@@ -9,13 +9,17 @@ set -x
 pushd magic-modules-branched
 BRANCH="$(cat ./branchname)"
 # Update this repo to track the submodules we just pushed:
+git config -f .gitmodules submodule.build/chef/compute.branch "$BRANCH"
+git config -f .gitmodules submodule.build/chef/compute.url "git@github.com:$GH_USERNAME/chef-google-compute.git"
+git config -f .gitmodules submodule.build/chef/sql.branch "$BRANCH"
+git config -f .gitmodules submodule.build/chef/sql.url "git@github.com:$GH_USERNAME/chef-google-sql.git"
 git config -f .gitmodules submodule.build/puppet/compute.branch "$BRANCH"
 git config -f .gitmodules submodule.build/puppet/compute.url "git@github.com:$GH_USERNAME/puppet-google-compute.git"
 git config -f .gitmodules submodule.build/puppet/sql.branch "$BRANCH"
 git config -f .gitmodules submodule.build/puppet/sql.url "git@github.com:$GH_USERNAME/puppet-google-sql.git"
 git config -f .gitmodules submodule.build/terraform.branch "$BRANCH"
 git config -f .gitmodules submodule.build/terraform.url "git@github.com:$GH_USERNAME/terraform-provider-google.git"
-git submodule sync build/terraform build/puppet/sql build/puppet/compute
+git submodule sync build/terraform build/puppet/sql build/puppet/compute build/chef/sql build/chef/compute
 
 set +x
 # Don't show the credential in the output.
@@ -24,7 +28,7 @@ set -x
 chmod 400 ~/github_private_key
 
 # Download those submodules so we can add them here.
-ssh-agent bash -c "ssh-add ~/github_private_key; git submodule update --remote --init build/terraform build/puppet/sql build/puppet/compute"
+ssh-agent bash -c "ssh-add ~/github_private_key; git submodule update --remote --init build/terraform build/puppet/sql build/puppet/compute build/chef/compute build/chef/sql"
 
 # Commit those changes so that they can be tested in the next phase.
 git add build/terraform build/puppet/compute build/puppet/sql

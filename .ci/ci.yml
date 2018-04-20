@@ -57,6 +57,18 @@ resources:
           uri: git@github.com:((github-account.username))/puppet-google-sql.git
           private_key: ((repo-key.private_key))
 
+    - name: chef-compute-intermediate
+      type: git-branch
+      source:
+          uri: git@github.com:((github-account.username))/chef-google-compute.git
+          private_key: ((repo-key.private_key))
+
+    - name: chef-sql-intermediate
+      type: git-branch
+      source:
+          uri: git@github.com:((github-account.username))/chef-google-sql.git
+          private_key: ((repo-key.private_key))
+
     - name: terraform-head
       type: git-branch
       source:
@@ -104,13 +116,10 @@ resources:
 jobs:
     - name: mm-generate
       plan:
-          - aggregate:
-              - get: magic-modules
-                resource: magic-modules-new-prs
-                version: every
-                trigger: true
-                params:
-                    submodules: [build/terraform]
+          - get: magic-modules
+            resource: magic-modules-new-prs
+            version: every
+            trigger: true
             # consumes: magic-modules (detached HEAD)
             # produces: magic-modules-branched (new branch, with submodule)
           - task: branch-magic-modules
@@ -132,7 +141,7 @@ jobs:
                     force: true
             - do:
                 # consumes: magic-modules-branched
-                # produces: puppet-compute-generated
+                # produces: puppet-generated
               - task: generate-puppet
                 file: magic-modules-branched/.ci/magic-modules/generate-puppet.yml
                 params:
@@ -150,6 +159,27 @@ jobs:
                       branch_file: magic-modules-branched/branchname
                       only_if_diff: true
                       force: true
+            - do:
+                # consumes: magic-modules-branched
+                # produces: chef-generated
+              - task: generate-chef
+                file: magic-modules-branched/.ci/magic-modules/generate-chef.yml
+                params:
+                  PRODUCTS: compute,sql
+              - aggregate:
+                - put: chef-compute-intermediate
+                  params:
+                      repository: chef-generated/compute
+                      branch_file: magic-modules-branched/branchname
+                      only_if_diff: true
+                      force: true
+                - put: chef-sql-intermediate
+                  params:
+                      repository: chef-generated/sql
+                      branch_file: magic-modules-branched/branchname
+                      only_if_diff: true
+                      force: true
+
 
             # consumes: magic-modules-branched
             # produces: magic-modules-submodules
@@ -198,14 +228,32 @@ jobs:
               PRODUCT: compute
               EXCLUDE_PATTERN: spec/gcompute_instance_group_manager_provider_spec.rb,spec/gcompute_instance_provider_spec.rb,spec/gcompute_instance_template_provider_spec.rb,spec/gcompute_target_https_proxy_provider_spec.rb,spec/gcompute_target_ssl_proxy_provider_spec.rb,spec/puppetlint_spec.rb
 
+    - name: chef-test
+      plan:
+        - get: magic-modules
+          version: every
+          trigger: true
+          params:
+              submodules: [build/chef/sql, build/chef/compute]
+          passed: [mm-generate]
+        - aggregate:
+          - task: test-sql
+            file: magic-modules/.ci/unit-tests/chef.yml
+            params:
+              PRODUCT: sql
+          - task: test-compute
+            file: magic-modules/.ci/unit-tests/chef.yml
+            params:
+              PRODUCT: compute
+
     - name: create-prs
       plan:
           - get: magic-modules
             version: every
             # trigger: true
             params:
-                submodules: [build/terraform, build/puppet/compute, build/puppet/sql]
-            passed: [terraform-test, mm-generate, puppet-test]
+                submodules: [build/terraform, build/puppet/compute, build/puppet/sql, build/chef/compute, build/chef/sql]
+            passed: [terraform-test, mm-generate, puppet-test, chef-test]
           - get: mm-initial-pr
             resource: magic-modules-new-prs
             passed: [mm-generate]
@@ -227,6 +275,8 @@ jobs:
                 TERRAFORM_REPO: terraform-providers/terraform-provider-google
                 PUPPET_COMPUTE_REPO: GoogleCloudPlatform/puppet-google-compute
                 PUPPET_SQL_REPO: GoogleCloudPlatform/puppet-google-sql
+                CHEF_COMPUTE_REPO: GoogleCloudPlatform/chef-google-compute
+                CHEF_SQL_REPO: GoogleCloudPlatform/chef-google-sql
             on_failure:
               put: magic-modules-new-prs
               params:
@@ -259,6 +309,18 @@ jobs:
           - put: puppet-sql-intermediate
             params:
               repository: magic-modules-with-comment/build/puppet/sql
+              branch_file: magic-modules-with-comment/original_pr_branch_name
+              only_if_diff: true
+              force: true
+          - put: chef-compute-intermediate
+            params:
+              repository: magic-modules-with-comment/build/chef/compute
+              branch_file: magic-modules-with-comment/original_pr_branch_name
+              only_if_diff: true
+              force: true
+          - put: chef-sql-intermediate
+            params:
+              repository: magic-modules-with-comment/build/chef/sql
               branch_file: magic-modules-with-comment/original_pr_branch_name
               only_if_diff: true
               force: true
