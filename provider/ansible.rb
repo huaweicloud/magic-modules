@@ -112,9 +112,9 @@ module Provider
       end
 
       # Returns the name of the module according to Ansible naming standards.
-      # Example: gcp_dns_managed_zone
+      # Example: hw_dns_managed_zone
       def module_name(object)
-        ["gcp_#{object.__product.prefix[1..-1]}",
+        ["hw_#{object.__product.prefix[1..-1]}",
          Google::StringUtils.underscore(object.name)].join('_')
       end
 

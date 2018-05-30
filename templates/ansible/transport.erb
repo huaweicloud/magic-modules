@@ -14,12 +14,12 @@
 <% end -%>
 <% if object.kind? -%>
 def fetch_resource(module, link, kind):
-    auth = GcpSession(module, <%= quote_string(prod_name) -%>)
-    return return_if_object(module, auth.get(link), kind)
+    auth = HwcSession(module, <%= quote_string(prod_name) -%>)
+    return return_if_object(module, auth.get(link), kind, <%= object.get_codes ? object.get_codes : [200] %>)
 <% else # object.kind? -%>
 def fetch_resource(module, link):
-    auth = GcpSession(module, <%= quote_string(prod_name) -%>)
-    return return_if_object(module, auth.get(link))
+    auth = HwcSession(module, <%= quote_string(prod_name) -%>)
+    return return_if_object(module, auth.get(link), <%= object.get_codes ? object.get_codes : [200] %>)
 
 <% end # object.kind? -%>
 

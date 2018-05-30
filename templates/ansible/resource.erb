@@ -26,7 +26,7 @@ DOCUMENTATION = '''
 module: <%= module_name(object) %>
 description:
 <%= lines(indent(bullet_lines(object.description, 4), 4)) -%>
-short_description: Creates a GCP <%= object.name %>
+short_description: Creates a Huawei Cloud <%= object.name %>
 version_added: <%= lines(@config.manifest.get('version_added', config)) -%>
 author: <%= lines(@config.manifest.get('author', config)) -%>
 requirements:
@@ -68,7 +68,7 @@ RETURN = '''
 ################################################################################
 
 <%
-  import = 'from ansible.module_utils.gcp_utils import navigate_hash, GcpSession, GcpModule, GcpRequest'
+  import = 'from ansible.module_utils.hwc_utils import navigate_hash, HwcSession, HwcModule, DictComparison'
   import += ', remove_nones_from_dict' unless properties_with_classes(object.all_user_properties).empty?
   import += ', replace_resource_dict' if nonvirtual_rrefs(object)
 -%>
@@ -94,7 +94,7 @@ def main():
     python_dict_for_property(prop, object)
   end
 -%>
-    module = GcpModule(
+    module = HwcModule(
         argument_spec=dict(
             state=dict(default='present', choices=['present', 'absent'], type='str'),
 <%= lines(indent_list(mod_props, 12)) -%>
@@ -178,7 +178,7 @@ def main():
 -%>
 <%= method_decl('create', ['module', 'link', ('kind' if object.kind?)]) %>
 <% if object.create.nil? -%>
-    auth = GcpSession(module, <%= quote_string(prod_name) -%>)
+    auth = HwcSession(module, <%= quote_string(prod_name) -%>)
 <%
   if object.create_verb.nil? || object.create_verb == :POST
     create_verb = '.post'
@@ -193,8 +193,9 @@ def main():
     object.async ? 'wait_for_operation' : 'return_if_object',
     ['module',
      method_call("auth#{create_verb}",
-                 ['link', 'resource_to_request(module)']),
-     ('kind' if !object.async && object.kind?)
+                 ['link', 'resource_to_request(module, "' + object.req_prefix + '")']),
+     ('kind' if !object.async && object.kind?),
+     object.create_codes ? object.create_codes : '[201, 202]'
    ]
   )
 -%>
@@ -210,14 +211,15 @@ def main():
 -%>
 <% if object.update.nil? -%>
 <%   if !false?(object.editable) -%>
-    auth = GcpSession(module, <%= quote_string(prod_name) -%>)
+    auth = HwcSession(module, <%= quote_string(prod_name) -%>)
 <%
   method = method_call(
     object.async ? 'wait_for_operation' : 'return_if_object',
     [
      'module',
-     method_call("auth.put", ['link', 'resource_to_request(module)']),
-     ('kind' if !object.async && object.kind?)
+     method_call("auth.put", ['link', 'resource_to_request(module, "' + object.req_prefix + '")']),
+     ('kind' if !object.async && object.kind?),
+     object.update_codes ? object.update_codes : '[201, 202]'
    ]
   )
 -%>
@@ -235,14 +237,16 @@ def main():
                                ('fetch' if object.save_api_results?)]))
 -%>
 <% if object.delete.nil? -%>
-    auth = GcpSession(module, <%= quote_string(prod_name) -%>)
+    auth = HwcSession(module, <%= quote_string(prod_name) -%>)
 <%
   method = method_call(
     object.async ? 'wait_for_operation' : 'return_if_object',
     ['module',
      method_call("auth.delete", ['link']),
-     ('kind' if !object.async && object.kind?)
-   ]
+     ('kind' if !object.async && object.kind?),
+     object.delete_codes ? object.delete_codes : '[202, 204]',
+     'False'
+    ]
   )
 -%>
     return <%= method %>
@@ -252,7 +256,7 @@ def main():
 
 
 <% end # unless object.virtual -%>
-def resource_to_request(module):
+def resource_to_request(module, parent=""):
 <%
   properties_in_request = [
     object&.parameters&.select { |p| p.input },
@@ -273,7 +277,7 @@ def resource_to_request(module):
         if v:
             return_vals[k] = v
 
-    return return_vals
+    return {parent: return_vals} if parent != "" else return_vals
 
 
 <%= lines(compile('templates/ansible/transport.erb'), 2) -%>
@@ -285,18 +289,18 @@ def resource_to_request(module):
 
 <%=
   lines(method_decl('return_if_object', ['module', 'response',
-                                         ('kind' if object.kind?)]))
+					 ('kind' if object.kind?),
+					 'success_codes', 'has_content=True']))
 -%>
     # If not found, return nothing.
     if response.status_code == 404:
         return None
 
     # If no content, return nothing.
-    if response.status_code == 204:
+    if response.status_code in success_codes and not has_content:
         return None
 
     try:
-        module.raise_for_status(response)
         result = response.json()
     except getattr(json.decoder, 'JSONDecodeError', ValueError) as inst:
         module.fail_json(msg="Invalid JSON response with error: %s" % inst)
@@ -317,7 +321,11 @@ def resource_to_request(module):
 
 def is_different(module, response):
     request = resource_to_request(module)
+<% if object.req_prefix -%>
+    response = response_to_hash(module, response.get("<%= object.req_prefix %>", {}))
+<% else # object.req_prefix -%>
     response = response_to_hash(module, response)
+<% end  # object.req_prefix -%>
 <% if object.decoder? -%>
     request = <%= object.transport.decoder -%>(request, module)
 <% end -%>
@@ -333,7 +341,7 @@ def is_different(module, response):
         if k in response:
             request_vals[k] = v
 
-    return GcpRequest(request_vals) != GcpRequest(response_vals)
+    return DictComparison(request_vals) != DictComparison(response_vals)
 
 
 # Remove unnecessary properties from the response.

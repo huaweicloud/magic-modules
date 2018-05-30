@@ -42,6 +42,11 @@ module Api
       attr_reader :create_verb
       attr_reader :update_verb
       attr_reader :input # If true, resource is not updatable as a whole unit
+      attr_reader :req_prefix # the prefix of the request body
+      attr_reader :create_codes
+      attr_reader :update_codes
+      attr_reader :get_codes
+      attr_reader :delete_codes
     end
 
     include Properties
