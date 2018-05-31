@@ -257,7 +257,7 @@ def main():
 
 
 <% end # unless object.virtual -%>
-def resource_to_request(module):
+def _convert_input(module):
 <%
   properties_in_request = [
     object&.parameters&.select { |p| p.input },
@@ -279,6 +279,15 @@ def resource_to_request(module):
             return_vals[k] = v
 
     return return_vals
+
+
+def resource_to_request(module):
+    v = _convert_input(module)
+<% if object.msg_prefix -%>
+    return {'<%= object.msg_prefix %>': v}
+<% else -%>
+    return v
+<% end -%>
 
 
 <%= lines(compile('templates/ansible/transport.erb'), 2) -%>
@@ -321,12 +330,15 @@ def resource_to_request(module):
         module.fail_json(msg="Incorrect result: {kind}".format(**result))
 <% end # object.kind? -%>
 
-    return result
+<% if object.msg_prefix -%>
+    return response_to_hash(module, result.get("<%= object.msg_prefix %>", {}))
+<% else # object.msg_prefix -%>
+    return response_to_hash(module, result)
+<% end  # object.msg_prefix -%>
 
 
 def is_different(module, response):
-    request = resource_to_request(module)
-    response = response_to_hash(module, response)
+    request = _convert_input(module)
 <% if object.decoder? -%>
     request = <%= object.transport.decoder -%>(request, module)
 <% end -%>
