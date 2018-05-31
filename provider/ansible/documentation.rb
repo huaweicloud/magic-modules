@@ -195,7 +195,7 @@ module Provider
 
       def autogen_notice_contrib
         ['Please read more about how to change this file at',
-         'https://www.github.com/GoogleCloudPlatform/magic-modules']
+	 'https://www.github.com/huaweicloud/magic-modules']
       end
     end
     # rubocop:enable Metrics/ModuleLength
