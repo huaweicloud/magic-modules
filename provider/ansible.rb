@@ -1,3 +1,5 @@
+# 2018.05.31 - changed method of 'module_name'
+#
 # Copyright 2017 Google Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -112,9 +114,9 @@ module Provider
       end
 
       # Returns the name of the module according to Ansible naming standards.
-      # Example: gcp_dns_managed_zone
+      # Example: hw_dns_managed_zone
       def module_name(object)
-        ["gcp_#{object.__product.prefix[1..-1]}",
+        ["hw_#{object.__product.prefix[1..-1]}",
          Google::StringUtils.underscore(object.name)].join('_')
       end
 
