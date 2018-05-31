@@ -1,3 +1,5 @@
+# 2018.05.31 - added properties of create_codes etc to resource
+#
 # Copyright 2017 Google Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,6 +44,10 @@ module Api
       attr_reader :create_verb
       attr_reader :update_verb
       attr_reader :input # If true, resource is not updatable as a whole unit
+      attr_reader :create_codes # the successful codes of Create
+      attr_reader :update_codes # the successful codes of Update
+      attr_reader :get_codes    # the successful codes of Get
+      attr_reader :delete_codes # the successful codes of Delete
     end
 
     include Properties
@@ -228,6 +234,14 @@ module Api
       check_optional_property :label_override, String
       check_optional_property :transport, Transport
       check_optional_property :references, ReferenceLinks
+      check_optional_property :create_codes, Array
+      check_optional_property :update_codes, Array
+      check_optional_property :delete_codes, Array
+      check_optional_property :get_codes, Array
+      check_optional_property_list :create_codes, Integer
+      check_optional_property_list :update_codes, Integer
+      check_optional_property_list :delete_codes, Integer
+      check_optional_property_list :get_codes, Integer
 
       check_property :properties, Array unless @exclude
 
