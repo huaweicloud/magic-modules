@@ -1,3 +1,5 @@
+# 2018.05.31 - changed the method of response_output
+#
 # Copyright 2017 Google Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -95,18 +97,18 @@ module Provider
         if prop.is_a? Api::Type::NestedObject
           [
             "#{prop.property_class[-1]}(",
-            "#{hash_name}.get(#{unicode_string(prop.name)}, {})",
+            "#{hash_name}.get(#{unicode_string(prop.field_name)}, {})",
             ", #{module_name}).from_response()"
           ].join
         elsif prop.is_a?(Api::Type::Array) && \
               prop.item_type.is_a?(Api::Type::NestedObject)
           [
             "#{prop.property_class[-1]}(",
-            "#{hash_name}.get(#{unicode_string(prop.name)}, [])",
+            "#{hash_name}.get(#{unicode_string(prop.field_name)}, [])",
             ", #{module_name}).from_response()"
           ].join
         else
-          "#{hash_name}.get(#{unicode_string(prop.name)})"
+          "#{hash_name}.get(#{unicode_string(prop.field_name)})"
         end
       end
       # rubocop:enable Metrics/MethodLength
