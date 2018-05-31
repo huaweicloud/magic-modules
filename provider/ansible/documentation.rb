@@ -1,3 +1,5 @@
+# 2018.05.31 - changed method of 'autogen_notice_contrib'
+#
 # Copyright 2017 Google Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -195,7 +197,7 @@ module Provider
 
       def autogen_notice_contrib
         ['Please read more about how to change this file at',
-         'https://www.github.com/GoogleCloudPlatform/magic-modules']
+         'https://www.github.com/huaweicloud/magic-modules']
       end
     end
     # rubocop:enable Metrics/ModuleLength

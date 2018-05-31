@@ -1,16 +1,17 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2017 Google
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (C) 2018 Huawei
+# GNU General Public License v3.0+ (see COPYING or
+# https://www.gnu.org/licenses/gpl-3.0.txt)
 <%= lines(autogen_notice :python) -%>
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
-################################################################################
+###############################################################################
 # Documentation
-################################################################################
+###############################################################################
 
 <%
   metadata_version = quote_string(@config.manifest.get('metadata_version',
@@ -26,9 +27,9 @@ DOCUMENTATION = '''
 module: <%= module_name(object) %>
 description:
 <%= lines(indent(bullet_lines(object.description, 4), 4)) -%>
-short_description: Creates a GCP <%= object.name %>
-version_added: <%= lines(@config.manifest.get('version_added', config)) -%>
-author: <%= lines(@config.manifest.get('author', config)) -%>
+short_description: Creates a Huawei Cloud <%= object.name %>
+<%#version_added: <%= lines(@config.manifest.get('version_added', config)) -%>
+<%#author: <%= lines(@config.manifest.get('author', config)) -%>
 requirements:
 <% @config.manifest.get('requirements', config).each do |line| -%>
 <%= lines(indent(bullet_line(line, 4, false, false), 4)) -%>
@@ -63,12 +64,12 @@ RETURN = '''
 <% end -%>
 '''
 
-################################################################################
+###############################################################################
 # Imports
-################################################################################
+###############################################################################
 
 <%
-  import = 'from ansible.module_utils.gcp_utils import navigate_hash, GcpSession, GcpModule, GcpRequest'
+  import = 'from ansible.module_utils.hwc_utils import navigate_hash, HwcSession, HwcModule, DictComparison'
   import += ', remove_nones_from_dict' unless properties_with_classes(object.all_user_properties).empty?
   import += ', replace_resource_dict' if nonvirtual_rrefs(object)
 -%>
@@ -81,9 +82,9 @@ import json
 -%>
 <%= lines(imports.sort.uniq.map { |i| "import #{i}" }) -%>
 
-################################################################################
+###############################################################################
 # Main
-################################################################################
+###############################################################################
 
 
 def main():
@@ -94,7 +95,7 @@ def main():
     python_dict_for_property(prop, object)
   end
 -%>
-    module = GcpModule(
+    module = HwcModule(
         argument_spec=dict(
             state=dict(default='present', choices=['present', 'absent'], type='str'),
 <%= lines(indent_list(mod_props, 12)) -%>
@@ -178,7 +179,7 @@ def main():
 -%>
 <%= method_decl('create', ['module', 'link', ('kind' if object.kind?)]) %>
 <% if object.create.nil? -%>
-    auth = GcpSession(module, <%= quote_string(prod_name) -%>)
+    auth = HwcSession(module, <%= quote_string(prod_name) -%>)
 <%
   if object.create_verb.nil? || object.create_verb == :POST
     create_verb = '.post'
@@ -210,7 +211,7 @@ def main():
 -%>
 <% if object.update.nil? -%>
 <%   if !false?(object.editable) -%>
-    auth = GcpSession(module, <%= quote_string(prod_name) -%>)
+    auth = HwcSession(module, <%= quote_string(prod_name) -%>)
 <%
   method = method_call(
     object.async ? 'wait_for_operation' : 'return_if_object',
@@ -235,7 +236,7 @@ def main():
                                ('fetch' if object.save_api_results?)]))
 -%>
 <% if object.delete.nil? -%>
-    auth = GcpSession(module, <%= quote_string(prod_name) -%>)
+    auth = HwcSession(module, <%= quote_string(prod_name) -%>)
 <%
   method = method_call(
     object.async ? 'wait_for_operation' : 'return_if_object',
@@ -333,7 +334,7 @@ def is_different(module, response):
         if k in response:
             request_vals[k] = v
 
-    return GcpRequest(request_vals) != GcpRequest(response_vals)
+    return DictComparison(request_vals) != DictComparison(response_vals)
 
 
 # Remove unnecessary properties from the response.
