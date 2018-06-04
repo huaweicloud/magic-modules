@@ -137,6 +137,7 @@ def main():
 -%>
 <%= lines(indent("fetch = #{method}", 16)) -%>
                 changed = True
+            fetch = response_to_hash(module, fetch)
         else:
 <%
   method = method_call('delete', [
@@ -163,6 +164,7 @@ def main():
 -%>
             fetch = <%= method %>
             changed = True
+            fetch = response_to_hash(module, fetch)
         else:
             fetch = {}
 
@@ -331,9 +333,9 @@ def resource_to_request(module):
 <% end # object.kind? -%>
 
 <% if object.msg_prefix -%>
-    return response_to_hash(module, result.get("<%= object.msg_prefix %>", {}))
+    return result.get("<%= object.msg_prefix %>")
 <% else # object.msg_prefix -%>
-    return response_to_hash(module, result)
+    return result
 <% end  # object.msg_prefix -%>
 
 
