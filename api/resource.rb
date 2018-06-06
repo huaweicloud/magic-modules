@@ -49,6 +49,7 @@ module Api
       attr_reader :update_codes # the successful codes of Update
       attr_reader :get_codes    # the successful codes of Get
       attr_reader :delete_codes # the successful codes of Delete
+      attr_reader :service_type # the endpoint service type of this resource
     end
 
     include Properties
@@ -244,6 +245,7 @@ module Api
       check_optional_property_list :update_codes, Integer
       check_optional_property_list :delete_codes, Integer
       check_optional_property_list :get_codes, Integer
+      check_property :service_type, String
 
       check_property :properties, Array unless @exclude
 

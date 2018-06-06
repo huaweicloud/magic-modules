@@ -106,10 +106,11 @@ def main():
 <% if object.kind? -%>
     kind = <%= lines(quote_string(object.kind)) -%>
 <% end -%>
+    endpoint = get_service_endpoint(module, <%= quote_string(object.service_type) -%>)
 
 <% if object.self_link_query.nil? -%>
 <%
-  method = method_call('fetch_resource', ['module', 'self_link(module)',
+  method = method_call('fetch_resource', ['module', 'endpoint + self_link(module)',
                                           ('kind' if object.kind?),
                                          ])
 -%>
@@ -130,7 +131,7 @@ def main():
             if is_different(module, fetch):
 <%
   method = method_call('update', [
-                                   'module', 'self_link(module)',
+                                   'module', 'endpoint + self_link(module)',
                                    ('kind' if object.kind?),
                                    ('fetch' if object.save_api_results?)
                                  ])
@@ -141,7 +142,7 @@ def main():
         else:
 <%
   method = method_call('delete', [
-                                   'module', 'self_link(module)',
+                                   'module', 'endpoint + self_link(module)',
                                    ('kind' if object.kind?),
                                    ('fetch' if object.save_api_results?)
                                  ])
@@ -153,9 +154,9 @@ def main():
         if state == 'present':
 <%
   if object.create_verb.nil? || object.create_verb == :POST
-    create_link = 'collection(module)'
+    create_link = 'endpoint + collection(module)'
   elsif object.create_verb == :PUT
-    create_link = 'self_link(module)'
+    create_link = 'endpoint + self_link(module)'
   else
     raise "Ansible does not support create_verb #{object.create_verb}"
   end
@@ -297,6 +298,11 @@ def resource_to_request(module):
 
 
 <%= lines(emit_link('collection', collection_url(object), object)) -%>
+
+
+def get_service_endpoint(module, service_type):
+    auth = HwcSession(module, <%= quote_string(prod_name) -%>)
+    return auth.get_service_endpoint(service_type)
 
 
 <%=
