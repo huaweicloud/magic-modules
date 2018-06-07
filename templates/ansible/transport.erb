@@ -16,13 +16,17 @@
 # limitations under the License.
 <% end -%>
 <% if object.kind? -%>
-def fetch_resource(module, link, kind):
+def fetch_resource(module, link, kind, success_codes=None):
     auth = HwcSession(module, <%= quote_string(prod_name) -%>)
-    return return_if_object(module, auth.get(link), kind, <%= object.get_codes ? '[' + object.get_codes.join(', ') + ']' : [200] %>)
+    if not success_codes:
+        success_codes = [200]
+    return return_if_object(module, auth.get(link), kind, success_code)
 <% else # object.kind? -%>
-def fetch_resource(module, link):
+def fetch_resource(module, link, success_codes=None):
     auth = HwcSession(module, <%= quote_string(prod_name) -%>)
-    return return_if_object(module, auth.get(link), <%= object.get_codes ? '[' + object.get_codes.join(', ') + ']' : [200] %>)
+    if not success_codes:
+        success_codes = [200]
+    return return_if_object(module, auth.get(link), success_codes)
 
 <% end # object.kind? -%>
 
