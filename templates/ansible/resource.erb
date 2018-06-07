@@ -272,39 +272,6 @@ def main():
 
 
 <% end # unless object.virtual -%>
-def _convert_input(module):
-<%
-  properties_in_request = [
-    object&.parameters&.select { |p| p.input },
-    object.properties.reject(&:output)
-  ].flatten.compact
--%>
-    request = {
-<% if object.kind? -%>
-        u'kind': <%= quote_string(object.kind) -%>,
-<% end # if object.kind? -%>
-<%= lines(indent(request_properties(properties_in_request), 4)) -%>
-    }
-<% if object.encoder? -%>
-    request = <%= object.transport.encoder -%>(request, module)
-<% end -%>
-    return_vals = {}
-    for k, v in request.items():
-        if v:
-            return_vals[k] = v
-
-    return return_vals
-
-
-def resource_to_request(module):
-    v = _convert_input(module)
-<% if object.msg_prefix -%>
-    return {'<%= object.msg_prefix %>': v}
-<% else -%>
-    return v
-<% end -%>
-
-
 <%= lines(compile('templates/ansible/transport.erb'), 2) -%>
 <%= lines(emit_link('self_link', self_link_url(object), object)) -%>
 
@@ -375,6 +342,39 @@ def is_different(module, response):
             request_vals[k] = v
 
     return DictComparison(request_vals) != DictComparison(response_vals)
+
+
+def _convert_input(module):
+<%
+  properties_in_request = [
+    object&.parameters&.select { |p| p.input },
+    object.properties.reject(&:output)
+  ].flatten.compact
+-%>
+    request = {
+<% if object.kind? -%>
+        u'kind': <%= quote_string(object.kind) -%>,
+<% end # if object.kind? -%>
+<%= lines(indent(request_properties(properties_in_request), 4)) -%>
+    }
+<% if object.encoder? -%>
+    request = <%= object.transport.encoder -%>(request, module)
+<% end -%>
+    return_vals = {}
+    for k, v in request.items():
+        if v:
+            return_vals[k] = v
+
+    return return_vals
+
+
+def resource_to_request(module):
+    v = _convert_input(module)
+<% if object.msg_prefix -%>
+    return {'<%= object.msg_prefix %>': v}
+<% else -%>
+    return v
+<% end -%>
 
 
 # Remove unnecessary properties from the response.
