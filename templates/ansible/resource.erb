@@ -106,6 +106,9 @@ def main():
 <% if object.kind? -%>
     kind = <%= lines(quote_string(object.kind)) -%>
 <% end -%>
+<% if object.msg_prefix -%>
+    msg_prefix = <%= quote_string(object.msg_prefix) %>
+<% end  # object.msg_prefix -%>
     endpoint = get_service_endpoint(module, <%= quote_string(object.service_type) -%>)
 
 <% if object.self_link_query.nil? -%>
@@ -128,6 +131,10 @@ def main():
 <% else # object.virtual -%>
 
     if fetch:
+<% if object.msg_prefix -%>
+        fetch = fetch.get(msg_prefix)
+<% end  # object.msg_prefix -%>
+
         if state == 'present':
             if is_different(module, fetch):
 <%
@@ -139,6 +146,9 @@ def main():
                                  ])
 -%>
 <%= lines(indent("fetch = #{method}", 16)) -%>
+<% if object.msg_prefix -%>
+                fetch = fetch.get(msg_prefix)
+<% end  # object.msg_prefix -%>
                 changed = True
             fetch = response_to_hash(module, fetch)
         else:
@@ -168,8 +178,8 @@ def main():
 				  ('[' + object.create_codes.join(', ') + ']' if object.create_codes)])
 -%>
             fetch = <%= method %>
+            fetch = response_to_hash(module, <%= object.msg_prefix ? 'fetch.get(msg_prefix)' : 'fetch'%>)
             changed = True
-            fetch = response_to_hash(module, fetch)
         else:
             fetch = {}
 
@@ -299,6 +309,7 @@ def get_service_endpoint(module, service_type):
     if code in success_codes and not has_content:
         return None
 
+    result = None
     try:
         result = response.json()
     except getattr(json.decoder, 'JSONDecodeError', ValueError) as inst:
@@ -317,11 +328,7 @@ def get_service_endpoint(module, service_type):
         module.fail_json(msg="Incorrect result: {kind}".format(**result))
 <% end # object.kind? -%>
 
-<% if object.msg_prefix -%>
-    return result.get("<%= object.msg_prefix %>")
-<% else # object.msg_prefix -%>
     return result
-<% end  # object.msg_prefix -%>
 
 
 def is_different(module, response):
