@@ -112,6 +112,7 @@ def main():
 <%
   method = method_call('fetch_resource', ['module', 'endpoint + self_link(module)',
                                           ('kind' if object.kind?),
+					  ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
                                          ])
 -%>
     fetch = <%= method %>
@@ -133,7 +134,8 @@ def main():
   method = method_call('update', [
                                    'module', 'endpoint + self_link(module)',
                                    ('kind' if object.kind?),
-                                   ('fetch' if object.save_api_results?)
+                                   ('fetch' if object.save_api_results?),
+                                   ('[' + object.update_codes.join(', ') + ']' if object.update_codes)
                                  ])
 -%>
 <%= lines(indent("fetch = #{method}", 16)) -%>
@@ -144,7 +146,8 @@ def main():
   method = method_call('delete', [
                                    'module', 'endpoint + self_link(module)',
                                    ('kind' if object.kind?),
-                                   ('fetch' if object.save_api_results?)
+				   ('fetch' if object.save_api_results?),
+				   ('[' + object.delete_codes.join(', ') + ']' if object.delete_codes)
                                  ])
 -%>
 <%= lines(indent(method, 12)) -%>
@@ -161,7 +164,8 @@ def main():
     raise "Ansible does not support create_verb #{object.create_verb}"
   end
   method = method_call('create', ['module', create_link,
-                                  ('kind' if object.kind?)])
+				  ('kind' if object.kind?),
+				  ('[' + object.create_codes.join(', ') + ']' if object.create_codes)])
 -%>
             fetch = <%= method %>
             changed = True
@@ -180,9 +184,11 @@ def main():
 <%# TODO: kind param not always needed.
   # https://github.com/GoogleCloudPlatform/magic-modules/issues/45
 -%>
-<%= method_decl('create', ['module', 'link', ('kind' if object.kind?)]) %>
+<%= method_decl('create', ['module', 'link', ('kind' if object.kind?), 'success_codes=None']) %>
 <% if object.create.nil? -%>
     auth = HwcSession(module, <%= quote_string(prod_name) -%>)
+    if not success_codes:
+        success_codes = [201, 202]
 <%
   if object.create_verb.nil? || object.create_verb == :POST
     create_verb = '.post'
@@ -199,7 +205,7 @@ def main():
      method_call("auth#{create_verb}",
                  ['link', 'resource_to_request(module)']),
      ('kind' if !object.async && object.kind?),
-     object.create_codes ? '[' + object.create_codes.join(', ') + ']' : '[201, 202]'
+     'success_codes'
    ]
   )
 -%>
@@ -211,11 +217,14 @@ def main():
 
 <%=
   lines(method_decl('update', ['module', 'link', ('kind' if object.kind?),
-                               ('fetch' if object.save_api_results?)]))
+			       ('fetch' if object.save_api_results?),
+			       'success_codes=None']))
 -%>
 <% if object.update.nil? -%>
 <%   if !false?(object.editable) -%>
     auth = HwcSession(module, <%= quote_string(prod_name) -%>)
+    if not success_codes:
+        success_codes = [201, 202]
 <%
   method = method_call(
     object.async ? 'wait_for_operation' : 'return_if_object',
@@ -223,7 +232,7 @@ def main():
      'module',
      method_call("auth.put", ['link', 'resource_to_request(module)']),
      ('kind' if !object.async && object.kind?),
-     object.update_codes ? '[' + object.update_codes.join(', ') + ']' : '[201, 202]'
+     'success_codes'
    ]
   )
 -%>
@@ -238,17 +247,20 @@ def main():
 
 <%=
   lines(method_decl('delete', ['module', 'link', ('kind' if object.kind?),
-                               ('fetch' if object.save_api_results?)]))
+			       ('fetch' if object.save_api_results?),
+			       'success_codes=None']))
 -%>
 <% if object.delete.nil? -%>
     auth = HwcSession(module, <%= quote_string(prod_name) -%>)
+    if not success_codes:
+        success_codes = [202, 204]
 <%
   method = method_call(
     object.async ? 'wait_for_operation' : 'return_if_object',
     ['module',
      method_call("auth.delete", ['link']),
      ('kind' if !object.async && object.kind?),
-     object.delete_codes ? '[' + object.delete_codes.join(', ') + ']' : '[202, 204]',
+     'success_codes',
      'False'
    ]
   )
