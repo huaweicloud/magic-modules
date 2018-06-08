@@ -19,7 +19,7 @@ def resource_get_url(module, wait_done):
 def wait_for_operation(module, op_type, op_result):
     op_id = navigate_hash(op_result, <%= op_path -%>)
     url = async_op_url(module, {'op_id': op_id})
-    timeout = module.params['timeouts'][op_type]
+    timeout = 60 * int(module.params['timeouts'][op_type].rstrip('m'))
 
 <% if object.self_link_query.nil? -%>
     return wait_for_completion(url, timeout, module)
