@@ -48,7 +48,7 @@ extends_documentation_fragment: gcp
 
 <% if example -%>
 EXAMPLES = '''
-<% res_readable_name = Google::StringUtils.uncombine(object.name) -%>
+<%#<% res_readable_name = Google::StringUtils.uncombine(object.name) -%>
 <% if example.dependencies -%>
 <%   example.dependencies.each do |depend| -%>
 <%= lines(depend.build_test('present', object, false)) -%>
@@ -109,11 +109,10 @@ def main():
 <% if object.msg_prefix -%>
     msg_prefix = <%= quote_string(object.msg_prefix) %>
 <% end  # object.msg_prefix -%>
-    endpoint = get_service_endpoint(module, <%= quote_string(object.service_type) -%>)
 
 <% if object.self_link_query.nil? -%>
 <%
-  method = method_call('fetch_resource', ['module', 'endpoint + self_link(module)',
+  method = method_call('fetch_resource', ['module', 'self_link(module)',
                                           ('kind' if object.kind?),
 					  ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
                                          ])
@@ -139,7 +138,7 @@ def main():
             if is_different(module, fetch):
 <%
   method = method_call('update', [
-                                   'module', 'endpoint + self_link(module)',
+                                   'module', 'self_link(module)',
                                    ('kind' if object.kind?),
                                    ('fetch' if object.save_api_results?),
                                    ('[' + object.update_codes.join(', ') + ']' if object.update_codes)
@@ -154,7 +153,7 @@ def main():
         else:
 <%
   method = method_call('delete', [
-                                   'module', 'endpoint + self_link(module)',
+                                   'module', 'self_link(module)',
                                    ('kind' if object.kind?),
 				   ('fetch' if object.save_api_results?),
 				   ('[' + object.delete_codes.join(', ') + ']' if object.delete_codes)
@@ -167,9 +166,9 @@ def main():
         if state == 'present':
 <%
   if object.create_verb.nil? || object.create_verb == :POST
-    create_link = 'endpoint + collection(module)'
+    create_link = 'collection(module)'
   elsif object.create_verb == :PUT
-    create_link = 'endpoint + self_link(module)'
+    create_link = 'self_link(module)'
   else
     raise "Ansible does not support create_verb #{object.create_verb}"
   end
@@ -210,7 +209,7 @@ def main():
 -%>
 <%
   method = method_call(
-    object.async ? 'wait_for_operation' : 'return_if_object',
+    'return_if_object',
     ['module',
      method_call("auth#{create_verb}",
                  ['link', 'resource_to_request(module)']),
@@ -219,7 +218,22 @@ def main():
    ]
   )
 -%>
+<%   if not object.async -%>
     return <%= method %>
+<%   else -%>
+    r = <%= method %>
+
+    wait_done = wait_for_operation(module, 'create', r)
+
+    url = resource_get_url(module, wait_done)
+<%
+  method = method_call('fetch_resource', ['module', 'url',
+                                          ('kind' if object.kind?),
+					  ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
+                                         ])
+-%>
+    return <%= method %>
+<%   end -%>
 <% else -%>
 <%= lines(indent(object.create, 4)) -%>
 <% end -%>
@@ -237,7 +251,7 @@ def main():
         success_codes = [201, 202]
 <%
   method = method_call(
-    object.async ? 'wait_for_operation' : 'return_if_object',
+    'return_if_object',
     [
      'module',
      method_call("auth.put", ['link', 'resource_to_request(module)']),
@@ -246,7 +260,22 @@ def main():
    ]
   )
 -%>
+<%   if not object.async -%>
     return <%= method %>
+<%   else -%>
+    r = <%= method %>
+
+    wait_done = wait_for_operation(module, 'update', r)
+
+    url = resource_get_url(module, wait_done)
+<%
+  method = method_call('fetch_resource', ['module', 'url',
+                                          ('kind' if object.kind?),
+					  ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
+                                         ])
+-%>
+    return <%= method %>
+<%     end -%>
 <%   else # !false?(object.editable) -%>
     module.fail_json(msg="<%= object.name -%> cannot be edited")
 <%   end # !false?(object.editable) -%>
@@ -266,7 +295,7 @@ def main():
         success_codes = [202, 204]
 <%
   method = method_call(
-    object.async ? 'wait_for_operation' : 'return_if_object',
+    'return_if_object',
     ['module',
      method_call("auth.delete", ['link']),
      ('kind' if !object.async && object.kind?),
@@ -275,7 +304,13 @@ def main():
    ]
   )
 -%>
+<%   if not object.async -%>
     return <%= method %>
+<%   else -%>
+    r = <%= method %>
+
+    return wait_for_operation(module, 'delete', r)
+<%   end -%>
 <% else # if object.delete.nil? -%>
 <%= lines(indent(object.delete, 4)) -%>
 <% end # if object.delete.nil? -%>
@@ -283,10 +318,10 @@ def main():
 
 <% end # unless object.virtual -%>
 <%= lines(compile('templates/ansible/transport.erb'), 2) -%>
-<%= lines(emit_link('self_link', self_link_url(object), object)) -%>
+<%= lines(emit_link('self_link', self_link_url(object), object, false, object.service_type)) -%>
 
 
-<%= lines(emit_link('collection', collection_url(object), object)) -%>
+<%= lines(emit_link('collection', collection_url(object), object, false, object.service_type)) -%>
 
 
 def get_service_endpoint(module, service_type):
@@ -319,10 +354,11 @@ def get_service_endpoint(module, service_type):
     result = <%= object.transport.decoder -%>(result, module)
 
 <% end -%>
-    if navigate_hash(result, ['error', 'errors']):
-        module.fail_json(msg=navigate_hash(result, ['error', 'errors']))
-    elif code not in success_codes:
-        module.fail_json(msg="operation failed, return code=%d" % code)
+    if code not in success_codes:
+        if navigate_hash(result, ['error', 'errors']):
+            module.fail_json(msg=navigate_hash(result, ['error', 'errors']))
+        else:
+            module.fail_json(msg="operation failed, return code=%d" % code)
 <% if object.kind? -%>
     if result['kind'] != kind:
         module.fail_json(msg="Incorrect result: {kind}".format(**result))

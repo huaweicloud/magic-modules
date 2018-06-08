@@ -37,6 +37,7 @@ module Api
       attr_reader :base_url
       attr_reader :wait_ms
       attr_reader :timeouts
+      attr_reader :service_type
 
       def validate
         super
@@ -48,6 +49,7 @@ module Api
         check_property :base_url, String
         check_property :wait_ms, Integer
         check_property :timeouts, Timeouts
+	check_optional_property :service_type, String
       end
 
       # Provides timeout information for the different operation types
@@ -79,10 +81,11 @@ module Api
     # Represents the results of an Operation request
     class Result < Api::Object
       attr_reader :path
-
+      attr_reader :base_url
       def validate
         super
         check_property :path, String
+	check_property :base_url, String
       end
     end
 

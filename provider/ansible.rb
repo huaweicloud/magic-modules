@@ -95,7 +95,7 @@ module Provider
         full_url = [product_url, resource_url].flatten.join
         # Double {} replaced with single {} to support Python string
         # interpolation
-        "\"#{full_url.gsub('{{', '{').gsub('}}', '}')}\""
+        "#{full_url.gsub('{{', '{').gsub('}}', '}')}"
       end
 
       def collection_url(resource)
@@ -104,13 +104,13 @@ module Provider
                     base_url].flatten.join
         # Double {} replaced with single {} to support Python string
         # interpolation
-        "\"#{full_url.gsub('{{', '{').gsub('}}', '}')}\""
+        "#{full_url.gsub('{{', '{').gsub('}}', '}')}"
       end
 
-      def async_operation_url(resource)
+      def async_operation_url(resource, url)
         base_url = resource.__product.default_version.base_url
-        url = [base_url, resource.async.operation.base_url].join
-        "\"#{url.gsub('{{', '{').gsub('}}', '}')}\""
+        url = [base_url, url].join
+        "#{url.gsub('{{', '{').gsub('}}', '}')}"
       end
 
       # Returns the name of the module according to Ansible naming standards.
@@ -138,7 +138,7 @@ module Provider
       # * extra_url will have a URL chunk to be appended after the URL.
       # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/AbcSize
-      def emit_link(name, url, object, has_extra_data = false)
+      def emit_link(name, url, object, has_extra_data = false, service_type='')
         params = emit_link_var_args(url, has_extra_data)
         extra = (' + extra_url' if url.include?('<|extra|>')) || ''
         if rrefs_in_link(url, object)
@@ -153,21 +153,37 @@ module Provider
             "def #{name}(#{params.join(', ')}):",
             indent([
                      'if extra_data is None:',
-                     indent('extra_data = {}', 4)
+                     indent('extra_data = {}', 4),
+		     "\n"
                    ], 4),
-            indent("url = #{url}#{extra}", 4).gsub('<|extra|>', ''),
             indent([
-                     'combined = extra_data.copy()',
+                     'combined = {}',
                      'combined.update(module.params)',
+                     'combined.update(extra_data)',
+		     "\n"
+                   ], 4),
+            (indent([
+		      "endpoint = get_service_endpoint(module, \'#{service_type}\')",
+                      "combined['endpoint'] = endpoint",
+                      "\n",
+		      "url = \"{endpoint}#{url}#{extra}\"".gsub('<|extra|>', ''),
+	            ], 4) if not url.start_with?("http")),
+            (indent("url = \"#{url}#{extra}\"", 4).gsub('<|extra|>', '') if url.start_with?("http")),
+            indent([
                      'return url.format(**combined)'
                    ], 4)
           ].compact.join("\n")
         else
-          url_code = "#{url}.format(**module.params)#{extra}"
+          url_code = "\"#{url}\".format(**module.params)#{extra}"
           [
             "def #{name}(#{params.join(', ')}):",
-            indent("return #{url_code}", 4).gsub('<|extra|>', '')
-          ].join("\n")
+            (indent("return #{url_code}", 4).gsub('<|extra|>', '') if url.start_with?("http")),
+            (indent([
+		      "endpoint = get_service_endpoint(module, \'#{service_type}\')",
+		      "url = #{url_code}".gsub('<|extra|>', ''),
+                      "return endpoint + url"
+	            ], 4) if not url.start_with?("http")),
+          ].compact.join("\n")
         end
       end
       # rubocop:enable Metrics/MethodLength

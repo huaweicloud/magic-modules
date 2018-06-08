@@ -2,27 +2,27 @@
 <%
   stat_path = path2navigate(object.async.status.path)
   res_path = path2navigate(object.async.result.path)
+  op_path = path2navigate(object.async.operation.path)
+  async_url = async_operation_url(object, object.async.operation.base_url)
+  res_url = async_operation_url(object, object.async.result.base_url)
 -%>
+def resource_get_url(module, wait_done):
+    op_id = navigate_hash(wait_done, <%= res_path -%>)
+    endpoint = get_service_endpoint(module, <%=quote_string(object.service_type)%>)
+    url = <%=quote_string(res_url)%>.format({'op_id': op_id})
+    return endpoint + url
+
+
 <%=
-  lines(emit_link('async_op_url', async_operation_url(object), object, true), 2)
+  lines(emit_link('async_op_url', async_url, object, true, object.async.operation.service_type || object.service_type), 2)
 -%>
-def wait_for_operation(module, response):
-<% if object.kind? -%>
-<%   op_kind = object.async.operation.kind -%>
-    op_result = return_if_object(module, response, '<%= op_kind -%>')
-<% else # object.kind? -%>
-    op_result = return_if_object(module, response)
-<% end # object.kind? -%>
-    if op_result is None:
-        return None
-    status = navigate_hash(op_result, <%= stat_path -%>)
+def wait_for_operation(module, op_type, op_result):
+    op_id = navigate_hash(op_result, <%= op_path -%>)
+    url = async_op_url(module, {'op_id': op_id})
+    timeout = module.params['timeouts'][op_type]
+
 <% if object.self_link_query.nil? -%>
-    wait_done = wait_for_completion(status, op_result, module)
-<%   if object.kind? -%>
-    return fetch_resource(module, navigate_hash(wait_done, <%= res_path -%>), <%= quote_string(object.kind) -%>)
-<%   else # object.kind? -%>
-    return fetch_resource(module, navigate_hash(wait_done, <%= res_path -%>))
-<%   end # object.kind? -%>
+    return wait_for_completion(url, timeout, module)
 <% else # object.self_link_query.nil? -%>
     wait_for_completion(status, op_result, resource)
 <%=
@@ -55,31 +55,46 @@ def wait_for_operation(module, response):
 <% end # object.self_link_query.nil? -%>
 
 
-def wait_for_completion(status, op_result, module):
+def wait_for_completion(op_uri, timeout, module):
 <%
-  op_path = path2navigate(object.async.operation.path)
   err_path = path2navigate(object.async.error.path)
-  err_msg = object.async.error.message
+  # err_msg = object.async.error.message
   allowed_states = object.async.status.allowed.map { |x| quote_string(x) }
 -%>
-    op_id = navigate_hash(op_result, <%= op_path -%>)
-    op_uri = async_op_url(module, {'op_id': op_id})
-    while status != '<%= object.async.status.complete -%>':
-        raise_if_errors(op_result, <%= err_path -%>, '<%= err_msg -%>')
-        time.sleep(<%= sprintf('%.1f', object.async.operation.wait_ms / 1000.0) %>)
+    start = time.time()
+    time_passed = 0
+    while time_passed <= timeout:
+        try:
+<% if object.kind? -%>
+            op_result = fetch_resource(module, op_uri, '<%= op_kind -%>')
+<% else # object.kind? -%>
+            op_result = fetch_resource(module, op_uri)
+<% end # object.kind? -%>
+        except Exception:
+            time.sleep(<%= sprintf('%.1f', object.async.operation.wait_ms / 1000.0) %>)
+            time_passed = time.time() - start
+            continue
+
+        raise_if_errors(op_result, module)
+
+        status = navigate_hash(op_result, <%= stat_path -%>)
         if status not in [<%= allowed_states.join(', ') -%>]:
             module.fail_json(msg="Invalid result %s" % status)
-<% if object.kind? -%>
-        op_result = fetch_resource(module, op_uri, '<%= op_kind -%>')
-<% else # object.kind? -%>
-        op_result = fetch_resource(module, op_uri)
-<% end # object.kind? -%>
-        status = navigate_hash(op_result, <%= stat_path -%>)
-    return op_result
+        if status == '<%= object.async.status.complete -%>': 
+            return op_result
+
+        time.sleep(<%= sprintf('%.1f', object.async.operation.wait_ms / 1000.0) %>)
+        time_passed = time.time() - start
+
+    module.fail_json("Timeout to wait completion")
 
 
-def raise_if_errors(response, err_path, module):
-    errors = navigate_hash(response, err_path)
-    if errors is not None:
-        module.fail_json(msg=errors)
+def raise_if_errors(response, module):
+<%
+  err_path = path2navigate(object.async.error.path)
+  err_msg = path2navigate(object.async.error.message)
+-%>
+    errors = navigate_hash(response, <%= err_path -%>)
+    if errors:
+        module.fail_json(msg=navigate_hash(response, <%= err_msg -%>))
 <% end #if object.async -%>
