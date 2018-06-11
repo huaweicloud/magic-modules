@@ -9,14 +9,22 @@ class <%= prop.property_class[-1] -%>(object):
             self.request = {}
 
     def to_request(self):
+<%   if prop.to_request -%>
+<%= lines(indent(prop.to_request, 8)) -%>
+<%   else -%>
         return remove_nones_from_dict({
 <%= lines(request_properties_in_classes(prop.properties, 12)) -%>
         })
+<%   end -%>
 
     def from_response(self):
+<%   if prop.from_response -%>
+<%= lines(indent(prop.from_response, 8)) -%>
+<%   else -%>
         return remove_nones_from_dict({
 <%= lines(response_properties_in_classes(prop.properties, 12)) -%>
         })
+<%   end -%>
 <% elsif prop.is_a?(Api::Type::Array) && prop.item_type.is_a?(Api::Type::NestedObject) -%>
     def __init__(self, request, module):
         self.module = module
@@ -26,16 +34,25 @@ class <%= prop.property_class[-1] -%>(object):
             self.request = []
 
     def to_request(self):
+<%   if prop.to_request -%>
+<%= lines(indent(prop.to_request, 8)) -%>
+<%   else -%>
         items = []
         for item in self.request:
             items.append(self._request_for_item(item))
         return items
+<%   end -%>
 
     def from_response(self):
+<%   if prop.from_response -%>
+<%= lines(indent(prop.from_response, 8)) -%>
+<%   else -%>
         items = []
         for item in self.request:
             items.append(self._response_from_item(item))
         return items
+<%   end -%>
+<%   if not prop.to_request -%>
 
     def _request_for_item(self, item):
         return remove_nones_from_dict({
@@ -43,6 +60,8 @@ class <%= prop.property_class[-1] -%>(object):
   lines(request_properties_in_classes(prop.item_type.properties, 12, 'item'))
 -%>
         })
+<%   end -%>
+<%   if not prop.from_response -%>
 
     def _response_from_item(self, item):
         return remove_nones_from_dict({
@@ -50,6 +69,7 @@ class <%= prop.property_class[-1] -%>(object):
   lines(response_properties_in_classes(prop.item_type.properties, 12, 'item'))
 -%>
         })
+<%   end -%>
 <% end # prop.is_a? NestedObject -%>
 <%=
   unless prop == properties_with_classes(object.all_user_properties).last
