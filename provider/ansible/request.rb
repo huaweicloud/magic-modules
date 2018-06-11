@@ -89,8 +89,11 @@ module Provider
       private
 
       def request_property(prop, hash_name, module_name)
+        fn = prop.field_name
+        fn = fn.include?("/") ? fn[0, fn.index("/")] : fn
+
         [
-          "#{unicode_string(prop.field_name)}:",
+          "#{unicode_string(fn)}:",
           request_output(prop, hash_name, module_name).to_s
         ].join(' ')
       end
@@ -107,26 +110,28 @@ module Provider
         # If input true, treat like request, but use module names.
         return request_output(prop, "#{module_name}.params", module_name) \
           if prop.input
+        fn = prop.field_name
+        fn = fn.include?("/") ? fn[fn.index("/") + 1..-1] : fn
         if prop.is_a? Api::Type::NestedObject
           [
             "#{prop.property_class[-1]}(",
-            "#{hash_name}.get(#{unicode_string(prop.field_name)}, {})",
+            "#{hash_name}.get(#{unicode_string(fn)}, {})",
             ", #{module_name}).from_response()"
           ].join
         elsif prop.is_a?(Api::Type::Array) && \
               prop.item_type.is_a?(Api::Type::NestedObject)
           [
             "#{prop.property_class[-1]}(",
-            "#{hash_name}.get(#{unicode_string(prop.field_name)}, [])",
+            "#{hash_name}.get(#{unicode_string(fn)}, [])",
             ", #{module_name}).from_response()"
           ].join
         elsif prop.from_response
           [
             "_#{prop.out_name}_convert_from_response(",
-            "#{hash_name}.get(#{quote_string(prop.field_name)}))",
+            "#{hash_name}.get(#{quote_string(fn)}))",
           ].join
         else
-          "#{hash_name}.get(#{unicode_string(prop.field_name)})"
+          "#{hash_name}.get(#{unicode_string(fn)})"
         end
       end
       # rubocop:enable Metrics/MethodLength
