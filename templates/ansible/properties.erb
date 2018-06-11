@@ -57,3 +57,15 @@ class <%= prop.property_class[-1] -%>(object):
   end
 -%>
 <% end -%>
+<% properties_with_custom_method_for_param(object.all_user_properties).each do |prop| -%>
+<%   if prop.to_request -%>
+<%= "\n" * 2 -%>
+def _<%= prop.out_name -%>_convert_to_request(param):
+<%= lines(indent(prop.to_request, 4)) -%>
+<%   end -%>
+<%   if prop.from_response -%>
+<%= "\n" * 2 -%>
+def _<%= prop.out_name -%>_convert_from_response(param):
+<%= lines(indent(prop.from_response, 4)) -%>
+<%   end -%>
+<% end -%>

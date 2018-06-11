@@ -73,6 +73,19 @@ module Provider
         end.compact.flatten
       end
 
+      def properties_with_custom_method_for_param(properties)
+        properties.map do |p|
+          if p.is_a? Api::Type::NestedObject
+            next
+          elsif p.is_a?(Api::Type::Array) && \
+                p.item_type.is_a?(Api::Type::NestedObject)
+            next
+          elsif p.to_request || p.from_response
+            [p]
+          end
+        end.compact.flatten
+      end
+
       private
 
       def request_property(prop, hash_name, module_name)
@@ -106,6 +119,11 @@ module Provider
             "#{prop.property_class[-1]}(",
             "#{hash_name}.get(#{unicode_string(prop.field_name)}, [])",
             ", #{module_name}).from_response()"
+          ].join
+        elsif prop.from_response
+          [
+            "_#{prop.out_name}_convert_from_response(",
+            "#{hash_name}.get(#{quote_string(prop.field_name)}))",
           ].join
         else
           "#{hash_name}.get(#{unicode_string(prop.field_name)})"
@@ -153,6 +171,11 @@ module Provider
             "replace_resource_dict(#{hash_name}",
             ".get(#{quote_string(prop_name)}, []), ",
             "#{quote_string(prop.item_type.imports)})"
+          ].join
+        elsif prop.to_request
+          [
+            "_#{prop.out_name}_convert_to_request(",
+            "#{hash_name}.get(#{quote_string(prop.out_name)}))",
           ].join
         else
           "#{hash_name}.get(#{quote_string(prop.out_name)})"

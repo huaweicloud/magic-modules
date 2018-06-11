@@ -21,6 +21,8 @@ module Provider
     # Ansible. All fields should be `attr_reader :<property>`
     module OverrideFields
       attr_reader :aliases
+      attr_reader :to_request
+      attr_reader :from_response
     end
 
     # Ansible-specific overrides to api.yaml.
@@ -30,6 +32,8 @@ module Provider
         super
 
         check_optional_property :aliases, ::Array
+        check_optional_property :to_request, ::String
+        check_optional_property :from_response, ::String
       end
 
       private
