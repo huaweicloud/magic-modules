@@ -44,7 +44,7 @@ module Provider
                                         module_name = 'self.module')
         indent_list(
           properties.map do |prop|
-            request_property(prop, hash_name, module_name)
+            request_property(prop, hash_name, module_name, 'self.')
           end,
           indent
         )
@@ -55,7 +55,7 @@ module Provider
                                          module_name = 'self.module')
         indent_list(
           properties.map do |prop|
-            response_property(prop, hash_name, module_name)
+            response_property(prop, hash_name, module_name, 'self.')
           end,
           indent
         )
@@ -64,7 +64,9 @@ module Provider
       # This returns a list of properties that require classes being built out.
       def properties_with_classes(properties)
         properties.map do |p|
-          if p.is_a? Api::Type::NestedObject
+          if p.to_request && p.from_response
+            next
+          elsif p.is_a? Api::Type::NestedObject
             [p] + properties_with_classes(p.properties)
           elsif p.is_a?(Api::Type::Array) && \
                 p.item_type.is_a?(Api::Type::NestedObject)
@@ -75,12 +77,7 @@ module Provider
 
       def properties_with_custom_method_for_param(properties)
         properties.map do |p|
-          if p.is_a? Api::Type::NestedObject
-            next
-          elsif p.is_a?(Api::Type::Array) && \
-                p.item_type.is_a?(Api::Type::NestedObject)
-            next
-          elsif p.to_request || p.from_response
+          if p.to_request || p.from_response
             [p]
           end
         end.compact.flatten
@@ -88,31 +85,36 @@ module Provider
 
       private
 
-      def request_property(prop, hash_name, module_name)
+      def request_property(prop, hash_name, module_name, invoker='')
         fn = prop.field_name
         fn = fn.include?("/") ? fn[0, fn.index("/")] : fn
 
         [
           "#{unicode_string(fn)}:",
-          request_output(prop, hash_name, module_name).to_s
+          request_output(prop, hash_name, module_name, invoker).to_s
         ].join(' ')
       end
 
-      def response_property(prop, hash_name, module_name)
+      def response_property(prop, hash_name, module_name, invoker='')
         [
           "#{unicode_string(prop.out_name)}:",
-          response_output(prop, hash_name, module_name).to_s
+          response_output(prop, hash_name, module_name, invoker).to_s
         ].join(' ')
       end
 
       # rubocop:disable Metrics/MethodLength
-      def response_output(prop, hash_name, module_name)
+      def response_output(prop, hash_name, module_name, invoker='')
         # If input true, treat like request, but use module names.
         return request_output(prop, "#{module_name}.params", module_name) \
           if prop.input
         fn = prop.field_name
         fn = fn.include?("/") ? fn[fn.index("/") + 1..-1] : fn
-        if prop.is_a? Api::Type::NestedObject
+        if prop.from_response
+          [
+            "#{invoker}_#{prop.out_name}_convert_from_response(",
+            "#{hash_name}.get(#{quote_string(fn)}))",
+          ].join
+        elsif prop.is_a? Api::Type::NestedObject
           [
             "#{prop.property_class[-1]}(",
             "#{hash_name}.get(#{unicode_string(fn)}, {})",
@@ -125,11 +127,6 @@ module Provider
             "#{hash_name}.get(#{unicode_string(fn)}, [])",
             ", #{module_name}).from_response()"
           ].join
-        elsif prop.from_response
-          [
-            "_#{prop.out_name}_convert_from_response(",
-            "#{hash_name}.get(#{quote_string(fn)}))",
-          ].join
         else
           "#{hash_name}.get(#{unicode_string(fn)})"
         end
@@ -140,8 +137,13 @@ module Provider
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
-      def request_output(prop, hash_name, module_name)
-        if prop.is_a? Api::Type::NestedObject
+      def request_output(prop, hash_name, module_name, invoker='')
+        if prop.to_request
+          [
+            "#{invoker}_#{prop.out_name}_convert_to_request(",
+            "#{hash_name}.get(#{quote_string(prop.out_name)}))",
+          ].join
+        elsif prop.is_a? Api::Type::NestedObject
           [
             "#{prop.property_class[-1]}(",
             "#{hash_name}.get(#{quote_string(prop.out_name)}, {})",
@@ -176,11 +178,6 @@ module Provider
             "replace_resource_dict(#{hash_name}",
             ".get(#{quote_string(prop_name)}, []), ",
             "#{quote_string(prop.item_type.imports)})"
-          ].join
-        elsif prop.to_request
-          [
-            "_#{prop.out_name}_convert_to_request(",
-            "#{hash_name}.get(#{quote_string(prop.out_name)}))",
           ].join
         else
           "#{hash_name}.get(#{quote_string(prop.out_name)})"
