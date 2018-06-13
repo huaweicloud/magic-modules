@@ -23,6 +23,7 @@ module Provider
       attr_reader :aliases
       attr_reader :to_request
       attr_reader :from_response
+      attr_reader :alone_parameter
     end
 
     # Ansible-specific overrides to api.yaml.
@@ -34,6 +35,7 @@ module Provider
         check_optional_property :aliases, ::Array
         check_optional_property :to_request, ::String
         check_optional_property :from_response, ::String
+        check_optional_property :alone_parameter, :boolean
       end
 
       private

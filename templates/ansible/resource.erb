@@ -390,7 +390,7 @@ def is_different(module, response):
 def _convert_input(module):
 <%
   properties_in_request = [
-    object&.parameters&.select { |p| p.input },
+    object.parameters.reject(&:alone_parameter).select { |p| p.input },
     object.properties.reject(&:output)
   ].flatten.compact
 -%>
@@ -411,12 +411,46 @@ def _convert_input(module):
     return return_vals
 
 
+<% if not object.alone_parameters.select(&:input).empty? -%>
+def _convert_alone_input_param(module):
+<%
+  properties_in_request = object.alone_parameters.select(&:input)
+-%>
+    request = {
+<% if object.kind? -%>
+        u'kind': <%= quote_string(object.kind) -%>,
+<% end # if object.kind? -%>
+<%= lines(indent(request_properties(properties_in_request), 4)) -%>
+    }
+<% if object.encoder? -%>
+    request = <%= object.transport.encoder -%>(request, module)
+<% end -%>
+    return_vals = {}
+    for k, v in request.items():
+        if v:
+            return_vals[k] = v
+
+    return return_vals
+<% end -%>
+
 def resource_to_request(module):
-    v = _convert_input(module)
+<% has_alone_param = (not object.alone_parameters.select(&:input).empty?) -%>
 <% if object.msg_prefix -%>
-    return {'<%= object.msg_prefix %>': v}
-<% else -%>
+<%   if has_alone_param -%>
+    v = {'<%= object.msg_prefix %>': _convert_input(module)}
+    v.update(_convert_alone_input_param(module))
     return v
+<%   else -%>
+    return {'<%= object.msg_prefix %>': _convert_input(module)}
+<%   end -%>
+<% else -%>
+<%   if has_alone_param -%>
+    v = _convert_input(module)
+    v.update(_convert_alone_input_param(module))
+    return v
+<%   else -%>
+    return _convert_input(module)
+<%   end -%>
 <% end -%>
 
 

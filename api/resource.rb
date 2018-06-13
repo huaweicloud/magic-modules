@@ -275,6 +275,10 @@ module Api
       (@parameters || []).reject(&:exclude)
     end
 
+    def alone_parameters
+      (@parameters || []).reject(&:exclude).select(&:alone_parameter)
+    end
+
     # Returns all properties and parameters including the ones that are
     # excluded. This is used for PropertyOverride validation
     def all_properties
