@@ -31,6 +31,11 @@ module Api
       attr_reader :required
       attr_reader :update_verb
       attr_reader :update_url
+      # Specify which API this filed belongs to, create or update or both.
+      # c:  this field is only the parameter of create
+      # u:  this field is only the parameter of update
+      # cu: both
+      attr_reader :create_update
     end
 
     include Fields
@@ -57,6 +62,9 @@ module Api
       check_optional_property_oneof_default \
         :update_verb, %i[POST PUT PATCH NONE], @__resource&.update_verb, Symbol
       check_optional_property :update_url, ::String
+      check_optional_property :create_update, ::String
+      check_optional_property_oneof_default \
+        :create_update, %w(c u cu), nil, ::String
     end
 
     def type
