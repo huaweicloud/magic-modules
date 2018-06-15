@@ -368,10 +368,8 @@ def get_service_endpoint(module, service_type):
 
 
 def is_different(module, response):
-    request = _convert_input(module)
-<% if object.decoder? -%>
-    request = <%= object.transport.decoder -%>(request, module)
-<% end -%>
+    request = _get_editable_properties(module)
+    response = response_to_hash(module, response)
 
     # Remove all output-only from response.
     response_vals = {}
@@ -463,28 +461,18 @@ def resource_to_update(module):
 <% end -%>
 
 
-def _convert_input(module):
+def _get_editable_properties(module):
 <%
-  properties_in_request = [
-    object.parameters.reject(&:alone_parameter).select { |p| p.input },
-    object.properties.reject(&:output)
-  ].flatten.compact
+  ps = object.properties.reject(&:output).select { |p| p.create_update == 'u' || p.create_update == 'cu' }
 -%>
-    request = {
-<% if object.kind? -%>
-        u'kind': <%= quote_string(object.kind) -%>,
-<% end # if object.kind? -%>
-<%= lines(indent(request_properties(properties_in_request), 4)) -%>
-    }
-<% if object.encoder? -%>
-    request = <%= object.transport.encoder -%>(request, module)
+    request = remove_nones_from_dict({
+<% ps.map do |p| -%>
+<%= indent("\"#{p.out_name}\": module.params.get(\"#{p.out_name}\"),", 8)-%>
+<%= "\n" -%>
 <% end -%>
-    return_vals = {}
-    for k, v in request.items():
-        if v:
-            return_vals[k] = v
+    })
 
-    return return_vals
+    return request
 
 
 # Remove unnecessary properties from the response.
