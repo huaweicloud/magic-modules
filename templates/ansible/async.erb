@@ -9,7 +9,7 @@
 def resource_get_url(module, wait_done):
     op_id = navigate_hash(wait_done, <%= res_path -%>)
     endpoint = get_service_endpoint(module, <%=quote_string(object.service_type)%>)
-    url = <%=quote_string(res_url)%>.format({'op_id': op_id})
+    url = <%=quote_string(res_url)%>.format(**{'op_id': op_id})
     return endpoint + url
 
 
@@ -80,13 +80,13 @@ def wait_for_completion(op_uri, timeout, module):
         status = navigate_hash(op_result, <%= stat_path -%>)
         if status not in [<%= allowed_states.join(', ') -%>]:
             module.fail_json(msg="Invalid result %s" % status)
-        if status == '<%= object.async.status.complete -%>': 
+        if status == '<%= object.async.status.complete -%>':
             return op_result
 
         time.sleep(<%= sprintf('%.1f', object.async.operation.wait_ms / 1000.0) %>)
         time_passed = time.time() - start
 
-    module.fail_json("Timeout to wait completion")
+    module.fail_json(msg="Timeout to wait completion")
 
 
 def raise_if_errors(response, module):
