@@ -304,13 +304,33 @@ def main():
      'False'
    ]
   )
+
+  method1 = method_call(
+    'return_if_object',
+    ['module',
+     method_call("auth.delete", ['link']),
+     ('kind' if !object.async && object.kind?),
+     'success_codes'
+   ]
+  )
 -%>
 <%   if not object.async -%>
-    return <%= method %>
+    <%= method %>
 <%   else -%>
-    r = <%= method %>
+<%
+  async_op_st = object.async.operation.service_type
+  async_op_url = object.async.operation.base_url.gsub(/{.*}/, ' ')
+  object_self_link = self_link_url(object).gsub(/{.*}/, ' ')
+-%>
+<%     if (not async_op_st || async_op_st == object.service_type) && async_op_url == object_self_link -%>
+    <%= method %>
 
-    return wait_for_operation(module, 'delete', r)
+    wait_for_delete(module, link)
+<%     else -%>
+    r = <%= method1 %>
+
+    wait_for_operation(module, 'delete', r)
+<%     end -%>
 <%   end -%>
 <% else # if object.delete.nil? -%>
 <%= lines(indent(object.delete, 4)) -%>

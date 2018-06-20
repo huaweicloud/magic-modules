@@ -61,9 +61,9 @@ def wait_for_completion(op_uri, timeout, module):
   # err_msg = object.async.error.message
   allowed_states = object.async.status.allowed.map { |x| quote_string(x) }
 -%>
-    start = time.time()
-    time_passed = 0
-    while time_passed <= timeout:
+    end = time.time() + 60 * int(
+        module.params['timeouts']['delete'].rstrip('m'))
+    while time.time() <= end:
         try:
 <% if object.kind? -%>
             op_result = fetch_resource(module, op_uri, '<%= op_kind -%>')
@@ -72,7 +72,6 @@ def wait_for_completion(op_uri, timeout, module):
 <% end # object.kind? -%>
         except Exception:
             time.sleep(<%= sprintf('%.1f', object.async.operation.wait_ms / 1000.0) %>)
-            time_passed = time.time() - start
             continue
 
         raise_if_errors(op_result, module)
@@ -84,7 +83,6 @@ def wait_for_completion(op_uri, timeout, module):
             return op_result
 
         time.sleep(<%= sprintf('%.1f', object.async.operation.wait_ms / 1000.0) %>)
-        time_passed = time.time() - start
 
     module.fail_json(msg="Timeout to wait completion")
 
@@ -97,4 +95,23 @@ def raise_if_errors(response, module):
     errors = navigate_hash(response, <%= err_path -%>)
     if errors:
         module.fail_json(msg=navigate_hash(response, <%= err_msg -%>))
+<%   if (not async_op_st || async_op_st == object.service_type) && async_op_url == object_self_link -%>
+
+
+def wait_for_delete(module, link):
+    auth = HwcSession(module, <%= quote_string(prod_name) -%>)
+    end = time.time() + 60 * int(
+        module.params['timeouts']['delete'].rstrip('m'))
+    while time.time() <= end:
+        try:
+            resp = auth.get(link)
+            if resp.status_code == 404:
+                return
+        except Exception:
+            pass
+
+        time.sleep(<%= sprintf('%.1f', object.async.operation.wait_ms / 1000.0) %>)
+
+    module.fail_json(msg="Timeout to wait for deletion to be complete")
+<%   end -%>
 <% end #if object.async -%>
