@@ -79,7 +79,7 @@ def wait_for_completion(op_uri, timeout, module):
         status = navigate_hash(op_result, <%= stat_path -%>)
         if status not in [<%= allowed_states.join(', ') -%>]:
             module.fail_json(msg="Invalid result %s" % status)
-        if status == '<%= object.async.status.complete -%>':
+        if status in '<%= object.async.status.complete -%>':
             return op_result
 
         time.sleep(<%= sprintf('%.1f', object.async.operation.wait_ms / 1000.0) %>)

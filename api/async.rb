@@ -99,7 +99,7 @@ module Api
       def validate
         super
         check_property :path, String
-        check_property :complete, String
+        check_property :complete, Array
         check_property :allowed, Array
       end
     end
