@@ -59,10 +59,11 @@ def wait_for_completion(op_uri, timeout, module):
 <%
   err_path = path2navigate(object.async.error.path)
   # err_msg = object.async.error.message
-  allowed_states = object.async.status.allowed.map { |x| quote_string(x) }
+  allowed_states = object.async.status.allowed.compact.map { |x| quote_string(x) }
+  complete_states = object.async.status.complete.compact.map { |x| quote_string(x) }
+  allowed_states = [allowed_states, complete_states].flatten
 -%>
-    end = time.time() + 60 * int(
-        module.params['timeouts']['delete'].rstrip('m'))
+    end = time.time() + timeout
     while time.time() <= end:
         try:
 <% if object.kind? -%>
@@ -79,7 +80,7 @@ def wait_for_completion(op_uri, timeout, module):
         status = navigate_hash(op_result, <%= stat_path -%>)
         if status not in [<%= allowed_states.join(', ') -%>]:
             module.fail_json(msg="Invalid result %s" % status)
-        if status in '<%= object.async.status.complete -%>':
+        if status in [<%= complete_states.join(', ') -%>]:
             return op_result
 
         time.sleep(<%= sprintf('%.1f', object.async.operation.wait_ms / 1000.0) %>)
