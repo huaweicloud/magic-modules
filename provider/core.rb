@@ -364,7 +364,7 @@ module Provider
       base_url = resource.__product.default_version.base_url
                          .split("\n").map(&:strip).compact
       if resource.self_link.nil?
-        [base_url, [resource.base_url, '{{name}}'].join('/')]
+        [base_url, [resource.base_url, '{{id}}'].join('/')]
       else
         self_link = resource.self_link.split("\n").map(&:strip).compact
         [base_url, self_link]
