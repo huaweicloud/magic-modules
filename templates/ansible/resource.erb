@@ -43,7 +43,6 @@ options:
 <% object.all_user_properties.reject(&:output).each do |prop| -%>
 <%= lines(indent(doc_property_yaml(prop, object, 4), 4)) -%>
 <% end -%>
-extends_documentation_fragment: gcp
 '''
 
 <%#if example -%>
@@ -350,6 +349,13 @@ def get_service_endpoint(module, service_type):
     return auth.get_service_endpoint(service_type)
 
 
+<% if object.base_url.include? "{project}" -%>
+def get_project_id(module):
+    auth = HwcSession(module, <%= quote_string(prod_name) -%>)
+    return auth.get_project_id()
+
+
+<% end -%>
 <%=
   lines(method_decl('return_if_object', ['module', 'response',
 					 ('kind' if object.kind?),
