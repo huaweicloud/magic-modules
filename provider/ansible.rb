@@ -154,20 +154,24 @@ module Provider
             indent([
                      'if extra_data is None:',
                      indent('extra_data = {}', 4),
-		     "\n"
+                     "\n"
                    ], 4),
             indent([
                      'combined = {}',
                      'combined.update(module.params)',
                      'combined.update(extra_data)',
-		     "\n"
+                     "\n"
                    ], 4),
             (indent([
-		      "endpoint = get_service_endpoint(module, \'#{service_type}\')",
+                      "combined['project'] = get_project_id(module)",
+                      "\n",
+                    ], 4) if url.include?("{project}")),
+            (indent([
+                      "endpoint = get_service_endpoint(module, \'#{service_type}\')",
                       "combined['endpoint'] = endpoint",
                       "\n",
-		      "url = \"{endpoint}#{url}#{extra}\"".gsub('<|extra|>', ''),
-	            ], 4) if not url.start_with?("http")),
+                      "url = \"{endpoint}#{url}#{extra}\"".gsub('<|extra|>', ''),
+                    ], 4) if not url.start_with?("http")),
             (indent("url = \"#{url}#{extra}\"", 4).gsub('<|extra|>', '') if url.start_with?("http")),
             indent([
                      'return url.format(**combined)'
@@ -175,14 +179,23 @@ module Provider
           ].compact.join("\n")
         else
           url_code = "\"#{url}\".format(**module.params)#{extra}"
+          if url.include?("{project}")
+            url_code = "\"#{url}\".format(**combined)#{extra}"
+          end
+
           [
             "def #{name}(#{params.join(', ')}):",
+            (indent([
+                      'combined = module.params.copy()',
+                      "combined['project'] = get_project_id(module)",
+                      "\n",
+                    ], 4) if url.include?("{project}")),
             (indent("return #{url_code}", 4).gsub('<|extra|>', '') if url.start_with?("http")),
             (indent([
-		      "endpoint = get_service_endpoint(module, \'#{service_type}\')",
-		      "url = #{url_code}".gsub('<|extra|>', ''),
+                      "url = #{url_code}".gsub('<|extra|>', ''),
+                      "endpoint = get_service_endpoint(module, \'#{service_type}\')",
                       "return endpoint + url"
-	            ], 4) if not url.start_with?("http")),
+                    ], 4) if not url.start_with?("http")),
           ].compact.join("\n")
         end
       end

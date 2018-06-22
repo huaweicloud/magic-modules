@@ -8,8 +8,9 @@
 -%>
 def resource_get_url(module, wait_done):
     op_id = navigate_hash(wait_done, <%= res_path -%>)
-    endpoint = get_service_endpoint(module, <%=quote_string(object.service_type)%>)
     url = <%=quote_string(res_url)%>.format(**{'op_id': op_id})
+
+    endpoint = get_service_endpoint(module, <%=quote_string(object.service_type)%>)
     return endpoint + url
 
 
