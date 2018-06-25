@@ -70,7 +70,7 @@ RETURN = '''
 
 <%
   import = 'from ansible.module_utils.hwc_utils import navigate_hash, HwcSession, HwcModule, DictComparison'
-  import += ', remove_nones_from_dict' unless properties_with_classes(object.all_user_properties).empty?
+  import += ', remove_nones_from_dict'
   import += ', replace_resource_dict' if nonvirtual_rrefs(object)
 -%>
 <%= lines(import) -%>
@@ -78,7 +78,7 @@ import json
 <%
   imports = object.imports || []
   imports << 'time' if object.async
-  imports << 're' unless virtual_selflink_rrefs(object).empty?
+  imports << 're'
 -%>
 <%= lines(imports.sort.uniq.map { |i| "import #{i}" }) -%>
 
@@ -125,12 +125,16 @@ def main():
 
 <% if object.self_link_query.nil? -%>
 <%
-  method = method_call('fetch_resource', ['module', 'self_link(module)',
+  method = method_call('fetch_resource', ['module', 'link',
                                           ('kind' if object.kind?),
 					  ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
                                          ])
 -%>
-    fetch = <%= method %>
+    fetch = None
+    link = self_link(module)
+    # the link will include Nones if required format parameters are missed
+    if not re.search('/None/|/None$', link):
+        fetch = <%= method %>
 <% else # object.self_link_query.nil? -%>
     fetch = fetch_wrapped_resource(module, '<%= object.kind -%>',
                                    '<%= object.self_link_query.kind -%>',
@@ -428,8 +432,9 @@ def get_project_id(module):
 
 <% end -%>
     if code not in success_codes:
-        if navigate_hash(result, ['error', 'errors']):
-            module.fail_json(msg=navigate_hash(result, ['error', 'errors']))
+        msg = navigate_hash(result, ['message'])
+        if msg:
+            module.fail_json(msg=msg)
         else:
             module.fail_json(msg="operation failed, return code=%d" % code)
 <% if object.kind? -%>
