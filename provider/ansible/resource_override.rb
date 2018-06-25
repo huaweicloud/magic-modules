@@ -27,6 +27,8 @@ module Provider
       attr_reader :provider_helpers
       attr_reader :update
       attr_reader :version_added
+      attr_reader :update_url
+      attr_reader :delete_url
     end
 
     # Product specific overriden properties for Ansible
@@ -53,6 +55,8 @@ module Provider
         check_property :provider_helpers, ::Array
         check_optional_property :update, ::String
         check_optional_property :version_added, ::String
+        check_optional_property :update_url, ::String
+        check_optional_property :delete_url, ::String
       end
       # rubocop:enable Metrics/MethodLength
 
