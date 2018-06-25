@@ -94,6 +94,19 @@ def main():
   mod_props = object.all_user_properties.reject(&:output).map do |prop|
     python_dict_for_property(prop, object)
   end
+  obj_update_url = 'self_link(module)'
+  obj_delete_url = 'self_link(module)'
+  if object.update_url && object.delete_url && object.update_url == object.delete_url
+    obj_update_url = 'update_delete_url(module)'
+    obj_delete_url = 'update_delete_url(module)'
+  else
+    if object.update_url
+      obj_update_url = 'update_url(module)'
+    end
+    if object.delete_url
+      obj_delete_url = 'delete_url(module)'
+    end
+  end
 -%>
     module = HwcModule(
         argument_spec=dict(
@@ -138,7 +151,7 @@ def main():
             if is_different(module, fetch):
 <%
   method = method_call('update', [
-                                   'module', 'self_link(module)',
+                                   'module', obj_update_url,
                                    ('kind' if object.kind?),
                                    ('fetch' if object.save_api_results?),
                                    ('[' + object.update_codes.join(', ') + ']' if object.update_codes)
@@ -153,7 +166,7 @@ def main():
         else:
 <%
   method = method_call('delete', [
-                                   'module', 'self_link(module)',
+                                   'module', obj_delete_url,
                                    ('kind' if object.kind?),
 				   ('fetch' if object.save_api_results?),
 				   ('[' + object.delete_codes.join(', ') + ']' if object.delete_codes)
@@ -344,6 +357,39 @@ def main():
 <%= lines(emit_link('collection', collection_url(object), object, false, object.service_type)) -%>
 
 
+<%
+  if object.update_url && object.delete_url && object.update_url == object.delete_url
+    tmp_url = object.update_url.gsub('{{', '{').gsub('}}', '}')
+-%>
+<%=
+    lines(emit_link('update_delete_url', tmp_url, object, false, object.service_type))
+-%>
+
+
+<%
+  else
+    if object.update_url
+      tmp_url = object.update_url.gsub('{{', '{').gsub('}}', '}')
+-%>
+<%=
+      lines(emit_link('update_url', tmp_url, object, false, object.service_type))
+-%>
+
+
+<%
+    end
+    if object.delete_url
+      tmp_url = object.delete_url.gsub('{{', '{').gsub('}}', '}')
+-%>
+<%=
+      lines(emit_link('delete_url', tmp_url, object, false, object.service_type))
+-%>
+
+
+<%
+    end
+  end
+-%>
 def get_service_endpoint(module, service_type):
     auth = HwcSession(module, <%= quote_string(prod_name) -%>)
     return auth.get_service_endpoint(service_type)
