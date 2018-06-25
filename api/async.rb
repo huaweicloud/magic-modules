@@ -20,6 +20,7 @@ module Api
     attr_reader :result
     attr_reader :status
     attr_reader :error
+    attr_reader :update_status
 
     def validate
       super
@@ -28,6 +29,7 @@ module Api
       check_property :result, Result
       check_property :status, Status
       check_property :error, Error
+      check_optional_property :update_status, Status
     end
 
     # Represents the operations (requests) issues to watch for completion
