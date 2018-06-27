@@ -131,7 +131,7 @@ module Provider
 
       def validate
         raise 'Region must be slash delineated (e.g. regions/us-west1)' \
-          unless @region == 'global' || @region.match?(%r{.*\/.*})
+          unless @region == 'global' || @region.match(%r{.*\/.*})
 
         check_optional_property :type, ::String
 
@@ -192,8 +192,8 @@ module Provider
             "#{@name}:",
             indent([
                      compile_string(hash, @code),
-                     'scopes:',
-                     indent(lines(scopes), 2),
+                     # 'scopes:',
+                     # indent(lines(scopes), 2),
                      "state: #{state}"
                    ], 4),
             ("register: #{@register}" unless @register.nil?)
@@ -204,7 +204,7 @@ module Provider
       # rubocop:enable Metrics/CyclomaticComplexity
 
       def object_name_from_module_name(mod_name)
-        product_name = mod_name.match(/gcp_[a-z]*_(.*)/).captures[0]
+        product_name = mod_name.match(/hw_[a-z]*_(.*)/).captures[0]
         product_name.tr('_', ' ')
       end
 
