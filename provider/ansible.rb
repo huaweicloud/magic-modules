@@ -153,12 +153,14 @@ module Provider
         if rrefs_in_link(url, object)
           url_code = "#{url}.format(**res)#{extra}"
           [
+            "@link_wrapper",
             "def #{name}(#{params.join(', ')}):",
             indent("res = #{resourceref_hash_for_links(url, object)}", 4),
             indent("return #{url_code}", 4).gsub('<|extra|>', '')
           ].join("\n")
         elsif has_extra_data
           [
+            "@link_wrapper",
             "def #{name}(#{params.join(', ')}):",
             indent([
                      'if extra_data is None:',
@@ -193,6 +195,7 @@ module Provider
           end
 
           [
+            "@link_wrapper",
             "def #{name}(#{params.join(', ')}):",
             (indent([
                       'combined = module.params.copy()',
