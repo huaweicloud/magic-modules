@@ -50,6 +50,7 @@ module Api
       attr_reader :get_codes    # the successful codes of Get
       attr_reader :delete_codes # the successful codes of Delete
       attr_reader :service_type # the endpoint service type of this resource
+      attr_reader :list_url     # the list url of the resource
     end
 
     include Properties
@@ -246,6 +247,8 @@ module Api
       check_optional_property_list :delete_codes, Integer
       check_optional_property_list :get_codes, Integer
       check_property :service_type, String
+      check_property :list_url, String
+      check_optional_property :list_msg_prefix, String
 
       check_property :properties, Array unless @exclude
 
@@ -291,6 +294,10 @@ module Api
 
     def required_properties
       all_user_properties.select(&:required)
+    end
+
+    def list_msg_prefix
+      @list_msg_prefix || @msg_prefix + 's'
     end
 
     def exported_properties

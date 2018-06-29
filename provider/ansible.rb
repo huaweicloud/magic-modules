@@ -107,6 +107,15 @@ module Provider
         "#{full_url.gsub('{{', '{').gsub('}}', '}')}"
       end
 
+      def list_url(resource)
+        base_url = resource.list_url.split("\n").map(&:strip).compact
+        full_url = [resource.__product.default_version.base_url,
+                    base_url].flatten.join
+        # Double {} replaced with single {} to support Python string
+        # interpolation
+        "#{full_url.gsub('{{', '{').gsub('}}', '}')}"
+      end
+
       def async_operation_url(resource, url)
         base_url = resource.__product.default_version.base_url
         url = [base_url, url].join

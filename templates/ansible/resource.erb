@@ -129,6 +129,11 @@ def main():
 					  ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
                                          ])
 -%>
+<% if self_link_url(object).match('/{id}') -%>
+    if (not module.params.get("id")) and module.params.get("name"):
+        module.params['id'] = get_id_by_name(module)
+
+<% end -%>
     fetch = None
     link = self_link(module)
     # the link will include Nones if required format parameters are missed
@@ -354,6 +359,58 @@ def main():
 
 <% end # unless object.virtual -%>
 <%= lines(compile('templates/ansible/transport.erb'), 2) -%>
+<% unless object.virtual || self_link_url(object).match('/{id}').nil? -%>
+def get_id_by_name(module):
+    name = module.params.get("name")
+    link = list_link(module, {'limit': 10, 'marker': '{marker}'})
+    not_format_keys = re.findall("={marker}", link)
+    none_values = re.findall("=None", link)
+
+    if not (not_format_keys or none_values):
+        r = fetch_resource(module, link)
+        if r is None:
+            return ""
+<%   if object.list_msg_prefix -%>
+        r = r.get(<%= quote_string(object.list_msg_prefix) %>, [])
+<%   end  # object.msg_prefix -%>
+        ids = [
+            i.get('id') for i in r if i.get('name', '') == name
+        ]
+        if not ids:
+            return ""
+        elif len(ids) == 1:
+            return ids[0]
+        else:
+            module.fail_json(msg="Multiple resources with same name are found")
+    elif none_values:
+        module.fail_json(msg="Can not find id by name because url includes None")
+    else:
+        p = {'marker': ''}
+        ids = set()
+        while True:
+            r = fetch_resource(module, link.format(**p))
+            if r is None:
+                break
+<%   if object.list_msg_prefix -%>
+            r = r.get(<%= quote_string(object.list_msg_prefix) %>, [])
+<%   end  # object.msg_prefix -%>
+            if r == []:
+                break
+            for i in r:
+                if i.get('name') == name:
+                    ids.add(i.get('id'))
+            if len(ids) >= 2:
+                module.fail_json(msg="Multiple resources with same name are found")
+
+            p['marker'] = r[-1].get('id')
+
+        return ids.pop() if ids else ""
+
+
+<%= lines(emit_link('list_link', list_url(object), object, true, object.service_type)) -%>
+
+
+<% end -%>
 <%= lines(emit_link('self_link', self_link_url(object), object, false, object.service_type)) -%>
 
 
