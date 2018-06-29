@@ -359,6 +359,17 @@ def main():
 
 <% end # unless object.virtual -%>
 <%= lines(compile('templates/ansible/transport.erb'), 2) -%>
+def link_wrapper(f):
+    def _wrapper(module, *args, **kwargs):
+        try:
+            return f(module, *args, **kwargs)
+        except KeyError as ex:
+            module.fail_json(
+                msg="Mapping keys(%s) are not found in generating link" % ex)
+
+    return _wrapper
+
+
 <% unless object.virtual || self_link_url(object).match('/{id}').nil? -%>
 def get_id_by_name(module):
     name = module.params.get("name")

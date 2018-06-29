@@ -6,6 +6,7 @@
   async_url = async_operation_url(object, object.async.operation.base_url)
   res_url = async_operation_url(object, object.async.result.base_url)
 -%>
+@link_wrapper
 def resource_get_url(module, wait_done):
     combined = {'op_id': navigate_hash(wait_done, <%= res_path -%>)}
 <% if res_url.include? '{project}' -%>
