@@ -7,14 +7,15 @@
   res_url = async_operation_url(object, object.async.result.base_url)
 -%>
 @link_wrapper
-def resource_get_url(module, wait_done):
-    combined = {'op_id': navigate_hash(wait_done, <%= res_path -%>)}
+def resource_get_url(session, wait_done):
+    combined = session.module.params.copy()
+    combined['op_id'] = navigate_hash(wait_done, <%= res_path -%>)
 <% if res_url.include? '{project}' -%>
-    combined['project'] = get_project_id(module)
+    combined['project'] = get_project_id(session)
 <% end-%>
     url = <%=quote_string(res_url)%>.format(**combined)
 
-    endpoint = get_service_endpoint(module, <%=quote_string(object.service_type)%>)
+    endpoint = session.get_service_endpoint(<%=quote_string(object.service_type)%>)
     return endpoint + url
 
 
@@ -31,34 +32,35 @@ def resource_get_url(module, wait_done):
   u_complete_states = object.async.update_status.complete.compact.map { |x| quote_string(x) }
   u_allowed_states = [u_allowed_states, u_complete_states].flatten
 -%>
-def wait_for_operation(module, op_type, op_result):
+def wait_for_operation(session, op_type, op_result):
     op_id = navigate_hash(op_result, <%= op_path -%>)
-    url = async_op_url(module, {'op_id': op_id})
-    timeout = 60 * int(module.params['timeouts'][op_type].rstrip('m'))
+    url = async_op_url(session, {'op_id': op_id})
+    timeout = 60 * int(session.module.params['timeouts'][op_type].rstrip('m'))
     states = {
         'create': {
-	    'allowed': [<%= c_allowed_states.join(', ') -%>],
-	    'complete': [<%= c_complete_states.join(', ') -%>],
-	},
+            'allowed': [<%= c_allowed_states.join(', ') -%>],
+            'complete': [<%= c_complete_states.join(', ') -%>],
+        },
         'update': {
-	    'allowed': [<%= u_allowed_states.join(', ') -%>] ,
-	    'complete': [<%= u_complete_states.join(', ') -%>],
-	}
+            'allowed': [<%= u_allowed_states.join(', ') -%>] ,
+            'complete': [<%= u_complete_states.join(', ') -%>],
+        }
     }
 
     return wait_for_completion(url, timeout, states[op_type]['allowed'],
-                               states[op_type]['complete'], module)
+                               states[op_type]['complete'], session)
 
 
 def wait_for_completion(op_uri, timeout, allowed_states,
-                        complete_states, module):
+                        complete_states, session):
+    module = session.module
     end = time.time() + timeout
     while time.time() <= end:
         try:
 <% if object.kind? -%>
-            op_result = fetch_resource(module, op_uri, '<%= op_kind -%>')
+            op_result = fetch_resource(session, op_uri, '<%= op_kind -%>')
 <% else # object.kind? -%>
-            op_result = fetch_resource(module, op_uri)
+            op_result = fetch_resource(session, op_uri)
 <% end # object.kind? -%>
         except Exception:
             time.sleep(<%= sprintf('%.1f', object.async.operation.wait_ms / 1000.0) %>)
@@ -76,13 +78,13 @@ def wait_for_completion(op_uri, timeout, allowed_states,
 
     module.fail_json(msg="Timeout to wait completion")
 <% else -%>
-def wait_for_operation(module, op_type, op_result):
+def wait_for_operation(session, op_type, op_result):
     op_id = navigate_hash(op_result, <%= op_path -%>)
-    url = async_op_url(module, {'op_id': op_id})
-    timeout = 60 * int(module.params['timeouts'][op_type].rstrip('m'))
+    url = async_op_url(session, {'op_id': op_id})
+    timeout = 60 * int(session.module.params['timeouts'][op_type].rstrip('m'))
 
 <% if object.self_link_query.nil? -%>
-    return wait_for_completion(url, timeout, module)
+    return wait_for_completion(url, timeout, session)
 <% else # object.self_link_query.nil? -%>
     wait_for_completion(status, op_result, resource)
 <%=
@@ -115,19 +117,20 @@ def wait_for_operation(module, op_type, op_result):
 <% end # object.self_link_query.nil? -%>
 
 
-def wait_for_completion(op_uri, timeout, module):
+def wait_for_completion(op_uri, timeout, session):
 <%
   allowed_states = object.async.status.allowed.compact.map { |x| quote_string(x) }
   complete_states = object.async.status.complete.compact.map { |x| quote_string(x) }
   allowed_states = [allowed_states, complete_states].flatten
 -%>
+    module = session.module
     end = time.time() + timeout
     while time.time() <= end:
         try:
 <% if object.kind? -%>
-            op_result = fetch_resource(module, op_uri, '<%= op_kind -%>')
+            op_result = fetch_resource(session, op_uri, '<%= op_kind -%>')
 <% else # object.kind? -%>
-            op_result = fetch_resource(module, op_uri)
+            op_result = fetch_resource(session, op_uri)
 <% end # object.kind? -%>
         except Exception:
             time.sleep(<%= sprintf('%.1f', object.async.operation.wait_ms / 1000.0) %>)
@@ -158,13 +161,12 @@ def raise_if_errors(response, module):
 <%   if (not async_op_st || async_op_st == object.service_type) && async_op_url == object_self_link -%>
 
 
-def wait_for_delete(module, link):
-    auth = HwcSession(module, <%= quote_string(prod_name) -%>)
+def wait_for_delete(session, link):
     end = time.time() + 60 * int(
-        module.params['timeouts']['delete'].rstrip('m'))
+        session.module.params['timeouts']['delete'].rstrip('m'))
     while time.time() <= end:
         try:
-            resp = auth.get(link)
+            resp = session.get(link)
             if resp.status_code == 404:
                 return
         except Exception:
@@ -172,6 +174,6 @@ def wait_for_delete(module, link):
 
         time.sleep(<%= sprintf('%.1f', object.async.operation.wait_ms / 1000.0) %>)
 
-    module.fail_json(msg="Timeout to wait for deletion to be complete")
+    session.module.fail_json(msg="Timeout to wait for deletion to be complete")
 <%   end -%>
 <% end #if object.async -%>

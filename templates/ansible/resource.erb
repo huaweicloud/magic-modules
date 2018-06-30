@@ -86,6 +86,7 @@ import json
 ###############################################################################
 
 
+<% prod_name = object.__product.prefix[1..-1] -%>
 def main():
     """Main function"""
 
@@ -93,17 +94,17 @@ def main():
   mod_props = object.all_user_properties.reject(&:output).map do |prop|
     python_dict_for_property(prop, object)
   end
-  obj_update_url = 'self_link(module)'
-  obj_delete_url = 'self_link(module)'
+  obj_update_url = 'self_link(session)'
+  obj_delete_url = 'self_link(session)'
   if object.update_url && object.delete_url && object.update_url == object.delete_url
-    obj_update_url = 'update_delete_url(module)'
-    obj_delete_url = 'update_delete_url(module)'
+    obj_update_url = 'update_delete_url(session)'
+    obj_delete_url = 'update_delete_url(session)'
   else
     if object.update_url
-      obj_update_url = 'update_url(module)'
+      obj_update_url = 'update_url(session)'
     end
     if object.delete_url
-      obj_delete_url = 'delete_url(module)'
+      obj_delete_url = 'delete_url(session)'
     end
   end
 -%>
@@ -113,6 +114,7 @@ def main():
 <%= lines(indent_list(mod_props, 12)) -%>
         )
     )
+    session = HwcSession(module, <%= quote_string(prod_name) -%>)
 
     state = module.params['state']
 <% if object.kind? -%>
@@ -124,18 +126,18 @@ def main():
 
 <% if object.self_link_query.nil? -%>
 <%
-  method = method_call('fetch_resource', ['module', 'link',
+  method = method_call('fetch_resource', ['session', 'link',
                                           ('kind' if object.kind?),
 					  ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
                                          ])
 -%>
 <% if self_link_url(object).match('/{id}') -%>
     if (not module.params.get("id")) and module.params.get("name"):
-        module.params['id'] = get_id_by_name(module)
+        module.params['id'] = get_id_by_name(session)
 
 <% end -%>
     fetch = None
-    link = self_link(module)
+    link = self_link(session)
     # the link will include Nones if required format parameters are missed
     if not re.search('/None/|/None$', link):
         fetch = <%= method %>
@@ -159,7 +161,7 @@ def main():
             if is_different(module, fetch):
 <%
   method = method_call('update', [
-                                   'module', obj_update_url,
+                                   'session', obj_update_url,
                                    ('kind' if object.kind?),
                                    ('fetch' if object.save_api_results?),
                                    ('[' + object.update_codes.join(', ') + ']' if object.update_codes)
@@ -174,7 +176,7 @@ def main():
         else:
 <%
   method = method_call('delete', [
-                                   'module', obj_delete_url,
+                                   'session', obj_delete_url,
                                    ('kind' if object.kind?),
 				   ('fetch' if object.save_api_results?),
 				   ('[' + object.delete_codes.join(', ') + ']' if object.delete_codes)
@@ -187,13 +189,13 @@ def main():
         if state == 'present':
 <%
   if object.create_verb.nil? || object.create_verb == :POST
-    create_link = 'collection(module)'
+    create_link = 'collection(session)'
   elsif object.create_verb == :PUT
-    create_link = 'self_link(module)'
+    create_link = 'self_link(session)'
   else
     raise "Ansible does not support create_verb #{object.create_verb}"
   end
-  method = method_call('create', ['module', create_link,
+  method = method_call('create', ['session', create_link,
 				  ('kind' if object.kind?),
 				  ('[' + object.create_codes.join(', ') + ']' if object.create_codes)])
 -%>
@@ -209,14 +211,12 @@ def main():
     module.exit_json(**fetch)
 
 
-<% prod_name = object.__product.prefix[1..-1] -%>
 <% unless object.virtual -%>
 <%# TODO: kind param not always needed.
   # https://github.com/GoogleCloudPlatform/magic-modules/issues/45
 -%>
-<%= method_decl('create', ['module', 'link', ('kind' if object.kind?), 'success_codes=None']) %>
+<%= method_decl('create', ['session', 'link', ('kind' if object.kind?), 'success_codes=None']) %>
 <% if object.create.nil? -%>
-    auth = HwcSession(module, <%= quote_string(prod_name) -%>)
     if not success_codes:
         success_codes = [201, 202]
 <%
@@ -228,11 +228,12 @@ def main():
     raise "Ansible does not support create_verb #{object.create_verb}"
   end
 -%>
+    module = session.module
 <%
   method = method_call(
     'return_if_object',
     ['module',
-     method_call("auth#{create_verb}",
+     method_call("session#{create_verb}",
                  ['link', 'resource_to_create(module)']),
      ('kind' if !object.async && object.kind?),
      'success_codes'
@@ -244,11 +245,11 @@ def main():
 <%   else -%>
     r = <%= method %>
 
-    wait_done = wait_for_operation(module, 'create', r)
+    wait_done = wait_for_operation(session, 'create', r)
 
-    url = resource_get_url(module, wait_done)
+    url = resource_get_url(session, wait_done)
 <%
-  method = method_call('fetch_resource', ['module', 'url',
+  method = method_call('fetch_resource', ['session', 'url',
                                           ('kind' if object.kind?),
 					  ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
                                          ])
@@ -261,21 +262,21 @@ def main():
 
 
 <%=
-  lines(method_decl('update', ['module', 'link', ('kind' if object.kind?),
+  lines(method_decl('update', ['session', 'link', ('kind' if object.kind?),
 			       ('fetch' if object.save_api_results?),
 			       'success_codes=None']))
 -%>
 <% if object.update.nil? -%>
 <%   if !false?(object.editable) -%>
-    auth = HwcSession(module, <%= quote_string(prod_name) -%>)
     if not success_codes:
         success_codes = [201, 202]
+    module = session.module
 <%
   method = method_call(
     'return_if_object',
     [
      'module',
-     method_call("auth.put", ['link', 'resource_to_update(module)']),
+     method_call("session.put", ['link', 'resource_to_update(module)']),
      ('kind' if !object.async && object.kind?),
      'success_codes'
    ]
@@ -286,11 +287,11 @@ def main():
 <%   else -%>
     r = <%= method %>
 
-    wait_done = wait_for_operation(module, 'update', r)
+    wait_done = wait_for_operation(session, 'update', r)
 
-    url = resource_get_url(module, wait_done)
+    url = resource_get_url(session, wait_done)
 <%
-  method = method_call('fetch_resource', ['module', 'url',
+  method = method_call('fetch_resource', ['session', 'url',
                                           ('kind' if object.kind?),
 					  ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
                                          ])
@@ -306,19 +307,18 @@ def main():
 
 
 <%=
-  lines(method_decl('delete', ['module', 'link', ('kind' if object.kind?),
+  lines(method_decl('delete', ['session', 'link', ('kind' if object.kind?),
 			       ('fetch' if object.save_api_results?),
 			       'success_codes=None']))
 -%>
 <% if object.delete.nil? -%>
-    auth = HwcSession(module, <%= quote_string(prod_name) -%>)
     if not success_codes:
         success_codes = [202, 204]
 <%
   method = method_call(
     'return_if_object',
-    ['module',
-     method_call("auth.delete", ['link']),
+    ['session.module',
+     method_call("session.delete", ['link']),
      ('kind' if !object.async && object.kind?),
      'success_codes',
      'False'
@@ -327,8 +327,8 @@ def main():
 
   method1 = method_call(
     'return_if_object',
-    ['module',
-     method_call("auth.delete", ['link']),
+    ['session.module',
+     method_call("session.delete", ['link']),
      ('kind' if !object.async && object.kind?),
      'success_codes'
    ]
@@ -345,11 +345,11 @@ def main():
 <%     if (not async_op_st || async_op_st == object.service_type) && async_op_url == object_self_link -%>
     <%= method %>
 
-    wait_for_delete(module, link)
+    wait_for_delete(session, link)
 <%     else -%>
     r = <%= method1 %>
 
-    wait_for_operation(module, 'delete', r)
+    wait_for_operation(session, 'delete', r)
 <%     end -%>
 <%   end -%>
 <% else # if object.delete.nil? -%>
@@ -371,14 +371,15 @@ def link_wrapper(f):
 
 
 <% unless object.virtual || self_link_url(object).match('/{id}').nil? -%>
-def get_id_by_name(module):
+def get_id_by_name(session):
+    module = session.module
     name = module.params.get("name")
-    link = list_link(module, {'limit': 10, 'marker': '{marker}'})
+    link = list_link(session, {'limit': 10, 'marker': '{marker}'})
     not_format_keys = re.findall("={marker}", link)
     none_values = re.findall("=None", link)
 
     if not (not_format_keys or none_values):
-        r = fetch_resource(module, link)
+        r = fetch_resource(session, link)
         if r is None:
             return ""
 <%   if object.list_msg_prefix -%>
@@ -394,12 +395,13 @@ def get_id_by_name(module):
         else:
             module.fail_json(msg="Multiple resources with same name are found")
     elif none_values:
-        module.fail_json(msg="Can not find id by name because url includes None")
+        module.fail_json(
+            msg="Can not find id by name because url includes None")
     else:
         p = {'marker': ''}
         ids = set()
         while True:
-            r = fetch_resource(module, link.format(**p))
+            r = fetch_resource(session, link.format(**p))
             if r is None:
                 break
 <%   if object.list_msg_prefix -%>
@@ -411,7 +413,8 @@ def get_id_by_name(module):
                 if i.get('name') == name:
                     ids.add(i.get('id'))
             if len(ids) >= 2:
-                module.fail_json(msg="Multiple resources with same name are found")
+                module.fail_json(
+                    msg="Multiple resources with same name are found")
 
             p['marker'] = r[-1].get('id')
 
@@ -461,18 +464,6 @@ def get_id_by_name(module):
     end
   end
 -%>
-def get_service_endpoint(module, service_type):
-    auth = HwcSession(module, <%= quote_string(prod_name) -%>)
-    return auth.get_service_endpoint(service_type)
-
-
-<% if object.base_url.include? "{project}" -%>
-def get_project_id(module):
-    auth = HwcSession(module, <%= quote_string(prod_name) -%>)
-    return auth.get_project_id()
-
-
-<% end -%>
 <%=
   lines(method_decl('return_if_object', ['module', 'response',
 					 ('kind' if object.kind?),
