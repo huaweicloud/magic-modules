@@ -168,17 +168,16 @@ module Provider
                      "\n"
                    ], 4),
             indent([
-                     'combined = {}',
-                     'combined.update(module.params)',
+                     'combined = session.module.params.copy()',
                      'combined.update(extra_data)',
                      "\n"
                    ], 4),
             (indent([
-                      "combined['project'] = get_project_id(module)",
+                      "combined['project'] = session.get_project_id()",
                       "\n",
                     ], 4) if url.include?("{project}")),
             (indent([
-                      "endpoint = get_service_endpoint(module, \'#{service_type}\')",
+                      "endpoint = session.get_service_endpoint(\'#{service_type}\')",
                       "combined['endpoint'] = endpoint",
                       "\n",
                       "url = \"{endpoint}#{url}#{extra}\"".gsub('<|extra|>', ''),
@@ -189,7 +188,7 @@ module Provider
                    ], 4)
           ].compact.join("\n")
         else
-          url_code = "\"#{url}\".format(**module.params)#{extra}"
+          url_code = "\"#{url}\".format(**session.module.params)#{extra}"
           if url.include?("{project}")
             url_code = "\"#{url}\".format(**combined)#{extra}"
           end
@@ -198,14 +197,14 @@ module Provider
             "@link_wrapper",
             "def #{name}(#{params.join(', ')}):",
             (indent([
-                      'combined = module.params.copy()',
-                      "combined['project'] = get_project_id(module)",
+                      'combined = session.module.params.copy()',
+                      "combined['project'] = session.get_project_id()",
                       "\n",
                     ], 4) if url.include?("{project}")),
             (indent("return #{url_code}", 4).gsub('<|extra|>', '') if url.start_with?("http")),
             (indent([
                       "url = #{url_code}".gsub('<|extra|>', ''),
-                      "endpoint = get_service_endpoint(module, \'#{service_type}\')",
+                      "endpoint = session.get_service_endpoint(\'#{service_type}\')",
                       "return endpoint + url"
                     ], 4) if not url.start_with?("http")),
           ].compact.join("\n")
@@ -250,7 +249,7 @@ module Provider
       def emit_link_var_args(url, extra_data)
         extra_url = url.include?('<|extra|>')
         [
-          'module', ("extra_url=''" if extra_url),
+          'session', ("extra_url=''" if extra_url),
           ('extra_data=None' if extra_data)
         ].compact
       end
