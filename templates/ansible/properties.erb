@@ -117,3 +117,83 @@ def _<%= prop.out_name -%>_convert_from_response(value):
 <%= lines(indent(prop.from_response, 4)) -%>
 <%   end -%>
 <% end -%>
+<% unless object.ex_properties.empty? -%>
+<%= "\n" * 2 -%>
+<%   object.ex_properties.each do |prop|
+       opts = prop.ex_property_opts
+       get_url = opts&.get_url&.gsub('{{', '{')&.gsub('}}', '}')
+       update_url = prop.update_url.gsub('{{', '{').gsub('}}', '}')
+       prop_service_type = opts&.service_type || prop.__resource.service_type
+-%>
+class <%= prop.property_class[-1] -%>ExProperty(object):
+    def __init__(self, session):
+        self.module = session.module
+        self.session = session
+
+<%     if get_url && get_url == update_url -%>
+<%= lines(indent(emit_link('_link', get_url, object, false, prop_service_type, true), 4)) -%>
+
+<%     else -%>
+<%       if get_url -%>
+<%= lines(indent(emit_link('_link_get', get_url, object, false, prop_service_type, true), 4)) -%>
+
+<%       end -%>
+<%= lines(indent(emit_link('_link_update', update_url, object, false, prop_service_type, true), 4)) -%>
+
+<%     end -%>
+<%     if get_url -%>
+    def fetch(self):
+<%
+   method = method_call('fetch_resource', ['self.session',
+                                           (get_url == update_url ? 'self._link()' : 'self._link_get()'),
+                                           ('kind' if object.kind?),
+                                           ('[' + opts.get_codes.join(', ') + ']' if opts&.get_codes)
+                                          ])
+-%>
+        return <%= method %>
+<%     end # end get_url -%>
+
+    def update(self):
+        request = {
+<%= lines(indent(request_properties([prop], 4, true), 8)) -%>
+        }
+<%
+  if prop.update_verb.nil? || prop.update_verb == :POST
+    update_verb = 'post'
+  elsif prop.update_verb == :PUT
+    update_verb = 'put'
+  else
+    raise "Ansible does not support update_verb #{prop.update_verb}"
+  end
+
+  update_method = method_call(
+    "self.session.#{update_verb}",
+    [
+     (get_url == update_url ? 'self._link()' : 'self._link_update()'),
+     'request'
+    ])
+
+  method = method_call(
+    'return_if_object',
+    [
+     'self.module',
+     'result',
+     ('kind' if !object.async && object.kind?),
+     (opts&.update_codes ? ('[' + opts&.update_codes.join(', ') + ']') : '[201, 202]'),
+     'False'
+   ])
+-%>
+        result = <%= update_method %>
+        <%= method %>
+<%       if get_url -%>
+        return self.fetch()
+<%       else -%>
+        return None
+<%       end -%>
+<%=
+       unless prop == object.ex_properties.last
+    "\n" * 2
+       end
+-%>
+<%   end -%>
+<% end -%>

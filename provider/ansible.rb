@@ -147,9 +147,11 @@ module Provider
       # * extra_url will have a URL chunk to be appended after the URL.
       # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/AbcSize
-      def emit_link(name, url, object, has_extra_data = false, service_type='')
-        params = emit_link_var_args(url, has_extra_data)
+      def emit_link(name, url, object, has_extra_data = false, service_type='', is_class_method=false)
+        params = emit_link_var_args(url, has_extra_data, is_class_method)
         extra = (' + extra_url' if url.include?('<|extra|>')) || ''
+        session = is_class_method ? "self.session" : "session"
+        md = is_class_method ? "self.module" : "session.module"
         if rrefs_in_link(url, object)
           url_code = "#{url}.format(**res)#{extra}"
           [
@@ -163,50 +165,41 @@ module Provider
             "@link_wrapper",
             "def #{name}(#{params.join(', ')}):",
             indent([
-                     'if extra_data is None:',
-                     indent('extra_data = {}', 4),
-                     "\n"
-                   ], 4),
+                     ("url = \"#{url}#{extra}\"".gsub('<|extra|>', '') if url.start_with?("http")),
+                     ("url = \"{endpoint}#{url}#{extra}\"".gsub('<|extra|>', '') unless url.start_with?("http")),
+                     "\n",
+                   ].compact, 4),
             indent([
-                     'combined = session.module.params.copy()',
-                     'combined.update(extra_data)',
-                     "\n"
-                   ], 4),
-            (indent([
-                      "combined['project'] = session.get_project_id()",
-                      "\n",
-                    ], 4) if url.include?("{project}")),
-            (indent([
-                      "endpoint = session.get_service_endpoint(\'#{service_type}\')",
-                      "combined['endpoint'] = endpoint",
-                      "\n",
-                      "url = \"{endpoint}#{url}#{extra}\"".gsub('<|extra|>', ''),
-                    ], 4) if not url.start_with?("http")),
-            (indent("url = \"#{url}#{extra}\"", 4).gsub('<|extra|>', '') if url.start_with?("http")),
-            indent([
-                     'return url.format(**combined)'
-                   ], 4)
+                     "combined = #{md}.params.copy()",
+                     'if extra_data:',
+                     indent('combined.update(extra_data)', 4),
+                     "\n",
+                     ("combined['project'] = #{session}.get_project_id()" if url.include?("{project}")),
+                     ("combined['parent_id'] = #{md}.params['id']" if url.include?("{parent_id}")),
+                     ("combined['endpoint'] = #{session}.get_service_endpoint(\'#{service_type}\')" unless url.start_with?("http")),
+                     "\n",
+                   ].compact, 4),
+            indent('return url.format(**combined)', 4),
           ].compact.join("\n")
         else
-          url_code = "\"#{url}\".format(**session.module.params)#{extra}"
-          if url.include?("{project}")
-            url_code = "\"#{url}\".format(**combined)#{extra}"
-          end
-
+          need_combined = url.include?("{project}") || url.include?("{parent_id}") || (not url.start_with?("http"))
           [
             "@link_wrapper",
             "def #{name}(#{params.join(', ')}):",
+            indent([
+                     ("url = \"#{url}#{extra}\"".gsub('<|extra|>', '') if url.start_with?("http")),
+                     ("url = \"{endpoint}#{url}#{extra}\"".gsub('<|extra|>', '') unless url.start_with?("http")),
+                     "\n",
+                   ].compact, 4),
             (indent([
-                      'combined = session.module.params.copy()',
-                      "combined['project'] = session.get_project_id()",
+                      "combined = #{md}.params.copy()",
+                      ("combined['project'] = #{session}.get_project_id()" if url.include?("{project}")),
+                      ("combined['parent_id'] = #{md}.params['id']" if url.include?("{parent_id}")),
+                      ("combined['endpoint'] = #{session}.get_service_endpoint(\'#{service_type}\')" unless url.start_with?("http")),
                       "\n",
-                    ], 4) if url.include?("{project}")),
-            (indent("return #{url_code}", 4).gsub('<|extra|>', '') if url.start_with?("http")),
-            (indent([
-                      "url = #{url_code}".gsub('<|extra|>', ''),
-                      "endpoint = session.get_service_endpoint(\'#{service_type}\')",
-                      "return endpoint + url"
-                    ], 4) if not url.start_with?("http")),
+                      "return url.format(**combined)",
+                    ].compact, 4) if need_combined),
+            (indent("return url.format(**#{md}.params)", 4) unless need_combined),
           ].compact.join("\n")
         end
       end
@@ -246,10 +239,12 @@ module Provider
       # rubocop:enable Metrics/MethodLength
       # rubocop:enable Metrics/AbcSize
 
-      def emit_link_var_args(url, extra_data)
+      def emit_link_var_args(url, extra_data, is_class_method)
         extra_url = url.include?('<|extra|>')
         [
-          'session', ("extra_url=''" if extra_url),
+          ('self' if is_class_method),
+          ('session' unless is_class_method),
+          ("extra_url=''" if extra_url),
           ('extra_data=None' if extra_data)
         ].compact
       end

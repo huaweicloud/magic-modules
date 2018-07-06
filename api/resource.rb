@@ -296,6 +296,10 @@ module Api
       all_user_properties.select(&:required)
     end
 
+    def ex_properties
+      properties.select(&:update_url)
+    end
+
     def list_msg_prefix
       @list_msg_prefix || @msg_prefix + 's'
     end

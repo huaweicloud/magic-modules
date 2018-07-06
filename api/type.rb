@@ -36,6 +36,7 @@ module Api
       # u:  this field is only the parameter of update
       # cu: both
       attr_reader :create_update
+      attr_reader :ex_property_opts
     end
 
     include Fields
@@ -65,6 +66,8 @@ module Api
       check_optional_property :create_update, ::String
       check_optional_property_oneof_default \
         :create_update, %w(c u cu), nil, ::String
+
+      check_optional_property :ex_property_opts, ExPropertyFields
     end
 
     def type
@@ -90,6 +93,12 @@ module Api
 
     def parent
       @__parent
+    end
+
+    def property_class
+      type1 = property_ns_prefix
+      type1 << [@__resource.name, @name]
+      shrink_type_name(type1)
     end
 
     private
@@ -427,6 +436,25 @@ module Api
                                      :upper),
         'Property'
       ]
+    end
+
+    # Fileds for the external property
+    class ExPropertyFields < Api::Object
+      attr_reader :get_url
+      attr_reader :update_codes
+      attr_reader :get_codes
+      attr_reader :service_type
+
+      def validate
+        super
+        check_optional_property :get_url, ::String
+        check_optional_property :update_codes, ::Array
+        check_optional_property :get_codes, ::Array
+        check_optional_property :service_type, ::String
+
+        check_optional_property_list :update_codes, ::Integer
+        check_optional_property_list :get_codes, ::Integer
+      end
     end
   end
 end
