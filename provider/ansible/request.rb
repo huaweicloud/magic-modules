@@ -21,10 +21,11 @@ module Provider
     module Request
       # Takes in a list of properties and outputs a python hash that takes
       # in a module and outputs a formatted JSON request.
-      def request_properties(properties, indent = 4)
+      def request_properties(properties, indent = 4, is_in_class = false)
+	prefix = is_in_class ? 'self.' : ''
         indent_list(
           properties.map do |prop|
-            request_property(prop, 'module.params', 'module')
+            request_property(prop, "#{prefix}module.params", "#{prefix}module")
           end,
           indent
         )

@@ -86,7 +86,10 @@ import json
 ###############################################################################
 
 
-<% prod_name = object.__product.prefix[1..-1] -%>
+<%
+  prod_name = object.__product.prefix[1..-1]
+  no_ex_properties = object.ex_properties.empty?
+-%>
 def main():
     """Main function"""
 
@@ -120,27 +123,32 @@ def main():
 <% if object.kind? -%>
     kind = <%= lines(quote_string(object.kind)) -%>
 <% end -%>
-<% if object.msg_prefix -%>
-    msg_prefix = <%= quote_string(object.msg_prefix) %>
-<% end  # object.msg_prefix -%>
 
 <% if object.self_link_query.nil? -%>
 <%
-  method = method_call('fetch_resource', ['session', 'link',
-                                          ('kind' if object.kind?),
-					  ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
-                                         ])
+  method_fetch = method_call('fetch_resource', ['session', 'link',
+                                                ('kind' if object.kind?),
+                                                ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
+                                               ])
 -%>
-<% if self_link_url(object).match('/{id}') -%>
+<%   if self_link_url(object).match('/{id}') -%>
     if (not module.params.get("id")) and module.params.get("name"):
         module.params['id'] = get_id_by_name(session)
 
-<% end -%>
+<%   end -%>
+<%   if no_ex_properties -%>
     fetch = None
     link = self_link(session)
     # the link will include Nones if required format parameters are missed
     if not re.search('/None/|/None$', link):
-        fetch = <%= method %>
+        fetch = <%= method_fetch %>
+<%     if object.msg_prefix -%>
+        if fetch:
+            fetch = fetch.get(<%= quote_string(object.msg_prefix) %>)
+<%     end  # object.msg_prefix -%>
+<%   else -%>
+    fetch = get_resource(session)
+<%   end # no_ex_properties -%>
 <% else # object.self_link_query.nil? -%>
     fetch = fetch_wrapped_resource(module, '<%= object.kind -%>',
                                    '<%= object.self_link_query.kind -%>',
@@ -153,33 +161,34 @@ def main():
 <% else # object.virtual -%>
 
     if fetch:
-<% if object.msg_prefix -%>
-        fetch = fetch.get(msg_prefix)
-<% end  # object.msg_prefix -%>
-
         if state == 'present':
-            if is_different(module, fetch):
+            expect = _get_editable_properties(module)
+            current_state = response_to_hash(module, fetch)
+            if is_different(expect, current_state):
 <%
-  method = method_call('update', [
-                                   'session', obj_update_url,
-                                   ('kind' if object.kind?),
-                                   ('fetch' if object.save_api_results?),
-                                   ('[' + object.update_codes.join(', ') + ']' if object.update_codes)
-                                 ])
+  method_update = method_call('update', ['session', obj_update_url,
+                                         ('kind' if object.kind?),
+                                         ('fetch' if object.save_api_results?),
+                                         ('[' + object.update_codes.join(', ') + ']' if object.update_codes)
+                                        ])
 -%>
-<%= lines(indent("fetch = #{method}", 16)) -%>
-<% if object.msg_prefix -%>
-                fetch = fetch.get(msg_prefix)
-<% end  # object.msg_prefix -%>
+<%   if no_ex_properties -%>
+<%= lines(indent("fetch = #{method_update}", 16)) -%>
+                fetch = response_to_hash(module, <%= object.msg_prefix ? "fetch.get(\'#{object.msg_prefix}\')" : 'fetch'%>)
+<%   else -%>
+                fetch = update_resource(session, current_state, fetch)
+                fetch = response_to_hash(module, fetch)
+<%   end  # no_ex_properties -%>
                 changed = True
-            fetch = response_to_hash(module, fetch)
+            else:
+                fetch = current_state
         else:
 <%
   method = method_call('delete', [
                                    'session', obj_delete_url,
                                    ('kind' if object.kind?),
-				   ('fetch' if object.save_api_results?),
-				   ('[' + object.delete_codes.join(', ') + ']' if object.delete_codes)
+                                   ('fetch' if object.save_api_results?),
+                                   ('[' + object.delete_codes.join(', ') + ']' if object.delete_codes)
                                  ])
 -%>
 <%= lines(indent(method, 12)) -%>
@@ -195,12 +204,17 @@ def main():
   else
     raise "Ansible does not support create_verb #{object.create_verb}"
   end
-  method = method_call('create', ['session', create_link,
-				  ('kind' if object.kind?),
-				  ('[' + object.create_codes.join(', ') + ']' if object.create_codes)])
+  method_create = method_call('create', ['session', create_link,
+                                         ('kind' if object.kind?),
+                                         ('[' + object.create_codes.join(', ') + ']' if object.create_codes)])
 -%>
-            fetch = <%= method %>
-            fetch = response_to_hash(module, <%= object.msg_prefix ? 'fetch.get(msg_prefix)' : 'fetch'%>)
+<% if no_ex_properties -%>
+            fetch = <%= method_create %>
+            fetch = response_to_hash(module, <%= object.msg_prefix ? "fetch.get(\'#{object.msg_prefix}\')" : 'fetch'%>)
+<% else -%>
+            fetch = create_resource(session)
+            fetch = response_to_hash(module, fetch)
+<% end -%>
             changed = True
         else:
             fetch = {}
@@ -251,7 +265,7 @@ def main():
 <%
   method = method_call('fetch_resource', ['session', 'url',
                                           ('kind' if object.kind?),
-					  ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
+                                          ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
                                          ])
 -%>
     return <%= method %>
@@ -263,8 +277,8 @@ def main():
 
 <%=
   lines(method_decl('update', ['session', 'link', ('kind' if object.kind?),
-			       ('fetch' if object.save_api_results?),
-			       'success_codes=None']))
+                               ('fetch' if object.save_api_results?),
+                               'success_codes=None']))
 -%>
 <% if object.update.nil? -%>
 <%   if !false?(object.editable) -%>
@@ -293,7 +307,7 @@ def main():
 <%
   method = method_call('fetch_resource', ['session', 'url',
                                           ('kind' if object.kind?),
-					  ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
+                                          ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
                                          ])
 -%>
     return <%= method %>
@@ -308,8 +322,8 @@ def main():
 
 <%=
   lines(method_decl('delete', ['session', 'link', ('kind' if object.kind?),
-			       ('fetch' if object.save_api_results?),
-			       'success_codes=None']))
+                               ('fetch' if object.save_api_results?),
+                               'success_codes=None']))
 -%>
 <% if object.delete.nil? -%>
     if not success_codes:
@@ -359,6 +373,124 @@ def main():
 
 <% end # unless object.virtual -%>
 <%= lines(compile('templates/ansible/transport.erb'), 2) -%>
+<% unless no_ex_properties -%>
+<%
+   internals = object.ex_properties.reject{|p1| p1.ex_property_opts&.get_url}
+   internals_create = object.ex_properties.reject{|p1| p1.ex_property_opts&.get_url}.select{|p1| p1.create_update == 'u'}
+   externals = object.ex_properties.select{|p1| p1.ex_property_opts&.get_url}
+-%>
+def get_resource(session):
+    link = self_link(session)
+    # the link will include Nones if required format parameters are missed
+    if re.search('/None/|/None$', link):
+        return None
+
+    fetch = <%= method_fetch %>
+    if not fetch:
+        return fetch
+<%   if object.msg_prefix -%>
+    fetch = fetch.get(<%= quote_string(object.msg_prefix) %>)
+<%   end  # object.msg_prefix -%>
+
+<%   externals.each do |p| -%>
+    r = <%= p.property_class[-1] -%>ExProperty(session).fetch()
+    if isinstance(r, dict):
+        fetch.update(r)
+
+<%   end -%>
+    return fetch
+
+
+def update_resource(session, current_state, resource):
+<% unless internals.empty? && externals.empty? -%>
+    params = session.module.params
+<% end -%>
+<% unless internals.empty? -%>
+    need_read = False
+
+<%   internals.each do |p| -%>
+    expect = <%= "{\"#{p.out_name}\": params.get(\"#{p.out_name}\"),}" %>
+    actual = <%= "{\"#{p.out_name}\": current_state.get(\"#{p.out_name}\"),}" %>
+    if DictComparison(expect) != DictComparison(actual):
+        <%= p.property_class[-1] -%>ExProperty(session).update()
+        need_read = True
+
+<%   end -%>
+<% end -%>
+    obj = resource
+    expect = _get_resource_editable_properties(session.module)
+    if is_different(expect, current_state):
+        obj = <%= method_update %>
+<% if object.msg_prefix -%>
+        obj = obj.get(<%= quote_string(object.msg_prefix) %>)
+<% end  # object.msg_prefix -%>
+<% unless internals.empty? -%>
+    elif need_read:
+        obj = <%= method_fetch %>
+<%   if object.msg_prefix -%>
+        obj = obj.get(<%= quote_string(object.msg_prefix) %>)
+<%   end  # object.msg_prefix -%>
+<% end -%>
+
+<% unless externals.empty? -%>
+    result = {}
+<%   externals.each do |p| -%>
+    expect = <%= "{\"#{p.out_name}\": params.get(\"#{p.out_name}\"),}" %>
+    actual = <%= "{\"#{p.out_name}\": current_state.get(\"#{p.out_name}\"),}" %>
+    if DictComparison(expect) != DictComparison(actual):
+        r = <%= p.property_class[-1] -%>ExProperty(session).update()
+        if r:
+            result.update(r)
+
+<%   end -%>
+    if result:
+        obj.update(result)
+<% end -%>
+    return obj
+
+
+def create_resource(session):
+    obj = <%= method_create %>
+<% if object.msg_prefix -%>
+    obj = obj.get(<%= quote_string(object.msg_prefix) -%>)
+<% end  # object.msg_prefix -%>
+    session.module.params['id'] = obj.get('id', None)
+
+<% unless internals_create.empty? && externals.empty? -%>
+    params = session.module.params
+<% end -%>
+<% unless internals_create.empty? -%>
+    need_read = False
+
+<%   internals_create.each do |p| -%>
+    if params.get(<%= quote_string(p.out_name) -%>) is not None:
+        <%= p.property_class[-1] -%>ExProperty(session).update()
+        need_read = True
+
+<%   end -%>
+    if need_read:
+        obj = <%= method_fetch %>
+<%   if object.msg_prefix -%>
+        obj = obj.get(<%= quote_string(object.msg_prefix) -%>)
+<%   end  # object.msg_prefix -%>
+
+<% end -%>
+<% unless externals.empty? -%>
+    result = {}
+<%   externals.each do |p| -%>
+    if params.get(<%= quote_string(p.out_name) -%>) is not None:
+        r = <%= p.property_class[-1] -%>ExProperty(session).update()
+        if r:
+            result.update(r)
+
+<%   end -%>
+    if result:
+        obj.update(result)
+<% end -%>
+    return obj
+
+
+<% end -%>
 def link_wrapper(f):
     def _wrapper(module, *args, **kwargs):
         try:
@@ -466,8 +598,8 @@ def get_id_by_name(session):
 -%>
 <%=
   lines(method_decl('return_if_object', ['module', 'response',
-					 ('kind' if object.kind?),
-					 'success_codes', 'has_content=True']))
+                                         ('kind' if object.kind?),
+                                         'success_codes', 'has_content=True']))
 -%>
     code = response.status_code
 
@@ -503,29 +635,26 @@ def get_id_by_name(session):
     return result
 
 
-def is_different(module, response):
-    request = _get_editable_properties(module)
-    response = response_to_hash(module, response)
+def is_different(expect, actual):
+    # Remove all output-only from actual.
+    actual_vals = {}
+    for k, v in actual.items():
+        if k in expect:
+            actual_vals[k] = v
 
-    # Remove all output-only from response.
-    response_vals = {}
-    for k, v in response.items():
-        if k in request:
-            response_vals[k] = v
+    expect_vals = {}
+    for k, v in expect.items():
+        if k in actual:
+            expect_vals[k] = v
 
-    request_vals = {}
-    for k, v in request.items():
-        if k in response:
-            request_vals[k] = v
-
-    return DictComparison(request_vals) != DictComparison(response_vals)
+    return DictComparison(expect_vals) != DictComparison(actual_vals)
 
 
 def resource_to_create(module):
 <%
   properties_in_request = [
     object&.parameters&.reject(&:alone_parameter)&.select { |p| p.input || p.create_update == 'c' || p.create_update == 'cu' },
-    object.properties.reject(&:output).select { |p| p.create_update == 'c' || p.create_update == 'cu' },
+    object.properties.reject(&:output).reject(&:update_url).select { |p| p.create_update == 'c' || p.create_update == 'cu' },
   ].flatten.compact
 -%>
     request = remove_nones_from_dict({
@@ -563,7 +692,7 @@ def resource_to_update(module):
 <%
   properties_in_request = [
     object&.parameters&.reject(&:alone_parameter)&.select { |p| p.create_update == 'u' || p.create_update == 'cu' },
-    object.properties.reject(&:output).select { |p| p.create_update == 'u' || p.create_update == 'cu' },
+    object.properties.reject(&:output).reject(&:update_url).select { |p| p.create_update == 'u' || p.create_update == 'cu' },
   ].flatten.compact
 -%>
     request = remove_nones_from_dict({
@@ -597,6 +726,22 @@ def resource_to_update(module):
 <% end -%>
 
 
+<% unless no_ex_properties -%>
+def _get_resource_editable_properties(module):
+<%
+  ps = object.properties.reject(&:output).reject(&:update_url).select { |p| p.create_update == 'u' || p.create_update == 'cu' }
+-%>
+    request = remove_nones_from_dict({
+<% ps.map do |p| -%>
+<%= indent("\"#{p.out_name}\": module.params.get(\"#{p.out_name}\"),", 8)-%>
+<%= "\n" -%>
+<% end -%>
+    })
+
+    return request
+
+
+<% end -%>
 def _get_editable_properties(module):
 <%
   ps = object.properties.reject(&:output).select { |p| p.create_update == 'u' || p.create_update == 'cu' }
