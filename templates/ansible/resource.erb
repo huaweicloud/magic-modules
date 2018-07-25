@@ -69,7 +69,7 @@ RETURN = '''
 
 <%
   import = 'from ansible.module_utils.hwc_utils import navigate_hash, HwcSession, HwcModule, DictComparison'
-  import += ', remove_nones_from_dict'
+  import += ', remove_nones_from_dict, remove_empty_from_dict'
   import += ', replace_resource_dict' if nonvirtual_rrefs(object)
 -%>
 <%= lines(import) -%>
@@ -658,7 +658,7 @@ def resource_to_create(module):
     object.properties.reject(&:output).reject(&:update_url).select { |p| p.create_update == 'c' || p.create_update == 'cu' },
   ].flatten.compact
 -%>
-    request = remove_nones_from_dict({
+    request = remove_empty_from_dict({
 <% if object.kind? -%>
         u'kind': <%= quote_string(object.kind) -%>,
 <% end # if object.kind? -%>
@@ -668,7 +668,7 @@ def resource_to_create(module):
   alone = object.alone_parameters.select { |p| p.input || p.create_update == 'c' || p.create_update == 'cu' }
 -%>
 <% if not alone.empty? -%>
-    alone_param = remove_nones_from_dict({
+    alone_param = remove_empty_from_dict({
  <%= lines(indent(request_properties(alone), 4)) -%>
     })
 <% end -%>
