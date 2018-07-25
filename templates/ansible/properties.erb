@@ -12,18 +12,18 @@ class <%= prop.property_class[-1] -%>(object):
 <%   if prop.to_request -%>
 <%= lines(indent(prop.to_request, 8)) -%>
 <%   else -%>
-        return remove_nones_from_dict({
+        return {
 <%= lines(request_properties_in_classes(prop.properties, 12)) -%>
-        })
+        }
 <%   end -%>
 
     def from_response(self):
 <%   if prop.from_response -%>
 <%= lines(indent(prop.from_response, 8)) -%>
 <%   else -%>
-        return remove_nones_from_dict({
+        return {
 <%= lines(response_properties_in_classes(prop.properties, 12)) -%>
-        })
+        }
 <%   end -%>
 <%   properties_with_custom_method_for_param(prop.properties).each do |p| -%>
 <%     if p.to_request -%>
@@ -69,20 +69,20 @@ class <%= prop.property_class[-1] -%>(object):
 <%   if not prop.to_request -%>
 
     def _request_for_item(self, item):
-        return remove_nones_from_dict({
+        return {
 <%=
   lines(request_properties_in_classes(prop.item_type.properties, 12, 'item'))
 -%>
-        })
+        }
 <%   end -%>
 <%   if not prop.from_response -%>
 
     def _response_from_item(self, item):
-        return remove_nones_from_dict({
+        return {
 <%=
   lines(response_properties_in_classes(prop.item_type.properties, 12, 'item'))
 -%>
-        })
+        }
 <%   end -%>
 <%   properties_with_custom_method_for_param(prop.item_type.properties).each do |p| -%>
 <%     if p.to_request -%>
@@ -154,9 +154,9 @@ class <%= prop.property_class[-1] -%>ExProperty(object):
 <%     end # end get_url -%>
 
     def update(self):
-        request = {
+        request = remove_nones_from_dict({
 <%= lines(indent(request_properties([prop], 4, true), 8)) -%>
-        }
+        })
 <%
   if prop.update_verb.nil? || prop.update_verb == :POST
     update_verb = 'post'
