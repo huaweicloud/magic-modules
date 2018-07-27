@@ -20,17 +20,23 @@ require 'provider/ansible/manifest'
 module Provider
   module Ansible
     INTEGRATION_TEST_DEFAULTS = {
-      project: '"{{ gcp_project }}"',
-      auth_kind: '"{{ gcp_cred_kind }}"',
-      service_account_file: '"{{ gcp_cred_file }}"',
+      identity_endpoint: '"{{ identity_endpoint }}"',
+      user_name: '"{{ user_name }}"',
+      password: '"{{ password }}"',
+      domain_name: '"{{ domain_name }}"',
+      project_name: '"{{ project_name }}"',
+      region: '"{{ region }}"',
       name: '"{{ resource_name }}"'
     }.freeze
 
     EXAMPLE_DEFAULTS = {
-      name: 'testObject',
-      project: 'testProject',
-      auth_kind: 'service_account',
-      service_account_file: '/tmp/auth.pem'
+      identity_endpoint: '"{{ identity_endpoint }}"',
+      user_name: '"{{ user_name }}"',
+      password: '"{{ password }}"',
+      domain_name: '"{{ domain_name }}"',
+      project_name: '"{{ project_name }}"',
+      region: '"{{ region }}"',
+      name: '"{{ resource_name }}"'
     }.freeze
 
     # Holds all information necessary to run gcloud and verify the creation
@@ -204,7 +210,7 @@ module Provider
       # rubocop:enable Metrics/CyclomaticComplexity
 
       def object_name_from_module_name(mod_name)
-        product_name = mod_name.match(/hw_[a-z]*_(.*)/).captures[0]
+        product_name = mod_name.match(/hwc_[a-z]*_(.*)/).captures[0]
         product_name.tr('_', ' ')
       end
 

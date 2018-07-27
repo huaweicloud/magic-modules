@@ -28,8 +28,8 @@ module: <%= module_name(object) %>
 description:
 <%= lines(indent(bullet_lines(object.description, 4), 4)) -%>
 short_description: Creates a Huawei Cloud <%= object.name %>
-<%#version_added: <%= lines(@config.manifest.get('version_added', config)) -%>
-<%#author: <%= lines(@config.manifest.get('author', config)) -%>
+version_added: <%= lines(@config.manifest.get('version_added', config)) -%>
+author: <%= lines(@config.manifest.get('author', config)) -%>
 requirements:
 <% @config.manifest.get('requirements', config).each do |line| -%>
 <%= lines(indent(bullet_line(line, 4, false, false), 4)) -%>
@@ -43,6 +43,7 @@ options:
 <% object.all_user_properties.reject(&:output).each do |prop| -%>
 <%= lines(indent(doc_property_yaml(prop, object, 4), 4)) -%>
 <% end -%>
+extends_documentation_fragment: hwc
 '''
 
 <%if example -%>
@@ -67,15 +68,12 @@ RETURN = '''
 # Imports
 ###############################################################################
 
+from ansible.module_utils.hwc_utils import (HwcSession, HwcModule,
+                                            DictComparison, navigate_hash,
+                                            remove_nones_from_dict,
+                                            remove_empty_from_dict)
 <%
-  import = 'from ansible.module_utils.hwc_utils import navigate_hash, HwcSession, HwcModule, DictComparison'
-  import += ', remove_nones_from_dict, remove_empty_from_dict'
-  import += ', replace_resource_dict' if nonvirtual_rrefs(object)
--%>
-<%= lines(import) -%>
-import json
-<%
-  imports = object.imports || []
+  imports = ['json']
   imports << 'time' if object.async
   imports << 're'
 -%>

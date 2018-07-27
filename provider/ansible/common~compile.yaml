@@ -31,7 +31,7 @@
   object_names = api.objects
                     .select { |o| !excludes.include?(o.name) }
                     .map do |object|
-                      ["gcp_#{object.__product.prefix[1..-1]}",
+                      ["hwc_#{object.__product.prefix[1..-1]}",
                       Google::StringUtils.underscore(object.name)].join('_')
                     end
 -%>

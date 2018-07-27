@@ -42,7 +42,7 @@ def wait_for_operation(session, op_type, op_result):
             'complete': [<%= c_complete_states.join(', ') -%>],
         },
         'update': {
-            'allowed': [<%= u_allowed_states.join(', ') -%>] ,
+            'allowed': [<%= u_allowed_states.join(', ') -%>],
             'complete': [<%= u_complete_states.join(', ') -%>],
         }
     }

@@ -123,9 +123,9 @@ module Provider
       end
 
       # Returns the name of the module according to Ansible naming standards.
-      # Example: hw_dns_managed_zone
+      # Example: hwc_dns_managed_zone
       def module_name(object)
-        ["hw_#{object.__product.prefix[1..-1]}",
+        ["hwc_#{object.__product.prefix[1..-1]}",
          Google::StringUtils.underscore(object.name)].join('_')
       end
 
