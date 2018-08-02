@@ -373,6 +373,7 @@ def main():
 <%= lines(compile('templates/ansible/transport.erb'), 2) -%>
 <% unless no_ex_properties -%>
 <%
+   resource_editable_ps = object.properties.reject(&:output).reject(&:update_url).select { |p| p.create_update == 'u' || p.create_update == 'cu' }
    internals = object.ex_properties.reject{|p1| p1.ex_property_opts&.get_url}
    internals_create = object.ex_properties.reject{|p1| p1.ex_property_opts&.get_url}.select{|p1| p1.create_update == 'u'}
    externals = object.ex_properties.select{|p1| p1.ex_property_opts&.get_url}
@@ -416,14 +417,20 @@ def update_resource(session, current_state, resource):
 <%   end -%>
 <% end -%>
     obj = resource
+<% unless resource_editable_ps.empty? -%>
     expect = _get_resource_editable_properties(session.module)
     if is_different(expect, current_state):
         obj = <%= method_update %>
-<% if object.msg_prefix -%>
+<%   if object.msg_prefix -%>
         obj = obj.get(<%= quote_string(object.msg_prefix) %>)
-<% end  # object.msg_prefix -%>
+<%   end  # object.msg_prefix -%>
+<% end -%>
 <% unless internals.empty? -%>
+<%   if resource_editable_ps.empty? -%>
+    if need_read:
+<%   else -%>
     elif need_read:
+<%   end -%>
         obj = <%= method_fetch %>
 <%   if object.msg_prefix -%>
         obj = obj.get(<%= quote_string(object.msg_prefix) %>)
@@ -725,13 +732,10 @@ def resource_to_update(module):
 <% end -%>
 
 
-<% unless no_ex_properties -%>
+<% unless no_ex_properties || resource_editable_ps.empty? -%>
 def _get_resource_editable_properties(module):
-<%
-  ps = object.properties.reject(&:output).reject(&:update_url).select { |p| p.create_update == 'u' || p.create_update == 'cu' }
--%>
     request = remove_nones_from_dict({
-<% ps.map do |p| -%>
+<% resource_editable_ps.map do |p| -%>
 <%= indent("\"#{p.out_name}\": module.params.get(\"#{p.out_name}\"),", 8)-%>
 <%= "\n" -%>
 <% end -%>
