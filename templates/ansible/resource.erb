@@ -86,7 +86,14 @@ from ansible.module_utils.hwc_utils import (HwcSession, HwcModule,
 
 <%
   prod_name = object.__product.prefix[1..-1]
+  resource_editable_ps = object.properties.reject(&:output).reject(&:update_url).select { |p| p.create_update == 'u' || p.create_update == 'cu' }
+  internals_create = []
+  externals = []
   no_ex_properties = object.ex_properties.empty?
+  unless no_ex_properties
+    internals_create = object.ex_properties.reject{|p1| p1.ex_property_opts&.get_url}.select{|p1| p1.create_update == 'u'}
+    externals = object.ex_properties.select{|p1| p1.ex_property_opts&.get_url}
+  end
 -%>
 def main():
     """Main function"""
@@ -134,19 +141,7 @@ def main():
         module.params['id'] = get_id_by_name(session)
 
 <%   end -%>
-<%   if no_ex_properties -%>
-    fetch = None
-    link = self_link(session)
-    # the link will include Nones if required format parameters are missed
-    if not re.search('/None/|/None$', link):
-        fetch = <%= method_fetch %>
-<%     if object.msg_prefix -%>
-        if fetch:
-            fetch = fetch.get(<%= quote_string(object.msg_prefix) %>)
-<%     end  # object.msg_prefix -%>
-<%   else -%>
     fetch = get_resource(session)
-<%   end # no_ex_properties -%>
 <% else # object.self_link_query.nil? -%>
     fetch = fetch_wrapped_resource(module, '<%= object.kind -%>',
                                    '<%= object.self_link_query.kind -%>',
@@ -206,7 +201,7 @@ def main():
                                          ('kind' if object.kind?),
                                          ('[' + object.create_codes.join(', ') + ']' if object.create_codes)])
 -%>
-<% if no_ex_properties -%>
+<% if no_ex_properties || (internals_create.empty? && externals.empty?)-%>
             fetch = <%= method_create %>
             fetch = response_to_hash(module, <%= object.msg_prefix ? "fetch.get(\'#{object.msg_prefix}\')" : 'fetch'%>)
 <% else -%>
@@ -273,6 +268,7 @@ def main():
 <% end -%>
 
 
+<% unless resource_editable_ps.empty? -%>
 <%=
   lines(method_decl('update', ['session', 'link', ('kind' if object.kind?),
                                ('fetch' if object.save_api_results?),
@@ -318,6 +314,7 @@ def main():
 <% end # object.update.nil? -%>
 
 
+<% end # resource_editable_ps.empty? -%>
 <%=
   lines(method_decl('delete', ['session', 'link', ('kind' if object.kind?),
                                ('fetch' if object.save_api_results?),
@@ -371,25 +368,22 @@ def main():
 
 <% end # unless object.virtual -%>
 <%= lines(compile('templates/ansible/transport.erb'), 2) -%>
-<% unless no_ex_properties -%>
-<%
-   resource_editable_ps = object.properties.reject(&:output).reject(&:update_url).select { |p| p.create_update == 'u' || p.create_update == 'cu' }
-   internals = object.ex_properties.reject{|p1| p1.ex_property_opts&.get_url}
-   internals_create = object.ex_properties.reject{|p1| p1.ex_property_opts&.get_url}.select{|p1| p1.create_update == 'u'}
-   externals = object.ex_properties.select{|p1| p1.ex_property_opts&.get_url}
--%>
 def get_resource(session):
     link = self_link(session)
     # the link will include Nones if required format parameters are missed
     if re.search('/None/|/None$', link):
         return None
 
+<% unless object.msg_prefix || (not externals.empty?) -%>
+    return <%= method_fetch %>
+<% else -%>
     fetch = <%= method_fetch %>
     if not fetch:
         return fetch
+<%  unless externals.empty? -%>
 <%   if object.msg_prefix -%>
     fetch = fetch.get(<%= quote_string(object.msg_prefix) %>)
-<%   end  # object.msg_prefix -%>
+<%   end -%>
 
 <%   externals.each do |p| -%>
     r = <%= p.property_class[-1] -%>ExProperty(session).fetch()
@@ -398,8 +392,16 @@ def get_resource(session):
 
 <%   end -%>
     return fetch
+<%  else -%>
+    return fetch.get(<%= quote_string(object.msg_prefix) %>)
+<%  end -%>
+<% end -%>
 
 
+<% unless no_ex_properties -%>
+<%
+   internals = object.ex_properties.reject{|p1| p1.ex_property_opts&.get_url}
+-%>
 def update_resource(session, current_state, resource):
 <% unless internals.empty? && externals.empty? -%>
     params = session.module.params
@@ -431,9 +433,10 @@ def update_resource(session, current_state, resource):
 <%   else -%>
     elif need_read:
 <%   end -%>
-        obj = <%= method_fetch %>
+        obj = get_resource(session)
 <%   if object.msg_prefix -%>
-        obj = obj.get(<%= quote_string(object.msg_prefix) %>)
+        if obj:
+            obj = obj.get(<%= quote_string(object.msg_prefix) %>)
 <%   end  # object.msg_prefix -%>
 <% end -%>
 
@@ -454,6 +457,7 @@ def update_resource(session, current_state, resource):
     return obj
 
 
+<% unless internals_create.empty? && externals.empty? -%>
 def create_resource(session):
     obj = <%= method_create %>
 <% if object.msg_prefix -%>
@@ -461,9 +465,7 @@ def create_resource(session):
 <% end  # object.msg_prefix -%>
     session.module.params['id'] = obj.get('id', None)
 
-<% unless internals_create.empty? && externals.empty? -%>
     params = session.module.params
-<% end -%>
 <% unless internals_create.empty? -%>
     need_read = False
 
@@ -474,9 +476,10 @@ def create_resource(session):
 
 <%   end -%>
     if need_read:
-        obj = <%= method_fetch %>
+        obj = get_resource(session) 
 <%   if object.msg_prefix -%>
-        obj = obj.get(<%= quote_string(object.msg_prefix) -%>)
+        if obj:
+            obj = obj.get(<%= quote_string(object.msg_prefix) -%>)
 <%   end  # object.msg_prefix -%>
 
 <% end -%>
@@ -495,6 +498,7 @@ def create_resource(session):
     return obj
 
 
+<% end # internals_create.empty? && externals.empty? -%>
 <% end -%>
 def link_wrapper(f):
     def _wrapper(module, *args, **kwargs):
@@ -630,9 +634,9 @@ def get_id_by_name(session):
     if code not in success_codes:
         msg = navigate_hash(result, ['message'])
         if msg:
-            module.fail_json(msg=msg)
+            module.fail_json(msg="request failed, %s" % msg)
         else:
-            module.fail_json(msg="operation failed, return code=%d" % code)
+            module.fail_json(msg="request failed, return code=%d" % code)
 <% if object.kind? -%>
     if result['kind'] != kind:
         module.fail_json(msg="Incorrect result: {kind}".format(**result))
@@ -660,7 +664,7 @@ def resource_to_create(module):
 <%
   properties_in_request = [
     object&.parameters&.reject(&:alone_parameter)&.select { |p| p.input || p.create_update == 'c' || p.create_update == 'cu' },
-    object.properties.reject(&:output).reject(&:update_url).select { |p| p.create_update == 'c' || p.create_update == 'cu' },
+    object.properties.reject(&:output).select { |p| p.create_update == 'c' || p.create_update == 'cu' },
   ].flatten.compact
 -%>
     request = remove_empty_from_dict({
@@ -694,11 +698,12 @@ def resource_to_create(module):
 <% end -%>
 
 
+<% unless resource_editable_ps.empty? -%>
 def resource_to_update(module):
 <%
   properties_in_request = [
     object&.parameters&.reject(&:alone_parameter)&.select { |p| p.create_update == 'u' || p.create_update == 'cu' },
-    object.properties.reject(&:output).reject(&:update_url).select { |p| p.create_update == 'u' || p.create_update == 'cu' },
+    resource_editable_ps,
   ].flatten.compact
 -%>
     request = remove_nones_from_dict({
@@ -732,7 +737,6 @@ def resource_to_update(module):
 <% end -%>
 
 
-<% unless no_ex_properties || resource_editable_ps.empty? -%>
 def _get_resource_editable_properties(module):
     request = remove_nones_from_dict({
 <% resource_editable_ps.map do |p| -%>
@@ -744,7 +748,7 @@ def _get_resource_editable_properties(module):
     return request
 
 
-<% end -%>
+<% end # resource_editable_ps.empty? -%>
 def _get_editable_properties(module):
 <%
   ps = object.properties.reject(&:output).select { |p| p.create_update == 'u' || p.create_update == 'cu' }
