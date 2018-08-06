@@ -171,11 +171,10 @@ def main():
 -%>
 <%     if no_ex_properties -%>
 <%= lines(indent("fetch = #{method_update}", 16)) -%>
-                fetch = response_to_hash(module, <%= object.msg_prefix ? "fetch.get(\'#{object.msg_prefix}\')" : 'fetch'%>)
 <%     else -%>
                 fetch = update_resource(session, current_state, fetch)
-                fetch = response_to_hash(module, fetch)
 <%     end # no_ex_properties -%>
+                fetch = response_to_hash(module, fetch)
                 changed = True
             else:
                 fetch = current_state
@@ -208,11 +207,10 @@ def main():
 -%>
 <% if no_ex_properties || (internals_create.empty? && externals.empty?)-%>
             fetch = <%= method_create %>
-            fetch = response_to_hash(module, <%= object.msg_prefix ? "fetch.get(\'#{object.msg_prefix}\')" : 'fetch'%>)
 <% else -%>
             fetch = create_resource(session)
-            fetch = response_to_hash(module, fetch)
 <% end -%>
+            fetch = response_to_hash(module, fetch)
             changed = True
         else:
             fetch = {}
@@ -253,7 +251,16 @@ def main():
   )
 -%>
 <%   if not object.async -%>
-    return <%= method %>
+    r = <%= method %>
+<% if object.msg_prefix -%>
+    r = r.get(<%= quote_string(object.msg_prefix) -%>)
+<% end  # object.msg_prefix -%>
+    session.module.params['id'] = r.get(<%= quote_string(object.resource_id) -%>, None)
+
+    v = get_resource(session)
+    if v:
+        r.update(v)
+    return r
 <%   else -%>
     r = <%= method %>
 
@@ -266,7 +273,12 @@ def main():
                                           ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
                                          ])
 -%>
+<%     if object.msg_prefix -%>
+    r = <%= method %>
+    return r.get(<%= quote_string(object.msg_prefix) -%>)
+<%     else -%>
     return <%= method %>
+<%     end  # object.msg_prefix -%>
 <%   end -%>
 <% else -%>
 <%= lines(indent(object.create, 4)) -%>
@@ -280,7 +292,6 @@ def main():
                                'success_codes=None']))
 -%>
 <% if object.update.nil? -%>
-<%   if !false?(object.editable) -%>
     if not success_codes:
         success_codes = [201, 202]
     module = session.module
@@ -296,7 +307,9 @@ def main():
   )
 -%>
 <%   if not object.async -%>
-    return <%= method %>
+    <%= method %>
+
+    return get_resource(session)
 <%   else -%>
     r = <%= method %>
 
@@ -309,11 +322,13 @@ def main():
                                           ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
                                          ])
 -%>
+<%     if object.msg_prefix -%>
+    r = <%= method %>
+    return r.get(<%= quote_string(object.msg_prefix) -%>)
+<%     else -%>
     return <%= method %>
-<%     end -%>
-<%   else # !false?(object.editable) -%>
-    module.fail_json(msg="<%= object.name -%> cannot be edited")
-<%   end # !false?(object.editable) -%>
+<%     end  # object.msg_prefix -%>
+<%   end # not object.async -%>
 <% else # object.update.nil? -%>
 <%= lines(indent(object.update, 4)) -%>
 <% end # object.update.nil? -%>
@@ -428,9 +443,6 @@ def update_resource(session, current_state, resource):
     expect = _get_resource_editable_properties(session.module)
     if is_different(expect, current_state):
         obj = <%= method_update %>
-<%   if object.msg_prefix -%>
-        obj = obj.get(<%= quote_string(object.msg_prefix) %>)
-<%   end  # object.msg_prefix -%>
 <% end -%>
 <% unless internals.empty? -%>
 <%   if resource_editable_ps.empty? -%>
@@ -439,10 +451,6 @@ def update_resource(session, current_state, resource):
     elif need_read:
 <%   end -%>
         obj = get_resource(session)
-<%   if object.msg_prefix -%>
-        if obj:
-            obj = obj.get(<%= quote_string(object.msg_prefix) %>)
-<%   end  # object.msg_prefix -%>
 <% end -%>
 
 <% unless externals.empty? -%>
@@ -465,9 +473,6 @@ def update_resource(session, current_state, resource):
 <% unless internals_create.empty? && externals.empty? -%>
 def create_resource(session):
     obj = <%= method_create %>
-<% if object.msg_prefix -%>
-    obj = obj.get(<%= quote_string(object.msg_prefix) -%>)
-<% end  # object.msg_prefix -%>
     session.module.params['id'] = obj.get(<%= quote_string(object.resource_id) -%>, None)
 
     params = session.module.params
@@ -481,11 +486,9 @@ def create_resource(session):
 
 <%   end -%>
     if need_read:
-        obj = get_resource(session) 
-<%   if object.msg_prefix -%>
-        if obj:
-            obj = obj.get(<%= quote_string(object.msg_prefix) -%>)
-<%   end  # object.msg_prefix -%>
+        v = get_resource(session) 
+        if v:
+            obj.update(v)
 
 <% end -%>
 <% unless externals.empty? -%>
@@ -530,7 +533,7 @@ def get_id_by_name(session):
             return ""
 <%   if object.list_msg_prefix -%>
         r = r.get(<%= quote_string(object.list_msg_prefix) %>, [])
-<%   end  # object.msg_prefix -%>
+<%   end  # object.list_msg_prefix -%>
         ids = [
             i.get(<%= quote_string(object.resource_id) -%>) for i in r if i.get(<%= quote_string(object.resource_name) -%>, '') == name
         ]
@@ -552,7 +555,7 @@ def get_id_by_name(session):
                 break
 <%   if object.list_msg_prefix -%>
             r = r.get(<%= quote_string(object.list_msg_prefix) %>, [])
-<%   end  # object.msg_prefix -%>
+<%   end  # object.list_msg_prefix -%>
             if r == []:
                 break
             for i in r:
