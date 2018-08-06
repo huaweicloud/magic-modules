@@ -266,6 +266,10 @@ module Api
       check_property_list :properties, Api::Type
 
       check_identity unless @identity.nil?
+
+      if properties.select(&:is_id).length > 1
+	raise "There are more than one properties as the resource identifier"
+      end
     end
     # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/MethodLength
@@ -302,6 +306,19 @@ module Api
 
     def list_msg_prefix
       @list_msg_prefix || @msg_prefix + 's'
+    end
+
+    def resource_id
+      ps = properties.select(&:is_id)
+      ps.empty? ? 'id' : ps[0].field_name
+    end
+
+    def resource_name
+      ps = properties.select{ |p| p.name == 'name' }
+      unless ps.empty?
+        fn = ps[0].field_name
+        fn.include?("/") ? fn[fn.index("/") + 1..-1] : fn
+      end
     end
 
     def exported_properties
