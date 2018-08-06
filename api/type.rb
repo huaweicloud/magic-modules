@@ -37,6 +37,7 @@ module Api
       # cu: both
       attr_reader :create_update
       attr_reader :ex_property_opts
+      attr_reader :is_id # If true, this parameter stands for the unique identifier of resource
     end
 
     include Fields
@@ -68,6 +69,7 @@ module Api
         :create_update, %w(c u cu), nil, ::String
 
       check_optional_property :ex_property_opts, ExPropertyFields
+      check_optional_property :is_id, :boolean
     end
 
     def type

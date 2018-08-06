@@ -136,7 +136,7 @@ def main():
                                                 ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
                                                ])
 -%>
-<%   if self_link_url(object).match('/{id}') -%>
+<%   if self_link_url(object).match('/{id}') && (not object.resource_name.nil?) -%>
     if (not module.params.get("id")) and module.params.get("name"):
         module.params['id'] = get_id_by_name(session)
 
@@ -463,7 +463,7 @@ def create_resource(session):
 <% if object.msg_prefix -%>
     obj = obj.get(<%= quote_string(object.msg_prefix) -%>)
 <% end  # object.msg_prefix -%>
-    session.module.params['id'] = obj.get('id', None)
+    session.module.params['id'] = obj.get(<%= quote_string(object.resource_id) -%>, None)
 
     params = session.module.params
 <% unless internals_create.empty? -%>
@@ -511,7 +511,7 @@ def link_wrapper(f):
     return _wrapper
 
 
-<% unless object.virtual || self_link_url(object).match('/{id}').nil? -%>
+<% unless object.virtual || self_link_url(object).match('/{id}').nil? || object.resource_name.nil? -%>
 def get_id_by_name(session):
     module = session.module
     name = module.params.get("name")
@@ -527,7 +527,7 @@ def get_id_by_name(session):
         r = r.get(<%= quote_string(object.list_msg_prefix) %>, [])
 <%   end  # object.msg_prefix -%>
         ids = [
-            i.get('id') for i in r if i.get('name', '') == name
+            i.get(<%= quote_string(object.resource_id) -%>) for i in r if i.get(<%= quote_string(object.resource_name) -%>, '') == name
         ]
         if not ids:
             return ""
@@ -551,13 +551,13 @@ def get_id_by_name(session):
             if r == []:
                 break
             for i in r:
-                if i.get('name') == name:
-                    ids.add(i.get('id'))
+                if i.get(<%= quote_string(object.resource_name) -%>) == name:
+                    ids.add(i.get(<%= quote_string(object.resource_id) -%>))
             if len(ids) >= 2:
                 module.fail_json(
                     msg="Multiple resources with same name are found")
 
-            p['marker'] = r[-1].get('id')
+            p['marker'] = r[-1].get(<%= quote_string(object.resource_id) -%>)
 
         return ids.pop() if ids else ""
 
