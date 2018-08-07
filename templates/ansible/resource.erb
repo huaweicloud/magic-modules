@@ -519,55 +519,71 @@ def link_wrapper(f):
     return _wrapper
 
 
-<% unless object.virtual || self_link_url(object).match('/{id}').nil? || object.resource_name.nil? -%>
+<%
+  unless object.virtual || self_link_url(object).match('/{id}').nil? || object.resource_name.nil?
+    list_url_format_keys = list_url(object).scan(/{[^}]+}/)
+    known_tags = ['{limit}', '{marker}', '{offset}', '{project}', '{endpoint}']
+    unknown_tags = list_url_format_keys.reject { |k| known_tags.include?(k) }
+    unless unknown_tags.empty?
+	    raise "The list url(#{list_url(object)}) contains unknown tags(#{unknown_tags.to_s})"
+    end
+-%>
 def get_id_by_name(session):
     module = session.module
     name = module.params.get("name")
-    link = list_link(session, {'limit': 10, 'marker': '{marker}'})
-    not_format_keys = re.findall("={marker}", link)
-    none_values = re.findall("=None", link)
-
-    if not (not_format_keys or none_values):
-        r = fetch_resource(session, link)
-        if r is None:
-            return ""
-<%   if object.list_msg_prefix -%>
-        r = r.get(<%= quote_string(object.list_msg_prefix) %>, [])
-<%   end  # object.list_msg_prefix -%>
-        ids = [
-            i.get(<%= quote_string(object.resource_id) -%>) for i in r if i.get(<%= quote_string(object.resource_name) -%>, '') == name
-        ]
-        if not ids:
-            return ""
-        elif len(ids) == 1:
-            return ids[0]
-        else:
-            module.fail_json(msg="Multiple resources with same name are found")
-    elif none_values:
-        module.fail_json(
-            msg="Can not find id by name because url includes None")
+<%  if list_url_format_keys.select { |k| ['{limit}', '{marker}', '{offset}'].include?(k) }.empty? -%>
+    r = fetch_resource(session, link)
+    if r is None:
+        return ""
+<%    if object.list_msg_prefix -%>
+    r = r.get(<%= quote_string(object.list_msg_prefix) %>, [])
+<%    end  # object.list_msg_prefix -%>
+    ids = [
+        i.get(<%= quote_string(object.resource_id) -%>) for i in r if i.get(<%= quote_string(object.resource_name) -%>, '') == name
+    ]
+    if not ids:
+        return ""
+    elif len(ids) == 1:
+        return ids[0]
     else:
-        p = {'marker': ''}
-        ids = set()
-        while True:
-            r = fetch_resource(session, link.format(**p))
-            if r is None:
-                break
-<%   if object.list_msg_prefix -%>
-            r = r.get(<%= quote_string(object.list_msg_prefix) %>, [])
-<%   end  # object.list_msg_prefix -%>
-            if r == []:
-                break
-            for i in r:
-                if i.get(<%= quote_string(object.resource_name) -%>) == name:
-                    ids.add(i.get(<%= quote_string(object.resource_id) -%>))
-            if len(ids) >= 2:
-                module.fail_json(
-                    msg="Multiple resources with same name are found")
+        module.fail_json(msg="Multiple resources with same name are found")
+<%  else
+        used_marker = list_url_format_keys.include?('{marker}')
+-%>
+<%    if used_marker -%>
+    link = list_link(session, {'limit': 10, 'marker': '{marker}'})
+    p = {'marker': ''}
+<%    else -%>
+    link = list_link(session, {'limit': 10, 'offset': '{offset}'})
+    p = {'offset': 0}
+    page_num = 0
+<%    end -%>
+    ids = set()
+    while True:
+        r = fetch_resource(session, link.format(**p))
+        if r is None:
+            break
+<%    if object.list_msg_prefix -%>
+        r = r.get(<%= quote_string(object.list_msg_prefix) %>, [])
+<%    end  # object.list_msg_prefix -%>
+        if r == []:
+            break
+        for i in r:
+            if i.get(<%= quote_string(object.resource_name) -%>) == name:
+                ids.add(i.get(<%= quote_string(object.resource_id) -%>))
+        if len(ids) >= 2:
+            module.fail_json(
+                msg="Multiple resources with same name are found")
 
-            p['marker'] = r[-1].get(<%= quote_string(object.resource_id) -%>)
+<%    if used_marker -%>
+        p['marker'] = r[-1].get(<%= quote_string(object.resource_id) -%>)
+<%    else -%>
+        page_num += 1
+        p = {'offset': page_num}
+<%    end -%>
 
-        return ids.pop() if ids else ""
+    return ids.pop() if ids else ""
+<%  end -%>
 
 
 <%= lines(emit_link('list_link', list_url(object), object, true, object.service_type)) -%>
