@@ -42,6 +42,10 @@ module Provider
         line.split(".\n").map { |paragraph| bullet_line(paragraph, spaces) }
       end
 
+      def bullet_lines1(line, spaces)
+        line.split(/^\n/).map { |paragraph| bullet_line1(paragraph, spaces) }
+      end
+
       # Takes in a string (representing a paragraph) and returns a multi-line
       # string, where each line is less than max_length characters long and all
       # subsequent lines are indented in by spaces characters
@@ -80,6 +84,38 @@ module Provider
         end
         yaml
       end
+
+      def bullet_line1(paragraph, spaces)
+        paragraph = paragraph.tr("\n", ' ').strip
+
+        spaces += 2
+        line_len = 79 - spaces
+        if line_len < 20
+            line_len = 20
+        end
+
+        s1 = paragraph
+        r = []
+        while s1.length > line_len do
+            # +1, because maybe the s1[line_len] == ' '
+            i = s1.rindex(' ', line_len)
+            if i.nil?
+              s2 = s1[0, line_len]
+              s1 = s1[line_len..-1]
+            else
+              s2 = s1[0, i]
+              s1 = s1[(i + 1)..-1]
+            end
+            r << "  %s\n" % s2
+        end
+        unless s1.empty?
+            r << "  %s\n" % s1
+        end
+
+        r[0] = "- %s\n" % r[0].strip
+        r.join
+      end
+
       # rubocop:enable Metrics/AbcSize
 
       # Builds out a full YAML block for DOCUMENTATION
@@ -128,7 +164,7 @@ module Provider
         block = [indent('contains:', 4)]
         block.concat(
           properties.map do |p|
-            indent(return_property_yaml(p, spaces + 4), 8)
+            indent(return_property_yaml(p, spaces + 8), 8)
           end
         )
       end
@@ -137,7 +173,7 @@ module Provider
         block = [indent('suboptions:', 4)]
         block.concat(
           properties.map do |p|
-            indent(doc_property_yaml(p, object, spaces + 4), 8)
+            indent(doc_property_yaml(p, object, spaces + 8), 8)
           end
         )
       end
@@ -196,7 +232,7 @@ module Provider
             [
               'description:',
               # + 8 to compensate for name + description.
-              indent(bullet_lines(prop.description, spaces + 8), 4)
+              indent(bullet_lines1(prop.description, spaces + 8), 4)
             ], 4
           )
         ]
