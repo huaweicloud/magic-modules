@@ -258,10 +258,13 @@ module Api
     # Represents an enum, and store is valid values
     class Enum < Primitive
       attr_reader :values
+      attr_reader :element_type
 
       def validate
         super
         check_property :values, ::Array
+        check_optional_property :element_type, ::String
+        raise "Invalid type #{@element_type}" unless @element_type.nil? || type?(@element_type)
       end
     end
 

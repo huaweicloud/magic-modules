@@ -66,25 +66,45 @@ module Provider
       # rubocop:disable Metrics/MethodLength
       def choices_enum(prop, spaces)
         name = Google::StringUtils.underscore(prop.out_name)
-        type = "type=#{quote_string(python_type(prop))}"
+        t = python_type(prop)
+        type = "type=#{quote_string(t)}"
         # + 6 for =dict(
         choices_indent = spaces + name.length + type.length + 6
-        format([
-                 [
-                   "choices=[#{prop.values.map do |x|
-                                 quote_string(x.to_s)
-                               end.join(', ')}]"
-                 ],
-                 [
-                   "choices=['#{prop.values[0]}',",
-                   prop.values[1..-2].map do |x|
-                     "#{indent(quote_string(x.to_s), choices_indent + 11)},"
-                   end,
-                   # + 11 for ' choices='
-                   indent("#{quote_string(prop.values[-1].to_s)}]",
-                          choices_indent + 11)
-                 ]
-               ], 0, choices_indent)
+	if t == 'str'
+          format([
+                   [
+                     "choices=[#{prop.values.map do |x|
+                                   quote_string(x.to_s)
+                                 end.join(', ')}]"
+                   ],
+                   [
+                     "choices=['#{prop.values[0]}',",
+                     prop.values[1..-2].map do |x|
+                       "#{indent(quote_string(x.to_s), choices_indent + 11)},"
+                     end,
+                     # + 11 for ' choices='
+                     indent("#{quote_string(prop.values[-1].to_s)}]",
+                            choices_indent + 11)
+                   ]
+                 ], 0, choices_indent)
+	else
+          format([
+                   [
+                     "choices=[#{prop.values.map do |x|
+                                   x.to_s
+                                 end.join(', ')}]"
+                   ],
+                   [
+                     "choices=[#{prop.values[0].to_s},",
+                     prop.values[1..-2].map do |x|
+                       "#{indent(x.to_s, choices_indent + 11)},"
+                     end,
+                     # + 11 for ' choices='
+                     indent("#{prop.values[-1].to_s}]",
+                            choices_indent + 11)
+                   ]
+                 ], 0, choices_indent)
+	end
       end
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/MethodLength

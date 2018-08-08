@@ -81,6 +81,10 @@ module Provider
           return 'str' if prop.resource_ref.virtual
           return 'dict'
         end
+        if prop.is_a? Api::Type::Enum
+          return PYTHON_TYPE_FROM_MM_TYPE.fetch(prop.element_type, 'str')
+        end
+
         PYTHON_TYPE_FROM_MM_TYPE.fetch(prop.class.to_s, 'str')
       end
 
