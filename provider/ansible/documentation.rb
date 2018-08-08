@@ -151,10 +151,17 @@ module Provider
             ('type: bool' if prop.is_a? Api::Type::Boolean),
             ("aliases: [#{prop.aliases.join(', ')}]" if prop.aliases),
             (if prop.is_a? Api::Type::Enum
-               [
-                 'choices:',
-                 "[#{prop.values.map { |x| quote_string(x.to_s) }.join(', ')}]"
-               ].join(' ')
+               if prop.element_type.nil? || prop.element_type == 'Api::Type::String'
+                 [
+                   'choices:',
+                   "[#{prop.values.map { |x| quote_string(x.to_s) }.join(', ')}]"
+                 ].join(' ')
+               else
+                 [
+                   'choices:',
+                   "[#{prop.values.map { |x| x.to_s }.join(', ')}]"
+                 ].join(' ')
+               end
              end)
           ].compact, 4)
         ]
