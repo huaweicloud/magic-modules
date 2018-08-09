@@ -42,9 +42,11 @@ module Provider
 
     attr_reader :test_data
 
-    def initialize(config, api)
+    def initialize(config, api, cloud_name, cloud_short_name)
       @config = config
       @api = api
+      @cloud_name = cloud_name
+      @cloud_short_name = cloud_short_name
       @property = Provider::TestData::Property.new(self)
       @constants = Provider::TestData::Constants.new(self)
       @data_gen = Provider::TestData::Generator.new
@@ -723,6 +725,10 @@ module Provider
         return matcher[:year] unless matcher.nil?
       end
       Time.now.year
+    end
+
+    def cloud_name
+      @cloud_name[0].upcase + @cloud_name[1..-1]
     end
   end
 end

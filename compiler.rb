@@ -35,9 +35,21 @@ require 'provider/puppet/bundle'
 require 'provider/terraform'
 require 'pp' if ENV['COMPILER_DEBUG']
 
+def cloud_short_name(name)
+  m = {
+    'telefonica' => 'tfc',
+    'huawei' => 'hwc',
+  }.freeze
+  unless m.include?(name)
+    raise "Unknown cloud #{name}"
+  end
+  m[name]
+end
+
 catalog = nil
 output = nil
 provider = nil
+cloud_name = nil
 types_to_generate = []
 
 ARGV << '-h' if ARGV.empty?
@@ -55,6 +67,9 @@ OptionParser.new do |opt|
   opt.on('-t', '--type TYPE[,TYPE...]', Array, 'Types to generate') do |t|
     types_to_generate = t
   end
+  opt.on('-c', '--cloud CLOUD', 'the name of cloud') do |c|
+    cloud_name = c
+  end
   opt.on('-h', '--help', 'Show this message') do
     puts opt
     exit
@@ -64,6 +79,7 @@ end.parse!
 raise 'Option -p/--product is a required parameter' if catalog.nil?
 raise 'Option -o/--output is a required parameter' if output.nil?
 raise 'Option -e/--engine is a required parameter' if provider.nil?
+raise 'Option -c/--cloud is a required parameter' if cloud_name.nil?
 
 raise "Product '#{catalog}' does not have api.yaml" \
   unless File.exist?(File.join(catalog, 'api.yaml'))
@@ -71,6 +87,8 @@ raise "Product '#{catalog}' does not have #{provider} settings" \
   unless File.exist?(File.join(catalog, provider))
 
 raise "Output '#{output}' is not a directory" unless Dir.exist?(output)
+
+sn = cloud_short_name(cloud_name)
 
 Google::LOGGER.info "Compiling '#{catalog}' output to '#{output}'"
 Google::LOGGER.info \
@@ -83,5 +101,5 @@ pp api if ENV['COMPILER_DEBUG']
 config = Provider::Config.parse(File.join(catalog, provider), api)
 pp config if ENV['COMPILER_DEBUG']
 
-provider = config.provider.new(config, api)
+provider = config.provider.new(config, api, cloud_name, sn)
 provider.generate output, types_to_generate
