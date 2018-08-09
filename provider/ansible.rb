@@ -67,9 +67,10 @@ module Provider
       include Provider::Ansible::Request
       include Provider::Ansible::SelfLink
 
-      def initialize(config, api, cloud_name, cloud_short_name)
+      def initialize(config, api, cloud_name, cloud_short_name, product_folder)
         super(config, api, cloud_name, cloud_short_name)
         @max_columns = 160
+        @product_folder = product_folder
       end
 
       # Returns a string representation of the corresponding Python type
@@ -138,8 +139,7 @@ module Provider
         data = super
 
         prod_name = Google::StringUtils.underscore(data[:object].name)
-        path = ["products/#{data[:product_name]}",
-                "examples/ansible/#{prod_name}.yaml"].join('/')
+        path = File.join(@product_folder, "examples/ansible/#{prod_name}.yaml")
 
         data.merge(example: (get_example(path) if File.file?(path)))
       end
@@ -318,8 +318,7 @@ module Provider
 
       def generate_resource_tests(data)
         prod_name = Google::StringUtils.underscore(data[:object].name)
-        path = ["products/#{data[:product_name]}",
-                "examples/ansible/#{prod_name}.yaml"].join('/')
+        path = File.join(@product_folder, "examples/ansible/#{prod_name}.yaml")
 
         # Unlike other providers, all resources will not be built at once or
         # in close timing to each other (due to external PRs).

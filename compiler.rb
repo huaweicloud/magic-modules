@@ -101,5 +101,9 @@ pp api if ENV['COMPILER_DEBUG']
 config = Provider::Config.parse(File.join(catalog, provider), api)
 pp config if ENV['COMPILER_DEBUG']
 
-provider = config.provider.new(config, api, cloud_name, sn)
+if provider.start_with?('ansible')
+  provider = config.provider.new(config, api, cloud_name, sn, catalog)
+else
+  provider = config.provider.new(config, api, cloud_name, sn)
+end
 provider.generate output, types_to_generate

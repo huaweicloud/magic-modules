@@ -210,7 +210,7 @@ module Provider
       # rubocop:enable Metrics/CyclomaticComplexity
 
       def object_name_from_module_name(mod_name)
-        product_name = mod_name.match(/hwc_[a-z]*_(.*)/).captures[0]
+        product_name = mod_name.match(/[a-z]*_[a-z]*_(.*)/).captures[0]
         product_name.tr('_', ' ')
       end
 
