@@ -1,0 +1,300 @@
+--- !ruby/object:Api::Product
+name: Telefonica Cloud
+prefix: tmanage
+versions:
+  - !ruby/object:Api::Product::Version
+    name: v1
+    base_url: ""
+    default: true
+scopes:
+  - "http://scopte"
+objects:
+  - !ruby/object:Api::Resource
+    name: 'AlarmRule'
+    service_type: 'ces'
+    base_url: '{{project}}/alarms'
+    list_url: '{{project}}/alarms?limit={{limit}}&start={{marker}}'
+    list_msg_prefix: 'metric_alarms'
+    description: |
+      Represents an alarm rule resource.
+    properties:
+      - !ruby/object:Api::Type::Boolean
+        name: 'action_enabled'
+        description: |
+          Specifies whether to enable the action to be triggered by an alarm.
+          The default value is true. Note: If alarm_action_enabled is set to
+          true, at least one of the following parameters alarm_actions,
+          insufficientdata_actions, and ok_actions cannot be empty. If
+          alarm_actions, insufficientdata_actions, and ok_actions coexist,
+          their corresponding notificationListmust be of the same value.
+        create_update: 'c'
+        field: 'alarm_action_enabled'
+      - !ruby/object:Api::Type::Array
+        name: 'alarm_actions'
+        description: |
+          Specifies the action triggered by an alarm. An example structure is
+          as follows: { "type": "notification","notificationList":
+          ["urn:smn:southchina:68438a86d98e427e907e0097b7e35d47:sd"] }
+        create_update: 'c'
+        item_type: !ruby/object:Api::Type::NestedObject
+          properties:
+            - !ruby/object:Api::Type::Array
+              name: 'notifications'
+              description: |
+                Specifies the topicUrn list of the target notification objects.
+                If type is set to notification, the value of notificationList
+                cannot be empty. If type is set to autoscaling, the value of
+                notificationList must be []. The maximum length is 5. The
+                topicUrn list can be obtained from Simple Message Notification
+                (SMN) and in the following format: urn:
+                smn:([a-z]|[A-Z]|[0-9]|\-){1,32}:([a-z]|[A-Z]|[0-9]){32}:([a-z]
+                |[A-Z]|[0-9]|\-|\_){1,256}.
+              field: 'notificationList'
+              item_type: Api::Type::String
+              max_size: 5
+              required: true
+            - !ruby/object:Api::Type::Enum
+              name: 'type'
+              description: |
+                Specifies the type of action triggered by an alarm.The value
+                can be notification: indicates that a notification will be sent
+                to the user. autoscaling: indicates that a scaling action will
+                be triggered.
+              required: true
+              values:
+                - :notification
+                - :autoscaling
+      - !ruby/object:Api::Type::String
+        name: 'description'
+        description: "The value can be a string of 0 to 256 characters."
+        create_update: 'c'
+        field: 'alarm_description'
+      - !ruby/object:Api::Type::Boolean
+        name: 'alarm_enabled'
+        description: |
+          Specifies whether to enable the alarm. The default value is true.
+        create_update: 'cu'
+        update_url: "{{project}}/alarms/{{id}}/action"
+      - !ruby/object:Api::Type::String
+        name: 'id'
+        description: "Specifies the alarm rule ID."
+        field: 'alarm_id'
+        is_id: true
+        output: true
+      - !ruby/object:Api::Type::Enum
+        name: 'alarm_level'
+        description: |
+          Specifies the alarm severity. The value can be 1, 2, 3 or 4, which
+          indicates critical, major, minor, and informational, respectively.
+        create_update: 'c'
+        values:
+          - :critical
+          - :major
+          - :minor
+          - :informational
+      - !ruby/object:Api::Type::String
+        name: 'name'
+        description: |
+          Specifies the alarm rule name. The value can be a string of 1 to 128
+          characters that can consist of numbers, lowercase letters, uppercase
+          letters, underscores (_), or hyphens (-).
+        create_update: 'c'
+        field: 'alarm_name'
+        required: true
+      - !ruby/object:Api::Type::Enum
+        name: 'alarm_state'
+        description: |
+          Specifies the alarm status. The value can be: ok: The alarm status is
+          normal. alarm: An alarm is generated. insufficient_data: The required
+          data is insufficient
+        output: true
+        values:
+          - :ok
+          - :alarm
+          - :insufficient_data
+      - !ruby/object:Api::Type::NestedObject
+        name: 'condition'
+        description: "Specifies the alarm triggering condition."
+        create_update: 'c'
+        properties:
+          - !ruby/object:Api::Type::Enum
+            name: 'operator'
+            description: |
+              Specifies the comparison condition of alarm thresholds. The value
+              can be >, =, <, >=, or <=.
+            field: 'comparison_operator'
+            required: true
+            values:
+              - :>
+              - :=
+              - :<
+              - :>=
+              - :<=
+          - !ruby/object:Api::Type::Enum
+            name: 'count'
+            description: |
+              Specifies the number of consecutive occurrence times. The value
+              ranges from 1 to 5.
+            element_type: Api::Type::Integer
+            required: true
+            values:
+              - :1
+              - :2
+              - :3
+              - :4
+              - :5
+          - !ruby/object:Api::Type::Enum
+            name: 'filter'
+            description: |
+              Specifies the data rollup methods. The value can be max, min,
+              average, sum, and variance.
+            required: true
+            values:
+              - :max
+              - :min
+              - :average
+              - :sum
+              - :variance
+          - !ruby/object:Api::Type::Enum
+            name: 'period'
+            description: |
+              Specifies the alarm checking period in seconds. The value can be
+              1, 300, 1200, 3600, 14400, and 86400. NOTE: If period is set to
+              1, the raw monitoring data is used to determine whether to
+              generate an alarm.
+            element_type: Api::Type::Integer
+            required: true
+            values:
+              - :1
+              - :300
+              - :1200
+              - :3600
+              - :14400
+              - :86400
+          - !ruby/object:Api::Type::String
+            name: 'unit'
+            description: "Specifies the data unit."
+          - !ruby/object:Api::Type::Integer
+            name: 'value'
+            description: |
+              Specifies the alarm threshold. The value ranges from 0 to Number.
+              MAX_VALUE (1.7976931348623157e+308).
+            required: true
+        required: true
+      - !ruby/object:Api::Type::Array
+        name: 'insufficient_actions'
+        description: |
+          Specifies the action triggered by data insufficiency. Its structure
+          is: { "type": "notification","notificationList":
+          ["urn:smn:southchina:68438a86d98e427e907e0097b7e35d47:sd"] }
+        create_update: 'c'
+        field: 'insufficientdata_actions'
+        item_type: !ruby/object:Api::Type::NestedObject
+          properties:
+            - !ruby/object:Api::Type::Array
+              name: 'notifications'
+              description: |
+                Specifies the topicUrn list of the target notification objects.
+                The maximum length is 5. The topicUrn list can be obtained from
+                Simple Message Notification (SMN) and in the following format:
+                urn:
+                smn:([a-z]|[A-Z]|[0-9]|\-){1,32}:([a-z]|[A-Z]|[0-9]){32}:([a-z]
+                |[A-Z]|[0-9]|\-|\_){1,256}.
+              field: 'notificationList'
+              item_type: Api::Type::String
+              max_size: 5
+              required: true
+            - !ruby/object:Api::Type::Enum
+              name: 'type'
+              description: |
+                Specifies the type of action triggered by an alarm. The value
+                can be notification: indicates that a notification will be sent
+                to the user.
+              required: true
+              values:
+                - :notification
+      - !ruby/object:Api::Type::NestedObject
+        name: 'metric'
+        description: "Specifies the alarm metrics."
+        create_update: 'c'
+        properties:
+          - !ruby/object:Api::Type::Array
+            name: 'dimensions'
+            description: |
+              Specifies the list of the metric dimensions. Currently, the
+              maximum length of the dimension list that is supported is 3. Each
+              dimension is a JSON object, and its structure is as follows:
+            item_type: !ruby/object:Api::Type::NestedObject
+              properties:
+                - !ruby/object:Api::Type::String
+                  name: 'name'
+                  description: |
+                    Specifies the dimension name. The value can be a string of
+                    1 to 32 characters that must start with a letter and can
+                    consist of uppercase letters, lowercase letters, numbers,
+                    underscores (_), or hyphens (-).
+                  required: true
+                - !ruby/object:Api::Type::String
+                  name: 'value'
+                  description: |
+                    Specifies the dimension value. The value can be a string of
+                    1 to 256 characters that must start with a letter or a
+                    number and can consist of uppercase letters, lowercase
+                    letters, numbers, underscores (_), or hyphens (-).
+                  required: true
+            max_size: 3
+            required: true
+          - !ruby/object:Api::Type::String
+            name: 'metric_name'
+            description: |
+              Specifies the metric name. The value can be a string of 1 to 64
+              characters that must start with a letter and can consist of
+              uppercase letters, lowercase letters, numbers, or underscores
+              (_).
+            required: true
+          - !ruby/object:Api::Type::String
+            name: 'namespace'
+            description: |
+              Specifies the namespace in service.item format. service.item can
+              be a string of 3 to 32 characters that must start with a letter
+              and can consist of uppercase letters, lowercase letters, numbers,
+              or underscores (_).
+            required: true
+        required: true
+      - !ruby/object:Api::Type::Array
+        name: 'ok_actions'
+        description: |
+          Specifies the action triggered by the clearing of an alarm. Its
+          structure is: { "type": "notification","notificationList":
+          ["urn:smn:southchina:68438a86d98e427e907e0097b7e35d47:sd"] }
+        create_update: 'c'
+        item_type: !ruby/object:Api::Type::NestedObject
+          properties:
+            - !ruby/object:Api::Type::Array
+              name: 'notifications'
+              description: |
+                Specifies the topicUrn list of the target notification objects.
+                The maximum length is 5. The topicUrn list can be obtained from
+                Simple Message Notification (SMN) and in the following format:
+                urn:
+                smn:([a-z]|[A-Z]|[0-9]|\-){1,32}:([a-z]|[A-Z]|[0-9]){32}:([a-z]
+                |[A-Z]|[0-9]|\-|\_){1,256}.
+              field: 'notificationList'
+              item_type: Api::Type::String
+              max_size: 5
+              required: true
+            - !ruby/object:Api::Type::Enum
+              name: 'type'
+              description: |
+                Specifies the type of action triggered by an alarm. The value
+                can be notification: indicates that a notification will be sent
+                to the user.
+              required: true
+              values:
+                - :notification
+      - !ruby/object:Api::Type::Time
+        name: 'update_time'
+        description: |
+          Specifies the time when the alarm status changed. The value is a UNIX
+          timestamp and the unit is ms.
+        output: true
