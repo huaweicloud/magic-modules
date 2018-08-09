@@ -87,6 +87,7 @@ module Provider
 
       def bullet_line1(paragraph, spaces)
         paragraph = paragraph.tr("\n", ' ').strip
+        paragraph += '.' unless paragraph.end_with?('.')
 
         spaces += 2
         line_len = 79 - spaces
