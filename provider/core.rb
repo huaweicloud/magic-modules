@@ -179,6 +179,7 @@ module Provider
     # rubocop:disable Metrics/AbcSize
     def compile_file_list(output_folder, files, data = {})
       files.each do |target, source|
+        target = target.tr('hwc', @cloud_short_name)
         Google::LOGGER.info "Compiling #{source} => #{target}"
         target_file = File.join(output_folder, target)
                           .gsub('{{product_name}}', @api.prefix[1..-1])
