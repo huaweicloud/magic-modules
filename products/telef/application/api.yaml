@@ -1,0 +1,113 @@
+--- !ruby/object:Api::Product
+name: Telefonica Cloud
+prefix: tapp
+versions:
+  - !ruby/object:Api::Product::Version
+    name: v1
+    base_url: ""
+    default: true
+scopes:
+  - "http://scopte"
+objects:
+  - !ruby/object:Api::Resource
+    name: 'SMNTopic'
+    service_type: 'smn'
+    base_url: '{{project}}/notifications/topics'
+    list_url: '{{project}}/notifications/topics?limit={{limit}}&offset={{offset}}'
+    list_msg_prefix: 'topics'
+    description: |
+      Represents a SMN notification topic resource.
+    properties:
+      - !ruby/object:Api::Type::String
+        name: 'create_time'
+        description: "Time when the topic was created"
+        output: true
+      - !ruby/object:Api::Type::String
+        name: 'display_name'
+        description: |
+          Topic display name, which is presented as the name of the email
+          sender in an email message. The topic display name contains a maximum
+          of 192 bytes
+        create_update: 'cu'
+      - !ruby/object:Api::Type::String
+        name: 'name'
+        description: |
+          Name of the topic to be created. The topic name is a string of 1 to
+          256 characters. It must contain upper- or lower-case letters, digits,
+          hyphens (-), and underscores (_), and must start with a letter or
+          digit.
+        create_update: 'c'
+        required: true
+      - !ruby/object:Api::Type::Enum
+        name: 'push_policy'
+        description: |
+          Message pushing policy. 0 indicates that the message sending fails
+          and the message is cached in the queue. 1 indicates that the failed
+          message is discarded.
+        element_type: Api::Type::Integer
+        output: true
+        values:
+          - :0
+          - :1
+      - !ruby/object:Api::Type::String
+        name: 'topic_urn'
+        description: "Resource identifier of a topic, which is unique"
+        is_id: true
+        output: true
+      - !ruby/object:Api::Type::String
+        name: 'update_time'
+        description: "Time when the topic was updated"
+        output: true
+
+  - !ruby/object:Api::Resource
+    name: 'SMNSubscription'
+    service_type: 'smn'
+    base_url: '{{project}}/notifications/topics/{topic_urn}/subscriptions'
+    list_url: '{{project}}/notifications/topics/{topic_urn}/subscriptions?offset=0&limit=100'
+    list_msg_prefix: 'subscriptions'
+    description: |
+      Represents an SMN notification topic resource.
+    properties:
+      - !ruby/object:Api::Type::String
+        name: 'endpoint'
+        description: |
+          Message endpoint. For an HTTP subscription, the endpoint starts with
+          http://. For an HTTPS subscription, the endpoint starts with
+          https://. For an email subscription, the endpoint is a mail address
+        create_update: 'c'
+        required: true
+      - !ruby/object:Api::Type::String
+        name: 'owner'
+        description: "Project ID of the topic creator"
+        output: true
+      - !ruby/object:Api::Type::Enum
+        name: 'protocol'
+        description: |
+          Protocol of the message endpoint. Currently, email, http, and https
+          are supported.
+        create_update: 'c'
+        required: true
+        values:
+          - :http
+          - :https
+          - :email
+      - !ruby/object:Api::Type::String
+        name: 'description'
+        description: |
+          Description of the subscription and must be a UTF-8-coded character
+          string containing 128 bytes.
+        create_update: 'c'
+        field: 'remark'
+      - !ruby/object:Api::Type::String
+        name: 'status'
+        description: "Subscription status."
+        output: true
+      - !ruby/object:Api::Type::String
+        name: 'subscription_urn'
+        description: "Resource identifier of a subscription, which is unique"
+        is_id: true
+        output: true
+      - !ruby/object:Api::Type::String
+        name: 'topic_urn'
+        description: "Resource identifier of a topic."
+        required: true
