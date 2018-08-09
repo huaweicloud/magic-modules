@@ -67,8 +67,8 @@ module Provider
       include Provider::Ansible::Request
       include Provider::Ansible::SelfLink
 
-      def initialize(config, api)
-        super(config, api)
+      def initialize(config, api, cloud_name, cloud_short_name)
+        super(config, api, cloud_name, cloud_short_name)
         @max_columns = 160
       end
 
@@ -129,7 +129,7 @@ module Provider
       # Returns the name of the module according to Ansible naming standards.
       # Example: hwc_dns_managed_zone
       def module_name(object)
-        ["hwc_#{object.__product.prefix[1..-1]}",
+        ["%s_#{object.__product.prefix[1..-1]}" % @cloud_short_name,
          Google::StringUtils.underscore(object.name)].join('_')
       end
 
