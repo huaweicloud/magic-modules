@@ -522,16 +522,13 @@ def link_wrapper(f):
 <%
   unless object.virtual || self_link_url(object).match('/{id}').nil? || object.resource_name.nil?
     list_url_format_keys = list_url(object).scan(/{[^}]+}/)
-    known_tags = ['{limit}', '{marker}', '{offset}', '{project}', '{endpoint}']
-    unknown_tags = list_url_format_keys.reject { |k| known_tags.include?(k) }
-    unless unknown_tags.empty?
-	    raise "The list url(#{list_url(object)}) contains unknown tags(#{unknown_tags.to_s})"
-    end
+    list_url_no_extra = list_url_format_keys.select { |k| ['{limit}', '{marker}', '{offset}'].include?(k) }.empty?
 -%>
 def get_id_by_name(session):
     module = session.module
     name = module.params.get("name")
-<%  if list_url_format_keys.select { |k| ['{limit}', '{marker}', '{offset}'].include?(k) }.empty? -%>
+<%  if list_url_no_extra -%>
+    link = list_link(session)
     r = fetch_resource(session, link)
     if r is None:
         return ""
@@ -586,7 +583,7 @@ def get_id_by_name(session):
 <%  end -%>
 
 
-<%= lines(emit_link('list_link', list_url(object), object, true, object.service_type)) -%>
+<%= lines(emit_link('list_link', list_url(object), object, (not list_url_no_extra), object.service_type)) -%>
 
 
 <% end -%>
