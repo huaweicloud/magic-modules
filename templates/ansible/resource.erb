@@ -56,8 +56,8 @@ EXAMPLES = '''
 <% end # if example.dependencies -%>
 <%= lines(example.task.build_example('present', object)) -%>
 '''
-<% end -%>
 
+<% end -%>
 RETURN = '''
 <% object.all_user_properties.each do |prop| -%>
 <%= lines(indent(return_property_yaml(prop, 4), 4)) -%>

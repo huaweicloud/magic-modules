@@ -22,7 +22,7 @@ module Provider
       # Takes in a list of properties and outputs a python hash that takes
       # in a module and outputs a formatted JSON request.
       def request_properties(properties, indent = 4, is_in_class = false)
-	prefix = is_in_class ? 'self.' : ''
+        prefix = is_in_class ? 'self.' : ''
         indent_list(
           properties.map do |prop|
             request_property(prop, "#{prefix}module.params", "#{prefix}module")
@@ -65,13 +65,15 @@ module Provider
       # This returns a list of properties that require classes being built out.
       def properties_with_classes(properties)
         properties.map do |p|
-          if p.to_request && p.from_response
-            next
-          elsif p.is_a? Api::Type::NestedObject
-            [p] + properties_with_classes(p.properties)
+          if p.is_a? Api::Type::NestedObject
+            if need_define_class(p)
+              [p] + properties_with_classes(p.properties)
+            end
           elsif p.is_a?(Api::Type::Array) && \
                 p.item_type.is_a?(Api::Type::NestedObject)
-            [p] + properties_with_classes(p.item_type.properties)
+            if need_define_class(p)
+              [p] + properties_with_classes(p.item_type.properties)
+            end
           end
         end.compact.flatten
       end
@@ -188,6 +190,14 @@ module Provider
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
+
+      def need_define_class(p)
+        if p.to_request && p.from_response
+          cn = p.property_class[-1]
+          return p.to_request.include?(cn) || p.from_response.include?(cn)
+        end
+        true
+      end
     end
     # rubocop:enable Metrics/ModuleLength
   end
