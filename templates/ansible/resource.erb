@@ -531,7 +531,7 @@ def get_id_by_name(session):
     link = list_link(session)
     r = fetch_resource(session, link)
     if r is None:
-        return ""
+        return None
 <%    if object.list_msg_prefix -%>
     r = r.get(<%= quote_string(object.list_msg_prefix) %>, [])
 <%    end  # object.list_msg_prefix -%>
@@ -539,7 +539,7 @@ def get_id_by_name(session):
         i.get(<%= quote_string(object.resource_id) -%>) for i in r if i.get(<%= quote_string(object.resource_name) -%>, '') == name
     ]
     if not ids:
-        return ""
+        return None
     elif len(ids) == 1:
         return ids[0]
     else:
@@ -579,7 +579,7 @@ def get_id_by_name(session):
         p = {'offset': page_num}
 <%    end -%>
 
-    return ids.pop() if ids else ""
+    return ids.pop() if ids else None
 <%  end -%>
 
 
