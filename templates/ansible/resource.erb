@@ -159,7 +159,11 @@ def main():
             # <%= object.name -%> cannot be edited, just return the current state
             fetch = response_to_hash(module, fetch)
 <%   else -%>
+<%     unless no_ex_properties -%>
             expect = _get_editable_properties(module)
+<%     else -%>
+            expect = _get_resource_editable_properties(module)
+<%     end -%>
             current_state = response_to_hash(module, fetch)
             if is_different(expect, current_state):
 <%
@@ -761,30 +765,26 @@ def resource_to_update(module):
 
 
 def _get_resource_editable_properties(module):
-    request = remove_nones_from_dict({
+    return remove_nones_from_dict({
 <% resource_editable_ps.map do |p| -%>
 <%= indent("\"#{p.out_name}\": module.params.get(\"#{p.out_name}\"),", 8)-%>
 <%= "\n" -%>
 <% end -%>
     })
 
-    return request
-
 
 <% end # resource_editable_ps.empty? -%>
-<% unless no_ex_properties && resource_editable_ps.empty? -%>
+<% unless no_ex_properties -%>
 def _get_editable_properties(module):
 <%
   ps = object.properties.reject(&:output).select { |p| p.create_update == 'u' || p.create_update == 'cu' }
 -%>
-    request = remove_nones_from_dict({
+    return remove_nones_from_dict({
 <% ps.map do |p| -%>
 <%= indent("\"#{p.out_name}\": module.params.get(\"#{p.out_name}\"),", 8)-%>
 <%= "\n" -%>
 <% end -%>
     })
-
-    return request
 
 
 <% end # no_ex_properties && resource_editable_ps.empty? -%>
