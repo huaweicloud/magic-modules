@@ -233,7 +233,10 @@ module Provider
             [
               'description:',
               # + 8 to compensate for name + description.
-              indent(bullet_lines1(prop.description, spaces + 8), 4)
+              indent(
+                bullet_lines1(convert_underscores(prop.description),
+                              spaces + 8),
+                4)
             ], 4
           )
         ]
@@ -242,6 +245,17 @@ module Provider
       def autogen_notice_contrib
         ['Please read more about how to change this file at',
          'https://www.github.com/huaweicloud/magic-modules']
+      end
+
+      def convert_underscores(desc)
+        def f(s)
+          i = s.index('_')
+          g1 = i == 1 ? ' C(' : s[0] + 'C('
+          g2 = s[-1] == ')' ? ')' : ')' + s[-1]
+          g1 + '_' + g2
+        end
+
+        desc.gsub(/(?: |[^C]\()(_)(?: |,|\))/) {|s| f(s)}
       end
     end
     # rubocop:enable Metrics/ModuleLength
