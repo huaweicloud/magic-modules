@@ -29,6 +29,8 @@ module Provider
       attr_reader :version_added
       attr_reader :update_url
       attr_reader :delete_url
+      # parameters to be compared in each list result to get resource id
+      attr_reader :check_items
     end
 
     # Product specific overriden properties for Ansible
@@ -57,6 +59,7 @@ module Provider
         check_optional_property :version_added, ::String
         check_optional_property :update_url, ::String
         check_optional_property :delete_url, ::String
+        check_optional_property :check_items, ::Array
       end
       # rubocop:enable Metrics/MethodLength
 

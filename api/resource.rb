@@ -313,12 +313,9 @@ module Api
       ps.empty? ? 'id' : ps[0].field_name
     end
 
-    def resource_name
-      ps = properties.select{ |p| p.name == 'name' }
-      unless ps.empty?
-        fn = ps[0].field_name
-        fn.include?("/") ? fn[fn.index("/") + 1..-1] : fn
-      end
+    def parameter(name)
+      ps = all_user_properties.select { |p| p.name == name }
+      ps.length == 1 ? ps[0] : nil
     end
 
     def exported_properties
