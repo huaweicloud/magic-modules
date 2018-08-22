@@ -24,7 +24,9 @@ manifest: !ruby/object:Provider::Ansible::Manifest
   version_added: '2.7'
   author: 'Huawei Inc. (@huaweicloud)' 
 overrides: !ruby/object:Provider::ResourceOverrides
-  AlarmRule: !ruby/object:Provider::Ansible::ResourceOverride
+  CESAlarmRule: !ruby/object:Provider::Ansible::ResourceOverride
+    check_items:
+      - 'name'
     properties:
       alarm_level: !ruby/object:Provider::Ansible::PropertyOverride
         to_request: |
