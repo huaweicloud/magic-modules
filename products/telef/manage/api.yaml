@@ -10,7 +10,7 @@ scopes:
   - "http://scopte"
 objects:
   - !ruby/object:Api::Resource
-    name: 'AlarmRule'
+    name: 'CESAlarmRule'
     service_type: 'ces'
     base_url: '{{project}}/alarms'
     list_url: '{{project}}/alarms?limit={{limit}}&start={{marker}}'

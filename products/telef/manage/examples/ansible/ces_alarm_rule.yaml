@@ -11,8 +11,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 --- !ruby/object:Provider::Ansible::Example
+dependencies:
+  - !ruby/object:Provider::Ansible::Task
+    name: tfc_app_smn_topic
+    register: smn_topic
+    code: |
+      identity_endpoint: <%= ctx[:identity_endpoint] %>
+      user_name: <%= ctx[:user_name] %>
+      password: <%= ctx[:password] %>
+      domain_name: <%= ctx[:domain_name] %>
+      project_name: <%= ctx[:project_name] %>
+      region: <%= ctx[:region] %>
+      name: "ansible_app_smn_topic_test"
 task: !ruby/object:Provider::Ansible::Task
-  name: tfc_manage_alarm_rule
+  name: tfc_manage_ces_alarm_rule
   code: |
     identity_endpoint: <%= ctx[:identity_endpoint] %>
     user_name: <%= ctx[:user_name] %>
@@ -40,4 +52,4 @@ task: !ruby/object:Provider::Ansible::Task
     alarm_actions:
       - type: "notification"
         notifications:
-          - "{{ smn_topic_urn }}"
+          - "{{ smn_topic.topic_urn }}"
