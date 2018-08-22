@@ -25,6 +25,8 @@ manifest: !ruby/object:Provider::Ansible::Manifest
   author: 'Huawei Inc. (@huaweicloud)' 
 overrides: !ruby/object:Provider::ResourceOverrides
   SMNTopic: !ruby/object:Provider::Ansible::ResourceOverride
+    check_items:
+      - 'name'
     properties:
       push_policy: !ruby/object:Provider::Ansible::PropertyOverride
         from_response: |
@@ -33,8 +35,19 @@ overrides: !ruby/object:Provider::ResourceOverrides
               1: "the failed message is discarded",
           }.get(int(value))
   SMNSubscription: !ruby/object:Provider::Ansible::ResourceOverride
+    check_items:
+      - 'protocol'
+      - 'endpoint'
     delete_url: '{{project}}/notifications/subscriptions/{{id}}'
     editable: false
+    properties:
+      status: !ruby/object:Provider::Ansible::PropertyOverride
+        from_response: |
+          return {
+              0: "the subscription is not confirmed",
+              1: "the subscription is confirmed",
+              3: "the subscription is canceled",
+          }.get(int(value))
 # This is where custom code would be defined eventually.
 examples: !ruby/object:Api::Resource::HashArray
 files: !ruby/object:Provider::Config::Files

@@ -63,7 +63,7 @@ objects:
     name: 'SMNSubscription'
     service_type: 'smn'
     base_url: '{{project}}/notifications/topics/{topic_urn}/subscriptions'
-    list_url: '{{project}}/notifications/topics/{topic_urn}/subscriptions?offset=0&limit=100'
+    list_url: '{{project}}/notifications/topics/{topic_urn}/subscriptions?offset={offset}&limit=100'
     list_msg_prefix: 'subscriptions'
     description: |
       Represents an SMN notification topic resource.
@@ -71,9 +71,13 @@ objects:
       - !ruby/object:Api::Type::String
         name: 'endpoint'
         description: |
-          Message endpoint. For an HTTP subscription, the endpoint starts with
-          http://. For an HTTPS subscription, the endpoint starts with
-          https://. For an email subscription, the endpoint is a mail address
+          Message endpoint.
+
+          For an HTTP subscription, the endpoint starts with http://.
+
+          For an HTTPS subscription, the endpoint starts with https://.
+
+          For an email subscription, the endpoint is a mail address
         create_update: 'c'
         required: true
       - !ruby/object:Api::Type::String
