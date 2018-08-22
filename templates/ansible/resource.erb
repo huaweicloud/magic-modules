@@ -513,11 +513,11 @@ def create_resource(session):
 <% end # internals_create.empty? && externals.empty? -%>
 <% end -%>
 def link_wrapper(f):
-    def _wrapper(module, *args, **kwargs):
+    def _wrapper(session, *args, **kwargs):
         try:
-            return f(module, *args, **kwargs)
+            return f(session, *args, **kwargs)
         except KeyError as ex:
-            module.fail_json(
+            session.module.fail_json(
                 msg="Mapping keys(%s) are not found in generating link" % ex)
 
     return _wrapper
@@ -526,6 +526,8 @@ def link_wrapper(f):
 <%
   unless object.virtual || self_link_url(object).match('/{id}').nil?
     list_url_format_keys = list_url(object).scan(/{[^}]+}/)
+    extra_map = {'{limit}' => "'limit': 10", '{offset}' => "'offset': '{offset}'", '{marker}' => "'marker': '{marker}'"}
+    extra_param = (extra_map.keys & list_url_format_keys).collect { |i| extra_map[i] }
     check_code = ""
     check_code1 = ""
     unless object.check_items.nil?
@@ -571,8 +573,8 @@ def link_wrapper(f):
 -%>
 def get_resource_id(session):
     module = session.module
-<%  if list_url_format_keys.include?('{limit}') -%>
-    link = list_link(session, {'limit': 10})
+<%  unless extra_param.empty? -%>
+    link = list_link(session, {<%= extra_param.join(', ') -%>})
 <%  else -%>
     link = list_link(session)
 <%  end -%>
@@ -627,7 +629,7 @@ def get_resource_id(session):
 <%  end -%>
 
 
-<%= lines(emit_link('list_link', list_url(object), object, list_url_format_keys.include?('{limit}'), object.service_type)) -%>
+<%= lines(emit_link('list_link', list_url(object), object, extra_param.length > 0, object.service_type)) -%>
 
 
 <% end -%>
