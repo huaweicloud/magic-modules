@@ -44,7 +44,6 @@ module Api
       attr_reader :create_verb
       attr_reader :update_verb
       attr_reader :input # If true, resource is not updatable as a whole unit
-      attr_reader :msg_prefix   # the prefix of the request/response body
       attr_reader :create_codes # the successful codes of Create
       attr_reader :update_codes # the successful codes of Update
       attr_reader :get_codes    # the successful codes of Get
@@ -237,7 +236,7 @@ module Api
       check_optional_property :label_override, String
       check_optional_property :transport, Transport
       check_optional_property :references, ReferenceLinks
-      check_optional_property :msg_prefix, String
+      check_optional_property :msg_prefix, Hash # key is create, update, get, list
       check_optional_property :create_codes, Array
       check_optional_property :update_codes, Array
       check_optional_property :delete_codes, Array
@@ -248,7 +247,6 @@ module Api
       check_optional_property_list :get_codes, Integer
       check_property :service_type, String
       check_property :list_url, String
-      check_optional_property :list_msg_prefix, String
 
       check_property :properties, Array unless @exclude
 
@@ -268,7 +266,7 @@ module Api
       check_identity unless @identity.nil?
 
       if properties.select(&:is_id).length > 1
-	raise "There are more than one properties as the resource identifier"
+        raise "There are more than one properties as the resource identifier"
       end
     end
     # rubocop:enable Metrics/AbcSize
@@ -304,8 +302,11 @@ module Api
       properties.select(&:update_url)
     end
 
-    def list_msg_prefix
-      @list_msg_prefix || @msg_prefix + 's'
+    # the prefix of the request/response body for CRUD
+    def msg_prefix(t)
+      if @msg_prefix
+        @msg_prefix.fetch(t, nil)
+      end
     end
 
     def resource_id
