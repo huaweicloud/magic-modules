@@ -86,6 +86,13 @@ module Provider
         end.compact.flatten
       end
 
+      def convert_custom_method(p, f)
+        if p.is_a? Api::Type::NestedObject || p.is_a?(Api::Type::Array)
+          return f.gsub(/{class}\(/, p.property_class[-1] + '(')
+        end
+        f
+      end
+
       private
 
       def request_property(prop, hash_name, module_name, invoker='')
@@ -193,7 +200,7 @@ module Provider
 
       def need_define_class(p)
         if p.to_request && p.from_response
-          cn = p.property_class[-1]
+          cn = '{class}('
           return p.to_request.include?(cn) || p.from_response.include?(cn)
         end
         true
