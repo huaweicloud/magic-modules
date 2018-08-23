@@ -14,7 +14,8 @@ objects:
     service_type: 'smn'
     base_url: '{{project}}/notifications/topics'
     list_url: '{{project}}/notifications/topics?limit={{limit}}&offset={{offset}}'
-    list_msg_prefix: 'topics'
+    msg_prefix:
+      list: 'topics'
     description: |
       Represents a SMN notification topic resource.
     properties:
@@ -64,7 +65,8 @@ objects:
     service_type: 'smn'
     base_url: '{{project}}/notifications/topics/{topic_urn}/subscriptions'
     list_url: '{{project}}/notifications/topics/{topic_urn}/subscriptions?offset={offset}&limit=100'
-    list_msg_prefix: 'subscriptions'
+    msg_prefix:
+      list: 'subscriptions'
     description: |
       Represents an SMN notification topic resource.
     properties:
