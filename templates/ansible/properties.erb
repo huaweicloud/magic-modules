@@ -20,15 +20,23 @@ class <%= prop.property_class[-1] -%>(object):
 <%   properties_with_custom_method_for_param(prop.properties).each do |p| -%>
 <%     if p.to_request -%>
 
+<%       if p.to_request.include?('self') -%>
+    def _<%= p.out_name -%>_convert_to_request(self, value):
+<%       else -%>
     @staticmethod
     def _<%= p.out_name -%>_convert_to_request(value):
-<%= lines(indent(p.to_request, 8)) -%>
+<%       end -%>
+<%= lines(indent(convert_custom_method(p, p.to_request), 8)) -%>
 <%     end -%>
 <%     if p.from_response -%>
 
+<%       if p.from_response.include?('self') -%>
+    def _<%= p.out_name -%>_convert_from_response(self, value):
+<%       else -%>
     @staticmethod
     def _<%= p.out_name -%>_convert_from_response(value):
-<%= lines(indent(p.from_response, 8)) -%>
+<%       end -%>
+<%= lines(indent(convert_custom_method(p, p.from_response), 8)) -%>
 <%     end -%>
 <%   end -%>
 <% elsif prop.is_a?(Api::Type::Array) && prop.item_type.is_a?(Api::Type::NestedObject) -%>
@@ -67,15 +75,23 @@ class <%= prop.property_class[-1] -%>(object):
 <%   properties_with_custom_method_for_param(prop.item_type.properties).each do |p| -%>
 <%     if p.to_request -%>
 
+<%       if p.to_request.include?('self') -%>
+    def _<%= p.out_name -%>_convert_to_request(self, value):
+<%       else -%>
     @staticmethod
     def _<%= p.out_name -%>_convert_to_request(value):
-<%= lines(indent(p.to_request, 8)) -%>
+<%       end -%>
+<%= lines(indent(convert_custom_method(p, p.to_request), 8)) -%>
 <%     end -%>
 <%     if p.from_response -%>
 
+<%       if p.from_response.include?('self') -%>
+    def _<%= p.out_name -%>_convert_from_response(self, value):
+<%       else -%>
     @staticmethod
     def _<%= p.out_name -%>_convert_from_response(value):
-<%= lines(indent(p.from_response, 8)) -%>
+<%       end -%>
+<%= lines(indent(convert_custom_method(p, p.from_response), 8)) -%>
 <%     end -%>
 <%   end -%>
 <% end # prop.is_a? NestedObject -%>
@@ -89,12 +105,12 @@ class <%= prop.property_class[-1] -%>(object):
 <%   if prop.to_request -%>
 <%= "\n" * 2 -%>
 def _<%= prop.out_name -%>_convert_to_request(value):
-<%= lines(indent(prop.to_request, 4)) -%>
+<%= lines(indent(convert_custom_method(prop, prop.to_request), 4)) -%>
 <%   end -%>
 <%   if prop.from_response -%>
 <%= "\n" * 2 -%>
 def _<%= prop.out_name -%>_convert_from_response(value):
-<%= lines(indent(prop.from_response, 4)) -%>
+<%= lines(indent(convert_custom_method(prop, prop.from_response), 4)) -%>
 <%   end -%>
 <% end -%>
 <% unless object.ex_properties.empty? -%>
