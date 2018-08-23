@@ -14,7 +14,8 @@ objects:
     service_type: 'ces'
     base_url: '{{project}}/alarms'
     list_url: '{{project}}/alarms?limit={{limit}}&start={{marker}}'
-    list_msg_prefix: 'metric_alarms'
+    msg_prefix:
+      list: 'metric_alarms'
     description: |
       Represents an alarm rule resource.
     properties:
