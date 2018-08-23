@@ -1,0 +1,44 @@
+# Copyright 2018 Huawei Inc.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+--- !ruby/object:Provider::Ansible::Example
+dependencies:
+  - !ruby/object:Provider::Ansible::Task
+    name: tfc_compute_as_group
+    register: as_group
+    code: |
+      identity_endpoint: <%= ctx[:identity_endpoint] %>
+      user_name: <%= ctx[:user_name] %>
+      password: <%= ctx[:password] %>
+      domain_name: <%= ctx[:domain_name] %>
+      project_name: <%= ctx[:project_name] %>
+      region: <%= ctx[:region] %>
+      name: "ansible_compute_as_group_test"
+      security_groups:
+        - "{{ security_group_id }}"
+      networks:
+        - "{{ network_id}}"
+      vpc_id: "{{ vpc_id }}"
+task: !ruby/object:Provider::Ansible::Task
+  name: tfc_compute_as_policy
+  code: |
+    identity_endpoint: <%= ctx[:identity_endpoint] %>
+    user_name: <%= ctx[:user_name] %>
+    password: <%= ctx[:password] %>
+    domain_name: <%= ctx[:domain_name] %>
+    project_name: <%= ctx[:project_name] %>
+    region: <%= ctx[:region] %>
+    name: "ansible_compute_as_policy_test"
+    policy_type: "SCHEDULED"
+    group_id: "{{ as_group.id }}"
+    scheduled_policy:
+      launch_time: "2020-12-22T12:00Z"
