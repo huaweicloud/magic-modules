@@ -256,8 +256,8 @@ def main():
 -%>
 <%   if not object.async -%>
     r = <%= method %>
-<% if object.msg_prefix -%>
-    r = r.get(<%= quote_string(object.msg_prefix) -%>)
+<% if object.msg_prefix('create') -%>
+    r = r.get(<%= quote_string(object.msg_prefix('create')) -%>)
 <% end  # object.msg_prefix -%>
     session.module.params['id'] = r.get(<%= quote_string(object.resource_id) -%>, None)
 
@@ -277,9 +277,9 @@ def main():
                                           ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
                                          ])
 -%>
-<%     if object.msg_prefix -%>
+<%     if object.msg_prefix('create') -%>
     r = <%= method %>
-    return r.get(<%= quote_string(object.msg_prefix) -%>)
+    return r.get(<%= quote_string(object.msg_prefix('create')) -%>)
 <%     else -%>
     return <%= method %>
 <%     end  # object.msg_prefix -%>
@@ -326,9 +326,9 @@ def main():
                                           ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
                                          ])
 -%>
-<%     if object.msg_prefix -%>
+<%     if object.msg_prefix('update') -%>
     r = <%= method %>
-    return r.get(<%= quote_string(object.msg_prefix) -%>)
+    return r.get(<%= quote_string(object.msg_prefix('update')) -%>)
 <%     else -%>
     return <%= method %>
 <%     end  # object.msg_prefix -%>
@@ -398,15 +398,15 @@ def get_resource(session):
     if re.search('/None/|/None$', link):
         return None
 
-<% unless object.msg_prefix || (not externals.empty?) -%>
+<% unless object.msg_prefix('get') || (not externals.empty?) -%>
     return <%= method_fetch %>
 <% else -%>
     fetch = <%= method_fetch %>
     if not fetch:
         return fetch
 <%  unless externals.empty? -%>
-<%   if object.msg_prefix -%>
-    fetch = fetch.get(<%= quote_string(object.msg_prefix) %>)
+<%   if object.msg_prefix('get') -%>
+    fetch = fetch.get(<%= quote_string(object.msg_prefix('get')) %>)
 <%   end -%>
 
 <%   externals.each do |p| -%>
@@ -417,7 +417,7 @@ def get_resource(session):
 <%   end -%>
     return fetch
 <%  else -%>
-    return fetch.get(<%= quote_string(object.msg_prefix) %>)
+    return fetch.get(<%= quote_string(object.msg_prefix('get')) %>)
 <%  end -%>
 <% end -%>
 
@@ -582,9 +582,9 @@ def get_resource_id(session):
     r = fetch_resource(session, link)
     if r is None:
         return None
-<%    if object.list_msg_prefix -%>
-    r = r.get(<%= quote_string(object.list_msg_prefix) %>, [])
-<%    end  # object.list_msg_prefix -%>
+<%    if object.msg_prefix('list') -%>
+    r = r.get(<%= quote_string(object.msg_prefix('list')) %>, [])
+<%    end  # object.msg_prefix -%>
 <%    unless check_code1.empty? -%>
 <%= indent(check_code1, 4) %>
 <%    end -%>
@@ -610,9 +610,9 @@ def get_resource_id(session):
         r = fetch_resource(session, link.format(**p))
         if r is None:
             break
-<%    if object.list_msg_prefix -%>
-        r = r.get(<%= quote_string(object.list_msg_prefix) %>, [])
-<%    end  # object.list_msg_prefix -%>
+<%    if object.msg_prefix('list') -%>
+        r = r.get(<%= quote_string(object.msg_prefix('list')) %>, [])
+<%    end  # object.msg_prefix -%>
         if r == []:
             break
 <%= indent(check_code, 8) %>
@@ -750,11 +750,11 @@ def resource_to_create(module):
  <%= lines(indent(request_properties(alone), 4)) -%>
     })
 <% end -%>
-<% if object.msg_prefix -%>
+<% if object.msg_prefix('create') -%>
 <%   if alone.empty? -%>
-    return {'<%= object.msg_prefix %>': request}
+    return {'<%= object.msg_prefix('create') %>': request}
 <%   else -%>
-    v = {'<%= object.msg_prefix %>': request}
+    v = {'<%= object.msg_prefix('create') %>': request}
     v.update(alone_param)
     return v
 <%   end -%>
@@ -789,11 +789,11 @@ def resource_to_update(module):
  <%= lines(indent(request_properties(alone), 4)) -%>
     })
 <% end -%>
-<% if object.msg_prefix -%>
+<% if object.msg_prefix('update') -%>
 <%   if alone.empty? -%>
-    return {'<%= object.msg_prefix %>': request}
+    return {'<%= object.msg_prefix('update') %>': request}
 <%   else -%>
-    v = {'<%= object.msg_prefix %>': request}
+    v = {'<%= object.msg_prefix('update') %>': request}
     v.update(alone_param)
     return v
 <%   end -%>
