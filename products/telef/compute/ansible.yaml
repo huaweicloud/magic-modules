@@ -34,17 +34,22 @@ overrides: !ruby/object:Provider::ResourceOverrides
               return {class}(value.get('eip', {}), self.module).from_response()
 
   ASGroup: !ruby/object:Provider::Ansible::ResourceOverride
+    delete_url: "{{project}}/scaling_group/{{id}}?force_delete=yes"
     properties:
       networks: !ruby/object:Provider::Ansible::PropertyOverride
         to_request: |
-          return [{'id': v} for v in value]
-        from_response:
-          return [v['id'] for v in value]
+          if value:
+              return [{'id': v} for v in value]
+        from_response: |
+          if value:
+              return [v['id'] for v in value]
       security_groups: !ruby/object:Provider::Ansible::PropertyOverride
         to_request: |
-          return [{'id': v} for v in value]
-        from_response:
-          return [v['id'] for v in value]
+          if value:
+              return [{'id': v} for v in value]
+        from_response: |
+          if value:
+              return [v['id'] for v in value]
 # This is where custom code would be defined eventually.
 examples: !ruby/object:Api::Resource::HashArray
 files: !ruby/object:Provider::Config::Files

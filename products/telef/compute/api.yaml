@@ -463,6 +463,22 @@ objects:
       get: 'scaling_group'
     description: |
       Represents an Auto Scaling Group resource.
+    async: !ruby/object:Api::Async
+      operation: !ruby/object:Api::Async::Operation
+        path: 'scaling_group_id'
+        base_url: '{{project}}/scaling_group/{{op_id}}'
+        wait_ms: 1000
+      result: !ruby/object:Api::Async::Result
+        base_url: '{{project}}/scaling_group/{{op_id}}'
+        path: 'scaling_group/scaling_group_id'
+      status: !ruby/object:Api::Async::Status
+        path: 'scaling_group/current_instance_number'
+        complete:
+          - |
+            navigate_hash(
+                v, ['scaling_group', 'current_instance_number']
+            ) == navigate_hash(
+                v, ['scaling_group', 'desire_instance_number'])
     properties:
       - !ruby/object:Api::Type::Array
         name: 'available_zones'
@@ -639,6 +655,7 @@ objects:
         description: "Specifies the AS configuration ID. "
         create_update: 'cu'
         field: 'scaling_configuration_id'
+        required: true
       - !ruby/object:Api::Type::String
         name: 'config_name'
         description: "Specifies the AS configuration name."
