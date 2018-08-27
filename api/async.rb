@@ -20,7 +20,6 @@ module Api
     attr_reader :result
     attr_reader :status
     attr_reader :error
-    attr_reader :update_status
 
     def validate
       super
@@ -28,8 +27,12 @@ module Api
       check_property :operation, Operation
       check_property :result, Result
       check_property :status, Status
-      check_property :error, Error
+      check_optional_property :error, Error
       check_optional_property :update_status, Status
+    end
+
+    def update_status
+      @update_status || @status
     end
 
     # Represents the operations (requests) issues to watch for completion
@@ -44,13 +47,11 @@ module Api
       def validate
         super
 
-        @timeouts ||= Timeouts.new
-
-        check_property :kind, String
+        check_optional_property :kind, String
         check_property :path, String
         check_property :base_url, String
         check_property :wait_ms, Integer
-        check_property :timeouts, Timeouts
+        check_optional_property :timeouts, Timeouts
 	check_optional_property :service_type, String
       end
 
@@ -102,7 +103,7 @@ module Api
         super
         check_property :path, String
         check_property :complete, Array
-        check_property :allowed, Array
+        check_optional_property :allowed, Array
       end
     end
 
