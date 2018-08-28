@@ -280,10 +280,10 @@ def main():
 -%>
 <%   unless object.async -%>
     r = <%= method %>
-<% if object.msg_prefix('create') -%>
+<%     if object.msg_prefix('create') -%>
     r = r.get(<%= quote_string(object.msg_prefix('create')) -%>)
-<% end  # object.msg_prefix -%>
-    session.module.params['id'] = r.get(<%= quote_string(object.resource_id) -%>, None)
+<%     end  # object.msg_prefix -%>
+    module.params['id'] = r.get(<%= quote_string(object.resource_id) -%>, None)
 
     v = get_resource(session)
     if v:
@@ -299,28 +299,6 @@ def main():
     timeout = 60 * int(module.params['timeouts']['create'].rstrip('m'))
     wait_done = wait_for_operation(session, r, timeout)
 <%       end -%>
-<%     else -%>
-<%       if  object.async.status.allowed -%>
-    complete_states = <%= c_complete_states.join(', ') -%>
-    allowed_states = <%= c_allowed_states.join(', ') -%>
-<%         if  object.async.operation.timeouts -%>
-    wait_done = wait_for_operation(session, r, <%= object.async.operation.timeouts.insert_sec -%>, complete_states, allowed_states)
-<%         else -%>
-    timeout = 60 * int(module.params['timeouts']['create'].rstrip('m'))
-    wait_done = wait_for_operation(session, r, timeout, complete_states, allowed_states)
-<%         end -%>
-<%       else -%>
-    is_complete = lambda v: (
-<%= indent(c_complete_states, 8) %>
-    )
-<%         if  object.async.operation.timeouts -%>
-    wait_done = wait_for_operation(session, r, <%= object.async.operation.timeouts.insert_sec -%>, is_complete)
-<%         else -%>
-    timeout = 60 * int(module.params['timeouts']['create'].rstrip('m'))
-    wait_done = wait_for_operation(session, r, timeout, is_complete)
-<%         end -%>
-<%       end -%>
-<%     end -%>
 
     url = resource_get_url(session, wait_done)
 <%
@@ -329,13 +307,40 @@ def main():
                                           ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
                                          ])
 -%>
-<%     if object.msg_prefix('get') -%>
+<%       if object.msg_prefix('get') -%>
     r = <%= method %>
-    return r.get(<%= quote_string(object.msg_prefix('create')) -%>)
-<%     else -%>
+    return r.get(<%= quote_string(object.msg_prefix('get')) -%>)
+<%       else -%>
     return <%= method %>
-<%     end  # object.msg_prefix -%>
-<%   end -%>
+<%       end  # object.msg_prefix -%>
+<%     else # if is_standard_async -%>
+<%       if  object.async.status.allowed -%>
+    complete_states = <%= c_complete_states.join(', ') -%>
+    allowed_states = <%= c_allowed_states.join(', ') -%>
+<%         if  object.async.operation.timeouts -%>
+    r = wait_for_operation(session, r, <%= object.async.operation.timeouts.insert_sec -%>, complete_states, allowed_states)
+<%         else -%>
+    timeout = 60 * int(module.params['timeouts']['create'].rstrip('m'))
+    r = wait_for_operation(session, r, timeout, complete_states, allowed_states)
+<%         end -%>
+<%       else -%>
+    is_complete = lambda v: (
+<%= indent(c_complete_states, 8) %>
+    )
+<%         if  object.async.operation.timeouts -%>
+    r = wait_for_operation(session, r, <%= object.async.operation.timeouts.insert_sec -%>, is_complete)
+<%         else -%>
+    timeout = 60 * int(module.params['timeouts']['create'].rstrip('m'))
+    r = wait_for_operation(session, r, timeout, is_complete)
+<%         end -%>
+<%       end -%>
+<%       if object.msg_prefix('get') -%>
+    return r.get(<%= quote_string(object.msg_prefix('get')) -%>)
+<%       else -%>
+    return r
+<%       end  # object.msg_prefix -%>
+<%     end # if is_standard_async -%>
+<%   end # object.async-%>
 <% else -%>
 <%= lines(indent(object.create, 4)) -%>
 <% end -%>
@@ -376,28 +381,6 @@ def main():
     timeout = 60 * int(module.params['timeouts']['update'].rstrip('m'))
     wait_done = wait_for_operation(session, r, timeout)
 <%       end -%>
-<%     else -%>
-<%       if  object.async.update_status.allowed -%>
-    complete_states = <%= u_complete_states.join(', ') -%>
-    allowed_states = <%= u_allowed_states.join(', ') -%>
-<%         if  object.async.operation.timeouts -%>
-    wait_done = wait_for_operation(session, r, <%= object.async.operation.timeouts.update_sec -%>, complete_states, allowed_states)
-<%         else -%>
-    timeout = 60 * int(module.params['timeouts']['udpate'].rstrip('m'))
-    wait_done = wait_for_operation(session, r, timeout, complete_states, allowed_states)
-<%         end -%>
-<%       else -%>
-    is_complete = lambda v: (
-<%= indent(u_complete_states, 8) %>
-    )
-<%         if  object.async.operation.timeouts -%>
-    wait_done = wait_for_operation(session, r, <%= object.async.operation.timeouts.update_sec -%>, is_complete)
-<%         else -%>
-    timeout = 60 * int(module.params['timeouts']['udpate'].rstrip('m'))
-    wait_done = wait_for_operation(session, r, timeout, is_complete)
-<%         end -%>
-<%       end -%>
-<%     end -%>
 
     url = resource_get_url(session, wait_done)
 <%
@@ -406,12 +389,39 @@ def main():
                                           ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
                                          ])
 -%>
-<%     if object.msg_prefix('get') -%>
+<%       if object.msg_prefix('get') -%>
     r = <%= method %>
-    return r.get(<%= quote_string(object.msg_prefix('update')) -%>)
-<%     else -%>
+    return r.get(<%= quote_string(object.msg_prefix('get')) -%>)
+<%       else -%>
     return <%= method %>
-<%     end  # object.msg_prefix -%>
+<%       end  # object.msg_prefix -%>
+<%     else # if is_standard_async -%>
+<%       if  object.async.update_status.allowed -%>
+    complete_states = <%= u_complete_states.join(', ') -%>
+    allowed_states = <%= u_allowed_states.join(', ') -%>
+<%         if  object.async.operation.timeouts -%>
+    r = wait_for_operation(session, r, <%= object.async.operation.timeouts.update_sec -%>, complete_states, allowed_states)
+<%         else -%>
+    timeout = 60 * int(module.params['timeouts']['udpate'].rstrip('m'))
+    r = wait_for_operation(session, r, timeout, complete_states, allowed_states)
+<%         end -%>
+<%       else -%>
+    is_complete = lambda v: (
+<%= indent(u_complete_states, 8) %>
+    )
+<%         if  object.async.operation.timeouts -%>
+    r = wait_for_operation(session, r, <%= object.async.operation.timeouts.update_sec -%>, is_complete)
+<%         else -%>
+    timeout = 60 * int(module.params['timeouts']['udpate'].rstrip('m'))
+    r = wait_for_operation(session, r, timeout, is_complete)
+<%         end -%>
+<%       end -%>
+<%       if object.msg_prefix('get') -%>
+    return r.get(<%= quote_string(object.msg_prefix('get')) -%>)
+<%       else -%>
+    return r
+<%       end  # object.msg_prefix -%>
+<%     end # if is_standard_async -%>
 <%   end # not object.async -%>
 <% else # object.update.nil? -%>
 <%= lines(indent(object.update, 4)) -%>
@@ -447,7 +457,7 @@ def main():
    ]
   )
 -%>
-<%   if not object.async -%>
+<%   unless object.async -%>
     <%= method %>
 <%   else -%>
 <%     unless is_standard_async -%>
