@@ -1,11 +1,14 @@
 <% if object.async -%>
 <%
-  res_path = path2navigate(object.async.result.path)
-  res_url = async_operation_url(object, object.async.result.base_url)
   op_path = path2navigate(object.async.operation.path)
   async_url = async_operation_url(object, object.async.operation.base_url)
   stat_path = path2navigate(object.async.status.path)
   check_interval = sprintf('%.1f', object.async.operation.wait_ms / 1000.0)
+-%>
+<%   if is_standard_async -%>
+<%
+  res_path = path2navigate(object.async.result.path)
+  res_url = async_operation_url(object, object.async.result.base_url)
 -%>
 @link_wrapper
 def resource_get_url(session, wait_done):
@@ -20,6 +23,7 @@ def resource_get_url(session, wait_done):
     return endpoint + url
 
 
+<% end -%>
 <%=
   lines(emit_link('async_op_url', async_url, object, true, object.async.operation.service_type || object.service_type), 2)
 -%>
