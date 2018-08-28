@@ -585,7 +585,7 @@ def create_resource(session):
 
 <%   end -%>
     if need_read:
-        v = get_resource(session) 
+        v = get_resource(session)
         if v:
             obj.update(v)
 
@@ -794,9 +794,11 @@ def get_resource_id(session):
 
 <% end -%>
     if code not in success_codes:
-        msg = navigate_hash(result, ['message'])
-        if msg:
-            module.fail_json(msg="request failed, %s" % msg)
+        for i in [['message'], ['error', 'message']]:
+            msg = navigate_hash(result, i)
+            if msg:
+                module.fail_json(msg="request failed, %s" % msg)
+                break
         else:
             module.fail_json(msg="request failed, return code=%d" % code)
 <% if object.kind? -%>
