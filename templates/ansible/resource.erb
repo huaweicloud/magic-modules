@@ -315,8 +315,8 @@ def main():
 <%       end  # object.msg_prefix -%>
 <%     else # if is_standard_async -%>
 <%       if  object.async.status.allowed -%>
-    complete_states = <%= c_complete_states.join(', ') -%>
-    allowed_states = <%= c_allowed_states.join(', ') -%>
+    complete_states = [<%= c_complete_states.join(', ') -%>]
+    allowed_states = [<%= c_allowed_states.join(', ') -%>]
 <%         if  object.async.operation.timeouts -%>
     r = wait_for_operation(session, r, <%= object.async.operation.timeouts.insert_sec -%>, complete_states, allowed_states)
 <%         else -%>
@@ -397,12 +397,12 @@ def main():
 <%       end  # object.msg_prefix -%>
 <%     else # if is_standard_async -%>
 <%       if  object.async.update_status.allowed -%>
-    complete_states = <%= u_complete_states.join(', ') -%>
-    allowed_states = <%= u_allowed_states.join(', ') -%>
+    complete_states = [<%= u_complete_states.join(', ') -%>]
+    allowed_states = [<%= u_allowed_states.join(', ') -%>]
 <%         if  object.async.operation.timeouts -%>
     r = wait_for_operation(session, r, <%= object.async.operation.timeouts.update_sec -%>, complete_states, allowed_states)
 <%         else -%>
-    timeout = 60 * int(module.params['timeouts']['udpate'].rstrip('m'))
+    timeout = 60 * int(module.params['timeouts']['update'].rstrip('m'))
     r = wait_for_operation(session, r, timeout, complete_states, allowed_states)
 <%         end -%>
 <%       else -%>
@@ -412,7 +412,7 @@ def main():
 <%         if  object.async.operation.timeouts -%>
     r = wait_for_operation(session, r, <%= object.async.operation.timeouts.update_sec -%>, is_complete)
 <%         else -%>
-    timeout = 60 * int(module.params['timeouts']['udpate'].rstrip('m'))
+    timeout = 60 * int(module.params['timeouts']['update'].rstrip('m'))
     r = wait_for_operation(session, r, timeout, is_complete)
 <%         end -%>
 <%       end -%>

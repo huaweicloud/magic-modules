@@ -39,6 +39,7 @@ def cloud_short_name(name)
   m = {
     'telefonica' => 'tfc',
     'huawei' => 'hwc',
+    'opentelekom' => 'otc',
   }.freeze
   unless m.include?(name)
     raise "Unknown cloud #{name}"
