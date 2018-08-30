@@ -83,7 +83,7 @@ def wait_for_completion(session, op_uri, timeout, complete_states, allowed_state
 
 <%       end -%>
         status = navigate_hash(op_result, <%= stat_path -%>)
-        if allowed_states and status not in allowed_states:
+        if status not in allowed_states:
             module.fail_json(msg="Invalid async operation status %s" % status)
         if status in complete_states:
             return op_result
