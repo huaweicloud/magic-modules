@@ -1,0 +1,193 @@
+# Copyright 2017 Google Inc.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# TODO(nelsonjr): Make all Zone and Region resource ref
+
+--- !ruby/object:Api::Product
+name: Huawei Cloud
+prefix: hnetwork
+versions:
+  - !ruby/object:Api::Product::Version
+    name: v1
+    base_url: ""
+    default: true
+scopes:
+  - "http://scopte"
+objects:
+  - !ruby/object:Api::Resource
+    name: 'VPC'
+    # kind: 'compute#instance'
+    service_type: 'vpc'
+    base_url: 'vpcs'
+    # self_link: v2.0/routers/{{id}}
+    list_url: 'vpcs?limit={{limit}}&marker={{marker}}'
+    msg_prefix:
+      create: 'vpc'
+      update: 'vpc'
+      get: 'vpc'
+      list: 'vpcs'
+    create_codes:
+      - 200
+    update_codes:
+      - 200
+    # get_codes:
+    #   - 200
+    #   - 203
+    description: |
+      Represents an vpc resource.
+    async: !ruby/object:Api::Async
+      operation: !ruby/object:Api::Async::Operation
+        kind: ''
+        # service_type: 'query'
+        path: 'vpc/id'
+        base_url: 'vpcs/{{op_id}}'
+        wait_ms: 1000
+      result: !ruby/object:Api::Async::Result
+        base_url: 'vpcs/{{op_id}}'
+        path: 'vpc/id'
+      status: !ruby/object:Api::Async::Status
+        path: 'vpc/status'
+        complete:
+          - 'OK'
+        allowed:
+          - 'CREATING'
+          - 'DONW'
+      update_status: !ruby/object:Api::Async::Status
+        path: 'vpc/status'
+        complete:
+          - 'OK'
+        allowed:
+          - 'PENDING_UPDATE'
+          - 'DONW'
+    properties:
+      - !ruby/object:Api::Type::String
+        name: 'id'
+        description: "the id of vpc"
+        output: true
+      - !ruby/object:Api::Type::String
+        name: 'name'
+        description: "the name of vpc"
+        create_update: 'cu'
+        required: true
+      - !ruby/object:Api::Type::String
+        name: 'cidr'
+        description: "the range of available subnets in the vpc"
+        create_update: 'cu'
+        required: true
+      - !ruby/object:Api::Type::String
+        name: 'status'
+        description: "the status of vpc"
+        output: true
+      - !ruby/object:Api::Type::Array
+        name: 'routes'
+        description: "the route information"
+        output: true
+        item_type: !ruby/object:Api::Type::NestedObject
+          properties:
+            - !ruby/object:Api::Type::String
+              name: 'destination'
+              description: "the destination network segment of a route"
+            - !ruby/object:Api::Type::String
+              name: 'next_hop'
+              description: "the next hop of a route"
+              field: 'nexthop'
+      - !ruby/object:Api::Type::Boolean
+        name: 'enable_shared_snat'
+        description: "show whether the shared snat is enabled"
+        output: true
+  - !ruby/object:Api::Resource
+    name: 'Subnet'
+    # kind: 'compute#instance'
+    service_type: 'vpc'
+    base_url: 'subnets'
+    # self_link: v2.0/routers/{{id}}
+    list_url: 'subnets?limit={{limit}}&marker={{marker}}&vpc_id={{vpc_id}}'
+    msg_prefix:
+      create: 'subnet'
+      update: 'subnet'
+      get: 'subnet'
+      list: 'subnets'
+    create_codes:
+      - 200
+    update_codes:
+      - 200
+    description: |
+      Represents an subnet resource.
+    async: !ruby/object:Api::Async
+      operation: !ruby/object:Api::Async::Operation
+        kind: ''
+        # service_type: 'query'
+        path: 'subnet/id'
+        base_url: 'subnets/{{op_id}}'
+        wait_ms: 1000
+      result: !ruby/object:Api::Async::Result
+        base_url: 'subnets/{{op_id}}'
+        path: 'subnet/id'
+      status: !ruby/object:Api::Async::Status
+        path: 'subnet/status'
+        complete:
+          - 'ACTIVE'
+        allowed:
+          - 'UNKNOWN'
+          - 'DONW'
+    properties:
+      - !ruby/object:Api::Type::String
+        name: 'id'
+        description: "the id of subnet"
+        output: true
+      - !ruby/object:Api::Type::String
+        name: 'name'
+        description: "the name of subnet"
+        create_update: 'cu'
+        required: true
+      - !ruby/object:Api::Type::String
+        name: 'cidr'
+        description: "the network segment on which the subnet resides"
+        create_update: 'c'
+        required: true
+      - !ruby/object:Api::Type::String
+        name: 'gateway_ip'
+        description: "the gateway of subnet"
+        create_update: 'c'
+        required: true
+      - !ruby/object:Api::Type::String
+        name: 'vpc_id'
+        description: "the id of vpc"
+        create_update: 'c'
+        required: true
+      - !ruby/object:Api::Type::Boolean
+        name: 'dhcp_enable'
+        description: "specify whether the DHCP function is enabled for the subnet"
+        create_update: 'cu'
+      - !ruby/object:Api::Type::String
+        name: 'primary_dns'
+        description: "specify the ip of DNS server 1 on the subnet"
+        create_update: 'cu'
+      - !ruby/object:Api::Type::String
+        name: 'secondary_dns'
+        description: "specify the ip of DNS server 2 on the subnet"
+        create_update: 'cu'
+      - !ruby/object:Api::Type::Array
+        name: 'dns_list'
+        description: "specify the DNS server address list of a subnet"
+        field: 'dnsList'
+        item_type: Api::Type::String
+        create_update: 'cu'
+      - !ruby/object:Api::Type::String
+        name: 'availability_zone'
+        description: "the availability zone to which the subnet belongs"
+        create_update: 'c'
+      - !ruby/object:Api::Type::String
+        name: 'status'
+        description: "the status of subnet"
+        output: true
