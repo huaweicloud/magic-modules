@@ -12,7 +12,7 @@
 # limitations under the License.
 --- !ruby/object:Provider::Ansible::Example
 task: !ruby/object:Provider::Ansible::Task
-  name: hwc_compute_instance
+  name: otc_compute_instance
   code: |
     identity_endpoint: <%= ctx[:identity_endpoint] %>
     user_name: <%= ctx[:user_name] %>
