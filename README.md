@@ -1,15 +1,11 @@
-[![Build Status](https://travis-ci.org/GoogleCloudPlatform/magic-modules.svg?branch=master)](https://travis-ci.org/GoogleCloudPlatform/magic-modules)
-
-<img src='mm_logo.png' align='right'>
-
 # Magic Modules
 
 
 ## Overview
 
-Magic Modules (MM) is a project to auto-generate management libraries (e.g.
-plugins) for third party tools to operate Google Cloud Platform (GCP) products
-natively.
+Magic Modules is a project to auto-generate management libraries (e.g.
+plugins) for third party tools to operate huawei cloud products
+natively. Magic Modules is based on [magic-modules](https://github.com/GoogleCloudPlatform/magic-modules) which has a great design. Magic Modules has also added some features to support huawei cloud.
 
 
 ## Motivation
@@ -20,13 +16,12 @@ Hashicorp produce open source tools to meet these needs and typically provide
 enterprise versions and support.
 
 Once customers invest in these tools they prefer to use a single management
-system (and style). For this reason Google wants to provide integration for
-these tools, so that our customers have an easier path to GCP versus abandoning
+system (and style). For this reason huawei wants to provide integration for
+these tools, so that our customers have an easier path to huawei cloud versus abandoning
 a tool they're already comfortable with. For example Puppet can provision and
-manage VMs in Compute Engine, databases in Cloud SQL, Google Kubernetes Engine
-clusters, and so on.
+manage VMs in ECS, databases in RDS, CCE clusters, and so on.
 
-But given the breadth of products available in Google Cloud Platform, creating
+But given the breadth of products available in huawei cloud, creating
 modules by hand is quickly becomes inefficient and costly. It would involve too
 much redundant engineering work and create too much code for a team to maintain.
 There is also the issue of explosion of modules, if you consider for
@@ -51,10 +46,10 @@ calls to achieve the object state.
 > Magic Modules will do "whatever it takes" to make it so.
 
 Note that there is not a required 1:1 mapping between objects and API calls to
-GCP. This 1:N mapping is key to the simplicity of the interface exposed to
-users. There are various wrappers out there that can envelope a Google API into
+huawei cloud. This 1:N mapping is key to the simplicity of the interface exposed to
+users. There are various wrappers out there that can envelope a huawei cloud API into
 various languages, e.g. Ruby or Java, but the user needs to know all the
-intricacies of the underlying GCP product API.
+intricacies of the underlying huawei cloud product API.
 
 [Read more about philosophy][philosophy]
 
@@ -118,7 +113,7 @@ Compiling a module is as easy as:
 
     bundle exec compiler -p <product> -e <provider> -o <folder>
 
-For example, to compile Google Compute Engine for Puppet, you invoke:
+For example, to compile huawei cloud ECS for Puppet, you invoke:
 
     bundle exec compiler -p products/compute -e puppet -o build/puppet/compute
 
@@ -133,7 +128,7 @@ a single provider.
 
 The following env variables can be set to have certain providers compile into
 a custom folder. For Terraform and Ansible, only one variable exists. For Chef +
-Puppet, one variable exists per GCP product. Examples include:
+Puppet, one variable exists per huawei cloud product. Examples include:
 
 Platform       | Variable
 ---------------|----------
