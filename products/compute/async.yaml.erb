@@ -1,0 +1,23 @@
+async: !ruby/object:Api::Async
+  operation: !ruby/object:Api::Async::Operation
+    kind: ''
+    # service_type: 'query'
+    path: 'server/id'
+    base_url: 'servers/{{op_id}}'
+    wait_ms: 1000
+<% unless ctx[:timeouts].nil? -%>
+    timeouts: !ruby/object:Api::Async::Operation::Timeouts
+<%= lines(indent(ctx[:timeouts].map { |k, v| "#{k}: #{v}" }, 6)) -%>
+<% end -%>
+  result: !ruby/object:Api::Async::Result
+    base_url: 'servers/{{op_id}}'
+    path: 'server/id'
+  status: !ruby/object:Api::Async::Status
+    path: 'server/status'
+    complete:
+      - 'ACTIVE'
+    allowed:
+      - 'BUILD'
+  error: !ruby/object:Api::Async::Error
+    path: 'server/fault'
+    message: 'server/fault/message'
