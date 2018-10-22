@@ -304,7 +304,7 @@ module Provider
         generate_resource_file data.clone.merge(
           default_template: 'templates/ansible/resource.erb',
           out_file: File.join(target_folder,
-                              "lib/ansible/modules/cloud/google/#{name}.py")
+                              "lib/ansible/modules/cloud/" + @cloud_name + "/#{name}.py")
         )
       end
 
