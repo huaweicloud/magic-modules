@@ -1,0 +1,186 @@
+--- !ruby/object:Api::Product
+name: Telefonica Cloud
+prefix: tnetwork
+versions:
+  - !ruby/object:Api::Product::Version
+    name: v1
+    base_url: ""
+    default: true
+scopes:
+  - "http://scopte"
+objects:
+  - !ruby/object:Api::Resource
+    name: 'ELBLoadBalancer'
+    service_type: 'elb'
+    base_url: '{{project}}/elbaas/loadbalancers'
+    list_url: '{{project}}/elbaas/loadbalancers?name={{name}}'
+    msg_prefix:
+      list: 'loadbalancers'
+    description: |
+      Represents an load balancer resource.
+    async: !ruby/object:Api::Async
+      operation: !ruby/object:Api::Async::Operation
+        path: 'job_id'
+        base_url: 'v1/{{project}}/jobs/{{op_id}}'
+        wait_ms: 3000
+      result: !ruby/object:Api::Async::Result
+        base_url: '{{project}}/elbaas/loadbalancers/{{op_id}}'
+        path: 'entities/elb/id'
+      status: !ruby/object:Api::Async::Status
+        path: 'status'
+        complete:
+          - 'SUCCESS'
+        allowed:
+          - 'RUNNING'
+          - 'INIT'
+      error: !ruby/object:Api::Async::Error
+        path: 'error_code'
+        message: 'fail_reason'
+    parameters:
+      - !ruby/object:Api::Type::String
+        name: 'az'
+        description: |
+          This field is valid when type is set to Internal. If type is set to
+          Internal and an AZ is specified, the specified AZ must support
+          private network load balancers. Otherwise, an error message is
+          returned. 
+        create_update: 'c'
+        input: true
+      - !ruby/object:Api::Type::String
+        name: 'charge_mode'
+        description: |
+          This is a reserved field. If the system supports charging by traffic
+          and this field is specified, you are charged by traffic for elastic
+          IP addresses.
+
+          The value is traffic.
+        create_update: 'c'
+        exclude: true
+        input: true
+      - !ruby/object:Api::Type::String
+        name: 'eip_type'
+        description: "This parameter is reserved."
+        create_update: 'c'
+        exclude: true
+        input: true
+      - !ruby/object:Api::Type::String
+        name: 'tenantId'
+        description: |
+          Specifies the tenant ID.
+
+          This parameter is mandatory when type is set to Internal.
+        create_update: 'c'
+        input: true
+
+    properties:
+      - !ruby/object:Api::Type::Integer
+        name: 'admin_state_up'
+        description: |
+          Specifies the status of the load balancer.
+
+          Optional values:
+
+          0: indicates that the load balancer is stopped. Only tenants are
+          allowed to enter this value.
+
+          1: indicates that the load balancer is running properly.
+
+          2: indicates that the load balancer is frozen. Only tenants are
+          allowed to enter this value.
+        create_update: 'cu'
+        required: true
+      - !ruby/object:Api::Type::Integer
+        name: 'bandwidth'
+        description: |
+          Specifies the bandwidth (Mbit/s). This parameter is mandatory when
+          type is set to External.
+
+          The value ranges from 1 to 300. Nonte: the specific range may vary
+          depending on the configuration in each region.
+        create_update: 'cu'
+      - !ruby/object:Api::Type::String
+        name: 'create_time'
+        description: "Specifies the time when the load balancer was created."
+        output: true
+      - !ruby/object:Api::Type::String
+        name: 'description'
+        description: |
+          Provides supplementary information about the load balancer.
+
+          The value is a string of 0 to 128 characters and cannot contain angle
+          brackets (< and >).
+        create_update: 'cu'
+      - !ruby/object:Api::Type::String
+        name: 'id'
+        description: "Specifies the load balancer ID."
+        output: true
+      - !ruby/object:Api::Type::String
+        name: 'name'
+        description: |
+          Specifies the load balancer name.
+
+          The value is a string of 1 to 64 characters that consist of Chinese
+          characters, letters, digits, underscores (_), and hyphens (-).
+        create_update: 'cu'
+        required: true
+      - !ruby/object:Api::Type::String
+        name: 'security_group_id'
+        description: |
+          Specifies the security group ID.
+
+          The value is a string of 1 to 200 characters that consists of
+          uppercase and lowercase letters, digits, and hyphens (-).
+
+          This parameter is mandatory when type is set to Internal.
+        create_update: 'c'
+      - !ruby/object:Api::Type::Enum
+        name: 'status'
+        description: |
+          Specifies the status of the load balancer.
+
+          The value can be ACTIVE, PENDING_CREATE, or ERROR.
+        output: true
+        values:
+          - :ACTIVE
+          - :PENDING_CREATE
+          - :ERROR
+      - !ruby/object:Api::Type::Enum
+        name: 'type'
+        description: |
+          Specifies the load balancer type.
+
+          The value is Internal or External.
+        create_update: 'c'
+        required: true
+        values:
+          - :Internal
+          - :External
+      - !ruby/object:Api::Type::String
+        name: 'update_time'
+        description: |
+          Specifies the time when information about the load balancer was
+          updated.
+        output: true
+      - !ruby/object:Api::Type::String
+        name: 'vip_address'
+        description: |
+          Specifies the IP address used by ELB for providing services. When
+          type is set to External, the parameter value is the elastic IP
+          address. When type is set to Internal, the parameter value is the
+          private network IP address.
+
+          You can select an existing elastic IP address and create a public
+          network load balancer. When this parameter is configured, parameters
+          bandwidth is invalid.
+        create_update: 'c'
+      - !ruby/object:Api::Type::String
+        name: 'vip_subnet_id'
+        description: |
+          Specifies the subnet ID of backend ECSs. This parameter is mandatory
+          when type is set to Internal.
+        create_update: 'c'
+      - !ruby/object:Api::Type::String
+        name: 'vpc_id'
+        description: "Specifies the VPC ID."
+        create_update: 'c'
+        required: true
