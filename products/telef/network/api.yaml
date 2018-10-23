@@ -184,3 +184,284 @@ objects:
         description: "Specifies the VPC ID."
         create_update: 'c'
         required: true
+  - !ruby/object:Api::Resource
+    name: 'ELBListener'
+    service_type: 'elb'
+    base_url: '{{project}}/elbaas/listeners'
+    list_url: '{{project}}/elbaas/listeners?loadbalancer_id={{loadbalancer_id}}&name={{name}}'
+    description: |
+      Represents an listener resource.
+    async: !ruby/object:Api::Async
+      operation: !ruby/object:Api::Async::Operation
+        path: 'id'
+        base_url: '{{project}}/elbaas/listeners/{{op_id}}'
+        wait_ms: 3000
+      result: !ruby/object:Api::Async::Result
+        base_url: '{{project}}/elbaas/listeners/{{op_id}}'
+        path: 'id'
+      status: !ruby/object:Api::Async::Status
+        path: 'status'
+        complete:
+          - 'ACTIVE'
+        allowed:
+          - 'PENDING_CREATE'
+    properties:
+      - !ruby/object:Api::Type::Boolean
+        name: 'admin_state_up'
+        description: |
+          Specifies the status of the load balancer.
+
+          Optional values:
+
+          false: The load balancer is disabled.
+
+          true: The load balancer is running properly.
+        output: true
+      - !ruby/object:Api::Type::Integer
+        name: 'backend_port'
+        description: "The value ranges from 1 to 65535."
+        create_update: 'cu'
+        required: true
+      - !ruby/object:Api::Type::Enum
+        name: 'backend_protocol'
+        description: |
+          Specifies the backend protocol.
+
+          If the value of protocol is UDP, the parameter value can only be UDP.
+
+          If the value of protocol is SSL, the parameter value can only be TCP.
+
+          The value can be HTTP, TCP, or UDP.
+        create_update: 'c'
+        required: true
+        values:
+          - :HTTP
+          - :TCP
+          - :UDP
+      - !ruby/object:Api::Type::String
+        name: 'certificate_id'
+        description: |
+          Specifies the certificate ID. This parameter is mandatory when
+          protocol is set to HTTPS or SSL.
+
+          The value can be obtained from the details about the SSL certificate.
+        create_update: 'cu'
+      - !ruby/object:Api::Type::Array
+        name: 'certificates'
+        description: |
+          Specifies the SSL certificate ID list if the value of protocol is
+          HTTPS.
+
+          This parameter is mandatory in SNI scenarios.
+
+          This parameter is valid only when the load balancer is a public
+          network load balancer.
+        create_update: 'cu'
+        item_type: Api::Type::String
+      - !ruby/object:Api::Type::Integer
+        name: 'cookie_timeout'
+        description: |
+          Specifies the cookie timeout duration in minutes. This parameter is
+          valid when protocolis set to HTTP, session_sticky to true, and
+          sticky_session_type to insert. This parameter is invalid when
+          protocol is set to TCP, UDP, or SSL.
+
+          The value ranges from 1 to 1440.
+        create_update: 'c'
+      - !ruby/object:Api::Type::String
+        name: 'create_time'
+        description: "Specifies the time when the listener was created."
+        output: true
+      - !ruby/object:Api::Type::String
+        name: 'description'
+        description: |
+          Provides supplementary information about the listener.
+
+          The value is a string of 0 to 128 characters and cannot contain angle
+          brackets (<>).
+        create_update: 'cu'
+      - !ruby/object:Api::Type::String
+        name: 'healthcheck_id'
+        description: "Specifies the health check ID."
+        output: true
+      - !ruby/object:Api::Type::String
+        name: 'id'
+        description: "Specifies the listener ID."
+        output: true
+      - !ruby/object:Api::Type::Enum
+        name: 'lb_algorithm'
+        description: |
+          Specifies the load balancing algorithm.
+
+          The value can be roundrobin, leastconn, or source.
+        create_update: 'cu'
+        required: true
+        values:
+          - :roundrobin
+          - :leastconn
+          - :source
+      - !ruby/object:Api::Type::String
+        name: 'loadbalancer_id'
+        description: |
+          Specifies the ID of the load balancer to which the listener belongs.
+        create_update: 'c'
+        required: true
+      - !ruby/object:Api::Type::Integer
+        name: 'member_number'
+        description: "Specifies the quantity of backend ECSs."
+        output: true
+      - !ruby/object:Api::Type::String
+        name: 'name'
+        description: |
+          Specifies the listener name.
+
+          The value is a string of 1 to 64 characters that consist of Chinese
+          characters, letters, digits, underscores (_), and hyphens (-).
+        create_update: 'cu'
+        required: true
+      - !ruby/object:Api::Type::Integer
+        name: 'port'
+        description: |
+          Specifies the listening port.
+
+          The value ranges from 1 to 65,535.
+        create_update: 'cu'
+        required: true
+      - !ruby/object:Api::Type::Enum
+        name: 'protocol'
+        description: |
+          Specifies the listening protocol used for layer 4 or 7.
+
+          A listener using UDP is not allowed for a private network load
+          balancer.
+
+          The value can be HTTP, TCP, HTTPS, SSL, or UDP.
+        create_update: 'c'
+        required: true
+        values:
+          - :HTTP
+          - :TCP
+          - :HTTPS
+          - :SSL
+          - :UDP
+      - !ruby/object:Api::Type::Boolean
+        name: 'session_sticky'
+        description: |
+          Specifies whether to enable the sticky session feature.
+
+          The value can be true or false. The feature is enabled when the value
+          is true.
+
+          If the value of protocol is SSL, the sticky session is not supported
+          and the parameter is invalid.
+
+          If the value of protocol is HTTP, HTTPS, or TCPand lb_algorithm is
+          not roundrobin, the parameter value can only be false.
+        create_update: 'c'
+      - !ruby/object:Api::Type::Enum
+        name: 'ssl_ciphers'
+        description: |
+          Specifies the cipher suite of an encryption protocol. This parameter
+          is valid only when the value of protocol is set to HTTPS or SSL.
+
+          The value is Default, Extended, or Strict.
+
+          The value of Default is
+          ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES
+          256-SHA384:ECDHE-RSA-AES128-SHA256.
+
+          The value of Extended is
+          ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:AES128-SHA256:AES25
+          6-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDS
+          A-AES128-SHA:ECDHE-RSA-AES128-SHA:DHE-RSA-AES128-SHA:ECDHE-RSA-AES256
+          -SHA:ECDHE-ECDSA-AES256-SHA:AES128-SHA:AES256-SHA:DHE-DSS-AES128-SHA:
+          CAMELLIA128-SHA:EDH-RSA-DES-CBC3-SHA:DES-CBC3-SHA:ECDHE-RSA-RC4-SHA:R
+          C4-SHA:DHE-RSA-AES256-SHA:DHE-DSS-AES256-SHA:DHE-RSA-CAMELLIA256-SHA:
+          DHE-DSS-CAMELLIA256-SHA:CAMELLIA256-SHA:EDH-DSS-DES-CBC3-SHA:DHE-RSA-
+          CAMELLIA128-SHA:DHE-DSS-CAMELLIA128-SHA.
+
+          The value of Strict is
+          ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256.
+
+          The default value is Default. The value can only be set to Extended
+          if the value of ssl_protocols is set to TLSv1.2 TLSv1.1 TLSv1.
+        create_update: 'cu'
+        values:
+          - :Default
+          - :Extended
+          - :Strict
+      - !ruby/object:Api::Type::Enum
+        name: 'ssl_protocols'
+        description: |
+          Specifies the SSL protocol standard supported by a listener.
+
+          This parameter is used for enabling specified encryption protocols
+          and valid only when the value of protocol is set to HTTPS or SSL.
+
+          The value is TLSv1.2 or TLSv1.2 TLSv1.1 TLSv1. The default value is
+          TLSv1.2.
+        create_update: 'cu'
+        values:
+          - :TLSv1.2
+          - :TLSv1.1
+          - :TLSv1
+      - !ruby/object:Api::Type::String
+        name: 'status'
+        description: |
+          Specifies the listener status. The value can be ACTIVE,
+          PENDING_CREATE, or ERROR.
+        output: true
+      - !ruby/object:Api::Type::Enum
+        name: 'sticky_session_type'
+        description: |
+          Specifies the cookie processing method. The value is insert.
+
+          insert indicates that the cookie is inserted by the load balancer.
+          This parameter is valid when protocol is set to HTTP and
+          session_sticky to true. The default value is insert. This parameter
+          is invalid when protocol is set to TCP, SSL, or UDP, which means the
+          parameter is empty.
+        create_update: 'c'
+        values:
+          - :insert
+      - !ruby/object:Api::Type::Boolean
+        name: 'tcp_draining'
+        description: |
+          Specifies whether to maintain the TCP connection to the backend ECS
+          after the ECS is deleted. This parameter is valid when protocol is
+          set to TCP.
+
+          The value can be true or false.
+        create_update: 'cu'
+      - !ruby/object:Api::Type::Integer
+        name: 'tcp_draining_timeout'
+        description: |
+          Specifies the timeout duration (minutes) for the TCP connection to
+          the backend ECS after the ECS is deleted.
+
+          This parameter is valid when protocol is set to TCP and tcp_draining
+          to true.
+
+          The value ranges from 0 to 60.
+        create_update: 'cu'
+      - !ruby/object:Api::Type::Integer
+        name: 'tcp_timeout'
+        description: |
+          Specifies the TCP session timeout duration in minutes. This parameter
+          is valid when protocol is set to TCP.
+
+          The value ranges from 1 to 1440.
+        create_update: 'cu'
+      - !ruby/object:Api::Type::Integer
+        name: 'udp_timeout'
+        description: |
+          Specifies the UDP session timeout duration in minutes. This parameter
+          is valid when protocol is set to UDP.
+
+          The value ranges from 1 to 1440.
+        create_update: 'cu'
+      - !ruby/object:Api::Type::String
+        name: 'update_time'
+        description: |
+          Specifies the time when information about the listener was updated.
+        output: true
