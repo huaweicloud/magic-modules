@@ -465,3 +465,95 @@ objects:
         description: |
           Specifies the time when information about the listener was updated.
         output: true
+  - !ruby/object:Api::Resource
+    name: 'ELBHealthCheck'
+    service_type: 'elb'
+    base_url: '{{project}}/elbaas/healthcheck'
+    description: |
+      Represents an health check resource.
+    properties:
+      - !ruby/object:Api::Type::String
+        name: 'create_time'
+        description: "Specifies the time when the health check was configured."
+        output: true
+      - !ruby/object:Api::Type::Integer
+        name: 'connect_port'
+        description: |
+          Specifies the health check port.
+
+          The value ranges from 1 to 65,535.
+        create_update: 'cu'
+        field: 'healthcheck_connect_port'
+      - !ruby/object:Api::Type::Integer
+        name: 'interval'
+        description: |
+          Specifies the interval between health checks in the unit of second.
+
+          The value ranges from 1 to 50.
+        create_update: 'cu'
+        field: 'healthcheck_interval'
+      - !ruby/object:Api::Type::String
+        name: 'path'
+        description: |
+          Specifies the health check URI. This parameter is valid when protocol
+          is HTTP.
+
+          The value is a string of 1 to 80 characters that must start with a
+          slash (/). Only contain letters, digits, and special characters such
+          as -/.%?#&_= can be contained.
+        create_update: 'cu'
+        field: 'healthcheck_path'
+      - !ruby/object:Api::Type::Enum
+        name: 'protocol'
+        description: |
+          Specifies the health check protocol.
+
+          The value can be HTTP or TCP (case-insensitive).
+        create_update: 'cu'
+        field: 'healthcheck_protocol'
+        values:
+          - :HTTP
+          - :TCP
+      - !ruby/object:Api::Type::Integer
+        name: 'timeout'
+        description: |
+          Specifies the maximum timeout duration of a health check in the unit
+          of second.
+
+          The value ranges from 1 to 50.
+        create_update: 'cu'
+        field: 'healthcheck_timeout'
+      - !ruby/object:Api::Type::Integer
+        name: 'healthy_threshold'
+        description: |
+          Specifies the threshold at which the health check result is success,
+          that is, the number of consecutive successful health checks when the
+          health check result of backend ECSs changes from fail to success.
+
+          The value ranges from 1 to 10.
+        create_update: 'cu'
+      - !ruby/object:Api::Type::String
+        name: 'id'
+        description: "Specifies the health check ID."
+        output: true
+      - !ruby/object:Api::Type::String
+        name: 'listener_id'
+        description: |
+          Specifies the ID of the listener to which the health check belongs.
+        create_update: 'c'
+        required: true
+      - !ruby/object:Api::Type::Integer
+        name: 'unhealthy_threshold'
+        description: |
+          Specifies the threshold at which the health check result is fail,
+          that is, the number of consecutive failed health checks when the
+          health check result of backend ECSs changes from success to fail.
+
+          The value ranges from 1 to 10.
+        create_update: 'cu'
+      - !ruby/object:Api::Type::String
+        name: 'update_time'
+        description: |
+          Specifies the time when information about the health check was
+          updated.
+        output: true
