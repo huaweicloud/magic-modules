@@ -471,6 +471,7 @@ objects:
     base_url: '{{project}}/elbaas/healthcheck'
     description: |
       Represents an health check resource.
+    list_url: '{{project}}/elbaas/healthcheck'
     properties:
       - !ruby/object:Api::Type::String
         name: 'create_time'
@@ -557,3 +558,154 @@ objects:
           Specifies the time when information about the health check was
           updated.
         output: true
+  - !ruby/object:Api::Resource
+    name: 'DNSRecordSet'
+    service_type: 'dns'
+    base_url: 'v2/zones/{{availability_zone_id}}/recordsets'
+    list_url: 'v2/zones/{{availability_zone_id}}/recordsets?limit=10&marker={{marker}}'
+    description: |
+      Represents a record set resource.
+    async: !ruby/object:Api::Async
+      operation: !ruby/object:Api::Async::Operation
+        path: 'id'
+        base_url: 'v2/zones/{{availability_zone_id}}/recordsets/{{op_id}}'
+        wait_ms: 3000
+      result: !ruby/object:Api::Async::Result
+        base_url: 'v2/zones/{{availability_zone_id}}/recordsets/{{op_id}}'
+        path: 'id'
+      status: !ruby/object:Api::Async::Status
+        path: 'status'
+        complete:
+          - 'ACTIVE'
+        allowed:
+          - 'PENDING_CREATE'
+      update_status: !ruby/object:Api::Async::Status
+        path: 'status'
+        complete:
+          - 'ACTIVE'
+        allowed:
+          - 'PENDING_UPDATE'
+    parameters:
+      - !ruby/object:Api::Type::Array
+        name: 'tags'
+        description: "Resource tag."
+        create_update: 'c'
+        input: true
+        item_type: !ruby/object:Api::Type::NestedObject
+          properties:
+            - !ruby/object:Api::Type::String
+              name: 'key'
+              description: |
+                Tag key. The key contains 36 Unicode characters at most and
+                cannot be blank. It cannot contain the following characters:
+                =*<>\,|/ nor start or end with a space.
+              required: true
+            - !ruby/object:Api::Type::String
+              name: 'value'
+              description: |
+                Tag value. Each value contains 43 Unicode characters at most
+                and can be an empty string. It cannot contain the following
+                characters: =*<>\,|/ nor start or end with a space.
+              required: true
+    properties:
+      - !ruby/object:Api::Type::String
+        name: 'create_at'
+        description: "Time when the record set was created"
+        output: true
+      - !ruby/object:Api::Type::Boolean
+        name: 'default'
+        description: |
+          Whether the record set is created by default
+
+          A default record set cannot be deleted or modified.
+        output: true
+      - !ruby/object:Api::Type::String
+        name: 'description'
+        description: |
+          (Optional) Description of the domain name, which must not exceed 255
+          characters
+        create_update: 'cu'
+      - !ruby/object:Api::Type::String
+        name: 'id'
+        description: "Record set ID"
+        output: true
+      - !ruby/object:Api::Type::String
+        name: 'name'
+        description: |
+          Fully qualified domain name (FQDN) suffixed with a zone name, which
+          is a complete host name ended with a dot
+
+          A domain name is case insensitive. Uppercase letters will also be
+          converted into lowercase letters.
+        create_update: 'c'
+        required: true
+      - !ruby/object:Api::Type::String
+        name: 'project_id'
+        description: "Project ID of the record set"
+        exclude: true
+        output: true
+      - !ruby/object:Api::Type::Array
+        name: 'records'
+        description: |
+          Record set value, which varies depending on the record set type.
+
+          For example, the value of an AAAA record set is the IPv6 address list
+          mapped to the domain name.
+
+          For details, see section "Managing Record Sets" in the Domain Name
+          Service User Guide.
+        create_update: 'cu'
+        item_type: Api::Type::String
+        required: true
+      - !ruby/object:Api::Type::Enum
+        name: 'status'
+        description: |
+          Resource status
+
+          The value can be PENDING_CREATE, ACTIVE, PENDING_UPDATE,
+          PENDING_DELETE, or ERROR.
+        output: true
+        values:
+          - :PENDING_CREATE
+          - :ACTIVE
+          - :PENDING_UPDATE
+          - :PENDING_DELETE
+          - :ERROR
+      - !ruby/object:Api::Type::Integer
+        name: 'ttl'
+        description: |
+          Caching period of the record set (in seconds)
+
+          The default value is 300s.
+
+          The value ranges from  300 to 2147483647.
+        create_update: 'cu'
+      - !ruby/object:Api::Type::Enum
+        name: 'type'
+        description: |
+          Record set type
+
+          The value can be A, AAAA, MX, CNAME, TXT, NS (only in public zones),
+          SRV, PTR (only in private zones), and CAA (only in public zones).
+        create_update: 'c'
+        required: true
+        values:
+          - :A
+          - :AAAA
+          - :MX
+          - :CNAME
+          - :TXT
+          - :NS
+          - :SRV
+          - :PTR
+          - :CAA
+      - !ruby/object:Api::Type::String
+        name: 'update_at'
+        description: "Time when the record set was updated"
+        output: true
+      - !ruby/object:Api::Type::String
+        name: 'dns_zone_id'
+        description: "The id of a dns zone"
+        create_update: 'c'
+        field: 'zone_id'
+        required: true
