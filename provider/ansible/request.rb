@@ -128,14 +128,14 @@ module Provider
           [
             "#{prop.property_class[-1]}(",
             "#{hash_name}.get(#{unicode_string(fn)}, {})",
-            ", #{module_name}).from_response()"
+            ").from_response()"
           ].join
         elsif prop.is_a?(Api::Type::Array) && \
               prop.item_type.is_a?(Api::Type::NestedObject)
           [
             "#{prop.property_class[-1]}(",
             "#{hash_name}.get(#{unicode_string(fn)}, [])",
-            ", #{module_name}).from_response()"
+            ").from_response()"
           ].join
         else
           "#{hash_name}.get(#{unicode_string(fn)})"
@@ -157,14 +157,14 @@ module Provider
           [
             "#{prop.property_class[-1]}(",
             "#{hash_name}.get(#{quote_string(prop.out_name)}, {})",
-            ", #{module_name}).to_request()"
+            ").to_request()"
           ].join
         elsif prop.is_a?(Api::Type::Array) && \
               prop.item_type.is_a?(Api::Type::NestedObject)
           [
             "#{prop.property_class[-1]}(",
             "#{hash_name}.get(#{quote_string(prop.out_name)}, [])",
-            ", #{module_name}).to_request()"
+            ").to_request()"
           ].join
         elsif prop.is_a?(Api::Type::ResourceRef) && !prop.resource_ref.virtual
           prop_name = Google::StringUtils.underscore(prop.name)
