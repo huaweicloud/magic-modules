@@ -24,6 +24,14 @@ manifest: !ruby/object:Provider::Ansible::Manifest
   version_added: '2.7'
   author: 'Huawei Inc. (@huaweicloud)' 
 overrides: !ruby/object:Provider::ResourceOverrides
+  DNSZone: !ruby/object:Provider::Ansible::ResourceOverride
+    check_items:
+      - name
+    properties:
+      vpc: !ruby/object:Provider::Ansible::PropertyOverride
+        from_response: |
+          if value:
+              return {class}(value[0]).from_response()
 # This is where custom code would be defined eventually.
 examples: !ruby/object:Api::Resource::HashArray
 files: !ruby/object:Provider::Config::Files

@@ -561,17 +561,17 @@ objects:
   - !ruby/object:Api::Resource
     name: 'DNSRecordSet'
     service_type: 'dns'
-    base_url: 'v2/zones/{{availability_zone_id}}/recordsets'
-    list_url: 'v2/zones/{{availability_zone_id}}/recordsets?limit=10&marker={{marker}}'
+    base_url: 'v2/zones/{{dns_zone_id}}/recordsets'
+    list_url: 'v2/zones/{{dns_zone_id}}/recordsets?limit=10&marker={{marker}}'
     description: |
       Represents a record set resource.
     async: !ruby/object:Api::Async
       operation: !ruby/object:Api::Async::Operation
         path: 'id'
-        base_url: 'v2/zones/{{availability_zone_id}}/recordsets/{{op_id}}'
+        base_url: 'v2/zones/{{dns_zone_id}}/recordsets/{{op_id}}'
         wait_ms: 3000
       result: !ruby/object:Api::Async::Result
-        base_url: 'v2/zones/{{availability_zone_id}}/recordsets/{{op_id}}'
+        base_url: 'v2/zones/{{dns_zone_id}}/recordsets/{{op_id}}'
         path: 'id'
       status: !ruby/object:Api::Async::Status
         path: 'status'
@@ -709,3 +709,175 @@ objects:
         create_update: 'c'
         field: 'zone_id'
         required: true
+  - !ruby/object:Api::Resource
+    name: 'DNSZone'
+    service_type: 'dns'
+    base_url: 'v2/zones'
+    list_url: 'v2/zones?type={{type}}limit=10&marker={{marker}}'
+    msg_prefix:
+      list: 'zones'
+    description: |
+      Represents a zone resource.
+    async: !ruby/object:Api::Async
+      operation: !ruby/object:Api::Async::Operation
+        path: 'id'
+        base_url: 'v2/zones/{{op_id}}'
+        wait_ms: 3000
+      result: !ruby/object:Api::Async::Result
+        base_url: 'v2/zones/{{op_id}}'
+        path: 'id'
+      status: !ruby/object:Api::Async::Status
+        path: 'status'
+        complete:
+          - 'ACTIVE'
+        allowed:
+          - 'PENDING_CREATE'
+      update_status: !ruby/object:Api::Async::Status
+        path: 'status'
+        complete:
+          - 'ACTIVE'
+        allowed:
+          - 'PENDING_UPDATE'
+    parameters:
+      - !ruby/object:Api::Type::NestedObject
+        name: 'tags'
+        description: "Resource tag. "
+        create_update: 'c'
+        input: true
+        properties:
+          - !ruby/object:Api::Type::String
+            name: 'key'
+            description: |
+              Tag key. The key contains 36 Unicode characters at most and
+              cannot be blank. It cannot contain the following characters:
+              =*<>\,|/ nor start or end with a space.
+            required: true
+          - !ruby/object:Api::Type::String
+            name: 'value'
+            description: |
+              Tag value. Each value contains 43 Unicode characters at most and
+              can be an empty string. It cannot contain the following
+              characters: =*<>\,|/ nor start or end with a space.
+            required: true
+
+    properties:
+      - !ruby/object:Api::Type::String
+        name: 'created_at'
+        description: "Time when the zone was created"
+        output: true
+      - !ruby/object:Api::Type::String
+        name: 'description'
+        description: |
+          Description of the domain name, which cannot exceed 255 characters
+        create_update: 'cu'
+      - !ruby/object:Api::Type::String
+        name: 'email'
+        description: "Email address of the administrator managing the zone"
+        create_update: 'cu'
+      - !ruby/object:Api::Type::String
+        name: 'id'
+        description: "Zone ID, which is a UUID used to identify the zone"
+        output: true
+      - !ruby/object:Api::Type::Array
+        name: 'masters'
+        description: |
+          Master DNS servers, from which the slave servers get DNS information
+        item_type: Api::Type::String
+        output: true
+      - !ruby/object:Api::Type::String
+        name: 'name'
+        description: |
+          Domain name of the zone to be created
+
+          If a domain name is ended with a dot (.), it cannot exceed 254
+          characters.
+
+          Otherwise, the domain name cannot exceed 253 characters.
+
+          Labels of a domain name are separated by dot (.). Each label cannot
+          exceed 63 characters.
+
+          A domain name is case insensitive. Uppercase letters will also be
+          converted into lowercase letters.
+        create_update: 'c'
+        required: true
+      - !ruby/object:Api::Type::String
+        name: 'pool_id'
+        description: "Pool ID of the zone, which is assigned by the system"
+        output: true
+      - !ruby/object:Api::Type::String
+        name: 'project_id'
+        description: "Project ID of the zone"
+        exclude: true
+        output: true
+      - !ruby/object:Api::Type::Integer
+        name: 'record_num'
+        description: "Number of record sets in the zone"
+        output: true
+      - !ruby/object:Api::Type::NestedObject
+        name: 'vpc'
+        description: |
+          VPC associated with the private zone, it is mandatory when the value
+          of zone_type is private.
+        create_update: 'c'
+        field: 'router/routers'
+        properties:
+          - !ruby/object:Api::Type::String
+            name: 'vpc_id'
+            description: "VPC ID"
+            field: 'router_id'
+            required: true
+          - !ruby/object:Api::Type::String
+            name: 'region'
+            description: |
+              Region of the VPC
+
+              If it is left blank, the region of the project in the token takes
+              effect by default.
+            field: 'router_region'
+        required: true
+      - !ruby/object:Api::Type::Integer
+        name: 'serial'
+        description: |
+          Serial number in the SOA record set in the zone, which identifies the
+          change on the primary DNS server
+        output: true
+      - !ruby/object:Api::Type::Enum
+        name: 'status'
+        description: |
+          Resource status
+
+          The value can be PENDING_CREATE, ACTIVE, PENDING_DELETE, or ERROR.
+        output: true
+        values:
+          - :PENDING_CREATE
+          - :ACTIVE
+          - :PENDING_DELETE
+          - :ERROR
+      - !ruby/object:Api::Type::Integer
+        name: 'ttl'
+        description: |
+          Caching period of the SOA record set (in seconds)
+
+          The default value is 300s.
+
+          The value ranges from 300 to 2147483647.
+        create_update: 'cu'
+      - !ruby/object:Api::Type::String
+        name: 'updated_at'
+        description: "Time when the zone was updated"
+        output: true
+      - !ruby/object:Api::Type::Enum
+        name: 'type'
+        description: |
+          Zone type, the value of which can be public or private
+
+          public: public zones accessible to hosts on the Internet
+
+          private: private zones accessible only to hosts in specified VPCs
+        create_update: 'c'
+        field: 'zone_type'
+        required: true
+        values:
+          - :public
+          - :private
