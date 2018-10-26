@@ -205,6 +205,17 @@ module Provider
         end
         true
       end
+
+      def send_request(code, code_if_error = "", module_name = "module", handle_404_code = "")
+        [
+          "try:",
+          indent(code, 4),
+          ("except HwcRequestException404:" unless handle_404_code.empty?),
+          (indent(handle_404_code, 4) unless handle_404_code.empty?),
+          "except HwcRequestException" + (code_if_error.empty? ? " as ex:" : ":"),
+          indent(code_if_error.empty? ? module_name + ".fail_json(msg=ex.message)" : code_if_error, 4),
+        ].compact
+      end
     end
     # rubocop:enable Metrics/ModuleLength
   end
