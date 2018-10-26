@@ -71,7 +71,9 @@ RETURN = '''
 from ansible.module_utils.hwc_utils import (HwcSession, HwcModule,
                                             DictComparison, navigate_hash,
                                             remove_nones_from_dict,
-                                            remove_empty_from_dict)
+                                            remove_empty_from_dict,
+                                            HwcRequestException,
+                                            HwcRequestException404)
 <%
   imports = ['json']
   imports << 'time' if object.async
@@ -154,12 +156,6 @@ def main():
 <% end -%>
 
 <% if object.self_link_query.nil? -%>
-<%
-  method_fetch = method_call('fetch_resource', ['session', 'link',
-                                                ('kind' if object.kind?),
-                                                ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
-                                               ])
--%>
 <%   if self_link_url(object).match('/{id}') -%>
     if not module.params.get("id"):
         module.params['id'] = get_resource_id(session)
@@ -268,18 +264,12 @@ def main():
 -%>
     module = session.module
 <%
-  method = method_call(
-    'return_if_object',
-    ['module',
-     method_call("session#{create_verb}",
-                 ['link', 'resource_to_create(module)']),
-     ('kind' if !object.async && object.kind?),
-     'success_codes'
-   ]
-  )
+  method = indent(send_request(
+     "r = " + method_call("session#{create_verb}", ['link', 'resource_to_create(module)'])
+  ), 4)
 -%>
 <%   unless object.async -%>
-    r = <%= method %>
+<%= method %>
 <%     if object.msg_prefix('create') -%>
     r = r.get(<%= quote_string(object.msg_prefix('create')) -%>)
 <%     end  # object.msg_prefix -%>
@@ -290,7 +280,7 @@ def main():
         r.update(v)
     return r
 <%   else -%>
-    r = <%= method %>
+<%= method %>
 
 <%     if is_standard_async -%>
 <%       if  object.async.operation.timeouts -%>
@@ -301,17 +291,15 @@ def main():
 <%       end -%>
 
     url = resource_get_url(session, wait_done)
-<%
-  method = method_call('fetch_resource', ['session', 'url',
-                                          ('kind' if object.kind?),
-                                          ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
-                                         ])
--%>
 <%       if object.msg_prefix('get') -%>
-    r = <%= method %>
+<%=
+  indent(send_request("r = session.get(url)"), 4)
+%>
     return r.get(<%= quote_string(object.msg_prefix('get')) -%>)
 <%       else -%>
-    return <%= method %>
+<%=
+  indent(send_request("return session.get(url)"), 4)
+%>
 <%       end  # object.msg_prefix -%>
 <%     else # if is_standard_async -%>
 <%       if  object.async.status.allowed -%>
@@ -357,22 +345,16 @@ def main():
         success_codes = [201, 202]
     module = session.module
 <%
-  method = method_call(
-    'return_if_object',
-    [
-     'module',
-     method_call("session.put", ['link', 'resource_to_update(module)']),
-     ('kind' if !object.async && object.kind?),
-     'success_codes'
-   ]
-  )
+  method = indent(send_request(
+    (object.async ? "r = " : "") + method_call("session.put", ['link', 'resource_to_update(module)']),
+  ), 4)
 -%>
 <%   unless object.async -%>
-    <%= method %>
+<%= method %>
 
     return get_resource(session)
 <%   else -%>
-    r = <%= method %>
+<%= method %>
 
 <%     if is_standard_async -%>
 <%       if  object.async.operation.timeouts -%>
@@ -383,17 +365,15 @@ def main():
 <%       end -%>
 
     url = resource_get_url(session, wait_done)
-<%
-  method = method_call('fetch_resource', ['session', 'url',
-                                          ('kind' if object.kind?),
-                                          ('[' + object.get_codes.join(', ') + ']' if object.get_codes)
-                                         ])
--%>
 <%       if object.msg_prefix('get') -%>
-    r = <%= method %>
+<%=
+  indent(send_request("r = session.get(url)"), 4)
+%>
     return r.get(<%= quote_string(object.msg_prefix('get')) -%>)
 <%       else -%>
-    return <%= method %>
+<%=
+  indent(send_request("return session.get(url)"), 4)
+%>
 <%       end  # object.msg_prefix -%>
 <%     else # if is_standard_async -%>
 <%       if  object.async.update_status.allowed -%>
@@ -438,30 +418,16 @@ def main():
     if not success_codes:
         success_codes = [202, 204]
 <%
-  method = method_call(
-    'return_if_object',
-    ['session.module',
-     method_call("session.delete", ['link']),
-     ('kind' if !object.async && object.kind?),
-     'success_codes',
-     'False'
-   ]
-  )
-
-  method1 = method_call(
-    'return_if_object',
-    ['session.module',
-     method_call("session.delete", ['link']),
-     ('kind' if !object.async && object.kind?),
-     'success_codes'
-   ]
-  )
+  method = indent(send_request(
+    (object.async && is_standard_async ? "r = " : "" ) + method_call("session.delete", ['link']),
+    "", "session.module"
+  ), 4)
 -%>
 <%   unless object.async -%>
-    <%= method %>
+<%= method %>
 <%   else -%>
 <%     unless is_standard_async -%>
-    <%= method %>
+<%= method %>
 
 <%       if  object.async.operation.timeouts -%>
     wait_for_delete(session, link, <%= object.async.operation.timeouts.delete_sec -%>)
@@ -470,7 +436,7 @@ def main():
     wait_for_delete(session, link, timeout)
 <%       end -%>
 <%     else -%>
-    r = <%= method1 %>
+<%= method %>
 
 <%       if  object.async.operation.timeouts -%>
     wait_for_operation(session, r, <%= object.async.operation.timeouts.delete_sec -%>)
@@ -486,7 +452,7 @@ def main():
 
 
 <% end # unless object.virtual -%>
-<%= lines(compile('templates/ansible/transport.erb'), 2) -%>
+<% # lines(compile('templates/ansible/transport.erb'), 2) -%>
 def get_resource(session):
     link = self_link(session)
     # the link will include Nones if required format parameters are missed
@@ -494,25 +460,31 @@ def get_resource(session):
         return None
 
 <% unless object.msg_prefix('get') || (not externals.empty?) -%>
-    return <%= method_fetch %>
+<%=
+  indent(send_request(
+    "return session.get(link)", "", "session.module", "return None"
+  ), 4)
+%>
 <% else -%>
-    fetch = <%= method_fetch %>
-    if not fetch:
-        return fetch
+<%=
+  indent(send_request(
+    "r = session.get(link)", "", "session.module", "return None"
+  ), 4)
+%>
 <%  unless externals.empty? -%>
 <%   if object.msg_prefix('get') -%>
-    fetch = fetch.get(<%= quote_string(object.msg_prefix('get')) %>)
+    r = r.get(<%= quote_string(object.msg_prefix('get')) %>)
 <%   end -%>
 
 <%   externals.each do |p| -%>
-    r = <%= p.property_class[-1] -%>ExProperty(session).fetch()
-    if isinstance(r, dict):
-        fetch.update(r)
+    fetch = <%= p.property_class[-1] -%>ExProperty(session).fetch()
+    if isinstance(fetch, dict):
+        r.update(fetch)
 
 <%   end -%>
-    return fetch
+    return r
 <%  else -%>
-    return fetch.get(<%= quote_string(object.msg_prefix('get')) %>)
+    return r.get(<%= quote_string(object.msg_prefix('get')) %>)
 <%  end -%>
 <% end -%>
 
@@ -674,7 +646,9 @@ def get_resource_id(session):
     link = list_link(session)
 <%  end -%>
 <%  if (['{marker}', '{offset}'] - list_url_format_keys).length == 2 # no need page -%>
-    r = fetch_resource(session, link)
+<%=
+  indent(send_request("r = session.get(link)", "", "module", "return None"), 4)
+%>
     if r is None:
         return None
 <%    if object.msg_prefix('list') -%>
@@ -702,7 +676,9 @@ def get_resource_id(session):
 <%    end -%>
     ids = set()
     while True:
-        r = fetch_resource(session, link.format(**p))
+<%=
+  indent(send_request("r = session.get(link.format(**p))", "", "module", "break"), 8)
+%>
         if r is None:
             break
 <%    if object.msg_prefix('list') -%>
@@ -767,46 +743,6 @@ def get_resource_id(session):
     end
   end
 -%>
-<%=
-  lines(method_decl('return_if_object', ['module', 'response',
-                                         ('kind' if object.kind?),
-                                         'success_codes', 'has_content=True']))
--%>
-    code = response.status_code
-
-    # If not found, return nothing.
-    if code == 404:
-        return None
-
-    success_codes = [200, 201, 202, 203, 204, 205, 206, 207, 208, 226]
-    # If no content, return nothing.
-    if code in success_codes and not has_content:
-        return None
-
-    result = None
-    try:
-        result = response.json()
-    except getattr(json.decoder, 'JSONDecodeError', ValueError) as inst:
-        module.fail_json(msg="Invalid JSON response with error: %s" % inst)
-
-<% if object.decoder? -%>
-    result = <%= object.transport.decoder -%>(result, module)
-
-<% end -%>
-    if code not in success_codes:
-        for i in [['message'], ['error', 'message']]:
-            msg = navigate_hash(result, i)
-            if msg:
-                module.fail_json(msg="request failed, %s" % msg)
-                break
-        else:
-            module.fail_json(msg="request failed, return code=%d" % code)
-<% if object.kind? -%>
-    if result['kind'] != kind:
-        module.fail_json(msg="Incorrect result: {kind}".format(**result))
-<% end # object.kind? -%>
-
-    return result
 
 
 <% unless no_ex_properties && resource_editable_ps.empty? -%>

@@ -43,11 +43,15 @@ def wait_for_completion(session, url, timeout):
     module = session.module
     end = time.time() + timeout
     while time.time() <= end:
-        try:
-            op_result = fetch_resource(session, url)
-        except Exception:
-            time.sleep(<%= check_interval %>)
-            continue
+<%=
+  indent(send_request(
+    "op_result = session.get(url)",
+    [
+      "time.sleep(#{check_interval})",
+      "continue"
+    ]
+  ), 8)
+%>
 
         raise_if_errors(op_result, module)
 
@@ -72,11 +76,15 @@ def wait_for_completion(session, op_uri, timeout, complete_states, allowed_state
     module = session.module
     end = time.time() + timeout
     while time.time() <= end:
-        try:
-            op_result = fetch_resource(session, op_uri)
-        except Exception:
-            time.sleep(<%= check_interval %>)
-            continue
+<%=
+  indent(send_request(
+    "op_result = session.get(op_uri)",
+    [
+      "time.sleep(#{check_interval})",
+      "continue"
+    ]
+  ), 8)
+%>
 
 <%       if object.async.error -%>
         raise_if_errors(op_result, module)
@@ -101,11 +109,15 @@ def wait_for_completion(session, op_uri, timeout, is_complete):
     module = session.module
     end = time.time() + timeout
     while time.time() <= end:
-        try:
-            op_result = fetch_resource(session, op_uri)
-        except Exception:
-            time.sleep(<%= check_interval %>)
-            continue
+<%=
+  indent(send_request(
+    "op_result = session.get(op_uri)",
+    [
+      "time.sleep(#{check_interval})",
+      "continue"
+    ]
+  ), 8)
+%>
 
 <%       if object.async.error -%>
         raise_if_errors(op_result, module)
@@ -122,12 +134,9 @@ def wait_for_completion(session, op_uri, timeout, is_complete):
 def wait_for_delete(session, link, timeout):
     end = time.time() + timeout
     while time.time() <= end:
-        try:
-            resp = session.get(link)
-            if resp.status_code == 404:
-                return
-        except Exception:
-            pass
+<%=
+  indent(send_request("session.get(link)", "pass", "", "return"), 8)
+%>
 
         time.sleep(<%= check_interval %>)
 
