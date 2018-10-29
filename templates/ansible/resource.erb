@@ -144,7 +144,8 @@ def main():
 -%>
     module = HwcModule(
         argument_spec=dict(
-            state=dict(default='present', choices=['present', 'absent'], type='str'),
+            state=dict(default='present', choices=['present', 'absent'],
+                       type='str'),
 <%= lines(indent_list(mod_props, 12)) -%>
         )
     )
