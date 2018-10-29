@@ -20,6 +20,7 @@ module Api
     attr_reader :result
     attr_reader :status
     attr_reader :error
+    attr_reader :async_methods
 
     def validate
       super
@@ -29,6 +30,7 @@ module Api
       check_property :status, Status
       check_optional_property :error, Error
       check_optional_property :update_status, Status
+      check_optional_property :aync_methods, Array
     end
 
     def update_status
