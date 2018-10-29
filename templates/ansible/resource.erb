@@ -266,7 +266,7 @@ def main():
      "r = " + method_call("session#{create_verb}", ['link', 'resource_to_create(module)'])
   ), 4)
 -%>
-<%   unless object.async -%>
+<%   unless object.async && (object.async.async_methods.nil? || object.async.async_methods.include?("create")) -%>
 <%= method %>
 <%     if object.msg_prefix('create') -%>
     r = r.get(<%= quote_string(object.msg_prefix('create')) -%>)
@@ -340,17 +340,20 @@ def main():
 -%>
 <% if object.update.nil? -%>
     module = session.module
-<%
-  method = indent(send_request(
-    (object.async ? "r = " : "") + method_call("session.put", ['link', 'resource_to_update(module)']),
+<%   unless object.async && (object.async.async_methods.nil? || object.async.async_methods.include?("update"))-%>
+<%=
+  indent(send_request(
+    method_call("session.put", ['link', 'resource_to_update(module)'])
   ), 4)
--%>
-<%   unless object.async -%>
-<%= method %>
+%>
 
     return get_resource(session)
 <%   else -%>
-<%= method %>
+<%=
+  indent(send_request(
+    "r = " + method_call("session.put", ['link', 'resource_to_update(module)'])
+  ), 4)
+%>
 
 <%     if is_standard_async -%>
 <%       if  object.async.operation.timeouts -%>
@@ -411,18 +414,23 @@ def main():
                               ]))
 -%>
 <% if object.delete.nil? -%>
-<%
-  method = indent(send_request(
-    (object.async && is_standard_async ? "r = " : "" ) + method_call("session.delete", ['link']),
-    "", "session.module"
+<%   unless object.async && (object.async.async_methods.nil? || object.async.async_methods.include?("delete")) -%>
+<%=
+  indent(send_request(
+    method_call("session.delete", ['link']), "", "session.module"
   ), 4)
--%>
-<%   unless object.async -%>
-<%= method %>
+%>
 <%   else -%>
 <%     unless is_standard_async -%>
-<%= method %>
+<%=
+  indent(send_request(
+    method_call("session.delete", ['link']), "", "session.module"
+  ), 4)
+%>
 
+<%       if object.delete_url -%>
+    link = self_link(session)
+<%       end -%>
 <%       if  object.async.operation.timeouts -%>
     wait_for_delete(session, link, <%= object.async.operation.timeouts.delete_sec -%>)
 <%       else -%>
@@ -430,7 +438,11 @@ def main():
     wait_for_delete(session, link, timeout)
 <%       end -%>
 <%     else -%>
-<%= method %>
+<%=
+  indent(send_request(
+    "r = " + method_call("session.delete", ['link']), "", "session.module"
+  ), 4)
+%>
 
 <%       if  object.async.operation.timeouts -%>
     wait_for_operation(session, r, <%= object.async.operation.timeouts.delete_sec -%>)

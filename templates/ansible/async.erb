@@ -141,6 +141,7 @@ def wait_for_completion(session, op_uri, timeout, is_complete):
 
     module.fail_json(msg="Timeout to wait completion")
 <%     end # object.async.status.allowed -%>
+<%     if (object.async.async_methods.nil? || object.async.async_methods.include?("delete")) -%>
 
 
 def wait_for_delete(session, link, timeout):
@@ -153,6 +154,7 @@ def wait_for_delete(session, link, timeout):
         time.sleep(<%= check_interval %>)
 
     session.module.fail_json(msg="Timeout to wait for deletion to be completed")
+<%     end -%>
 <%   end # is_standard_async -%>
 <%   if object.async.error -%>
 
