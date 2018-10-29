@@ -122,19 +122,19 @@ module Provider
         if prop.from_response
           [
             "#{invoker}_#{prop.out_name}_convert_from_response(",
-            "#{hash_name}.get(#{quote_string(fn)}))",
+            "\n    #{hash_name}.get(#{quote_string(fn)}))",
           ].join
         elsif prop.is_a? Api::Type::NestedObject
           [
             "#{prop.property_class[-1]}(",
-            "#{hash_name}.get(#{unicode_string(fn)}, {})",
+            "\n    #{hash_name}.get(#{unicode_string(fn)}, {})",
             ").from_response()"
           ].join
         elsif prop.is_a?(Api::Type::Array) && \
               prop.item_type.is_a?(Api::Type::NestedObject)
           [
             "#{prop.property_class[-1]}(",
-            "#{hash_name}.get(#{unicode_string(fn)}, [])",
+            "\n    #{hash_name}.get(#{unicode_string(fn)}, [])",
             ").from_response()"
           ].join
         else
