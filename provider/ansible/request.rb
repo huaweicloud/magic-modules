@@ -210,10 +210,10 @@ module Provider
         [
           "try:",
           indent(code, 4),
-          ("except HwcRequestException404:" unless handle_404_code.empty?),
+          ("except HwcClientException404:" unless handle_404_code.empty?),
           (indent(handle_404_code, 4) unless handle_404_code.empty?),
-          "except HwcRequestException" + (code_if_error.empty? ? " as ex:" : ":"),
-          indent(code_if_error.empty? ? module_name + ".fail_json(msg=ex.message)" : code_if_error, 4),
+          "except HwcClientException" + (code_if_error.empty? ? " as ex:" : ":"),
+          indent(code_if_error.empty? ? module_name + ".fail_json(msg=str(ex))" : code_if_error, 4),
         ].compact
       end
     end

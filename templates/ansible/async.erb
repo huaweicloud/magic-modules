@@ -15,11 +15,23 @@ def resource_get_url(session, wait_done):
     combined = session.module.params.copy()
     combined['op_id'] = navigate_hash(wait_done, <%= res_path -%>)
 <% if res_url.include? '{project}' -%>
-    combined['project'] = session.get_project_id()
+<%=
+  indent(send_request(
+    "combined['project'] = session.get_project_id()",
+    "", "session.module"
+  ), 4)
+%>
+
 <% end-%>
     url = <%=quote_string(res_url)%>.format(**combined)
 
-    endpoint = session.get_service_endpoint(<%=quote_string(object.service_type)%>)
+<%=
+  indent(send_request(
+    "endpoint = session.get_service_endpoint(\"#{object.service_type}\")",
+    "", "session.module"
+  ), 4)
+%>
+
     return endpoint + url
 
 
