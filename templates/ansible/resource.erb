@@ -237,9 +237,9 @@ def main():
 <% end # object.virtual -%>
 
     module.exit_json(**fetch)
-
-
 <% unless object.virtual -%>
+
+
 <%# TODO: kind param not always needed.
   # https://github.com/GoogleCloudPlatform/magic-modules/issues/45
 -%>
@@ -327,9 +327,9 @@ def main():
 <% else -%>
 <%= lines(indent(object.create, 4)) -%>
 <% end -%>
-
-
 <% unless resource_editable_ps.empty? -%>
+
+
 <%=
   lines(method_decl('update', ['session', ('kind' if object.kind?),
                                ('fetch' if object.save_api_results?),
@@ -393,9 +393,9 @@ def main():
 <% else # object.update.nil? -%>
 <%= lines(indent(object.update, 4)) -%>
 <% end # object.update.nil? -%>
-
-
 <% end # resource_editable_ps.empty? -%>
+
+
 <%=
   lines(method_decl('delete', ['session', ('kind' if object.kind?),
                                ('fetch' if object.save_api_results?),
@@ -444,10 +444,10 @@ def main():
 <% else # if object.delete.nil? -%>
 <%= lines(indent(object.delete, 4)) -%>
 <% end # if object.delete.nil? -%>
-
-
 <% end # unless object.virtual -%>
 <% # lines(compile('templates/ansible/transport.erb'), 2) -%>
+
+
 def get_resource(session):
     link = self_link(session)
     # the link will include Nones if required format parameters are missed
@@ -482,12 +482,12 @@ def get_resource(session):
     return r.get(<%= quote_string(object.msg_prefix('get')) %>)
 <%  end -%>
 <% end -%>
-
-
 <% unless no_ex_properties -%>
 <%
    internals = object.ex_properties.reject{|p1| p1.ex_property_opts&.get_url}
 -%>
+
+
 def update_resource(session, current_state, resource):
 <% unless internals.empty? && externals.empty? -%>
     params = session.module.params
@@ -534,9 +534,9 @@ def update_resource(session, current_state, resource):
         obj.update(result)
 <% end -%>
     return obj
-
-
 <% unless internals_create.empty? && externals.empty? -%>
+
+
 def create_resource(session):
     obj = <%= method_create %>
     session.module.params['id'] = obj.get(<%= quote_string(object.resource_id) -%>, None)
@@ -574,6 +574,8 @@ def create_resource(session):
 
 <% end # internals_create.empty? && externals.empty? -%>
 <% end -%>
+
+
 def link_wrapper(f):
     def _wrapper(session, *args, **kwargs):
         try:
@@ -583,8 +585,6 @@ def link_wrapper(f):
                 msg="Mapping keys(%s) are not found in generating link" % ex)
 
     return _wrapper
-
-
 <%
   unless object.virtual || self_link_url(object).match('/{id}').nil?
     list_url_format_keys = list_url(object).scan(/{[^}]+}/)
@@ -633,6 +633,8 @@ def link_wrapper(f):
                    ].join("\n")
     end
 -%>
+
+
 def get_resource_id(session):
     module = session.module
 <%  unless extra_param.empty? -%>
@@ -696,51 +698,51 @@ def get_resource_id(session):
 
 
 <%= lines(emit_link('list_link', list_url(object), object, extra_param.length > 0, object.service_type)) -%>
+<%
+  end
+-%>
 
 
-<% end -%>
 <%= lines(emit_link('self_link', self_link_url(object), object, false, object.service_type)) -%>
 
 
 <%= lines(emit_link('collection', collection_url(object), object, false, object.service_type)) -%>
-
-
 <%
   if object.update_url && object.delete_url && object.update_url == object.delete_url
     tmp_url = object.update_url.gsub('{{', '{').gsub('}}', '}')
 -%>
+
+
 <%=
     lines(emit_link('update_delete_url', tmp_url, object, false, object.service_type))
 -%>
-
-
 <%
   else
     if object.update_url
       tmp_url = object.update_url.gsub('{{', '{').gsub('}}', '}')
 -%>
+
+
 <%=
       lines(emit_link('update_url', tmp_url, object, false, object.service_type))
 -%>
-
-
 <%
     end
     if object.delete_url
       tmp_url = object.delete_url.gsub('{{', '{').gsub('}}', '}')
 -%>
+
+
 <%=
       lines(emit_link('delete_url', tmp_url, object, false, object.service_type))
 -%>
-
-
 <%
     end
   end
 -%>
-
-
 <% unless no_ex_properties && resource_editable_ps.empty? -%>
+
+
 def is_different(expect, actual):
     # Remove all output-only from actual.
     actual_vals = {}
@@ -754,9 +756,9 @@ def is_different(expect, actual):
             expect_vals[k] = v
 
     return DictComparison(expect_vals) != DictComparison(actual_vals)
-
-
 <% end -%>
+
+
 def resource_to_create(module):
 <%
   properties_in_request = [
@@ -793,9 +795,9 @@ def resource_to_create(module):
     return request.update(alone_param)
 <%   end -%>
 <% end -%>
-
-
 <% unless resource_editable_ps.empty? -%>
+
+
 def resource_to_update(module):
 <%
   properties_in_request = [
@@ -841,10 +843,10 @@ def _get_resource_editable_properties(module):
 <%= "\n" -%>
 <% end -%>
     })
-
-
 <% end # resource_editable_ps.empty? -%>
 <% unless no_ex_properties -%>
+
+
 def _get_editable_properties(module):
 <%
   ps = object.properties.reject(&:output).select { |p| p.create_update == 'u' || p.create_update == 'cu' }
@@ -855,9 +857,9 @@ def _get_editable_properties(module):
 <%= "\n" -%>
 <% end -%>
     })
-
-
 <% end # no_ex_properties && resource_editable_ps.empty? -%>
+
+
 # Remove unnecessary properties from the response.
 # This is for doing comparisons with Ansible's current parameters.
 def response_to_hash(module, response):
