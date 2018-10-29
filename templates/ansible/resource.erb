@@ -357,23 +357,13 @@ def main():
 
 <%     if is_standard_async -%>
 <%       if  object.async.operation.timeouts -%>
-    wait_done = wait_for_operation(session, r, <%= object.async.operation.timeouts.update_sec -%>)
+    wait_for_operation(session, r, <%= object.async.operation.timeouts.update_sec -%>)
 <%       else -%>
     timeout = 60 * int(module.params['timeouts']['update'].rstrip('m'))
-    wait_done = wait_for_operation(session, r, timeout)
+    wait_for_operation(session, r, timeout)
 <%       end -%>
 
-    url = resource_get_url(session, wait_done)
-<%       if object.msg_prefix('get') -%>
-<%=
-  indent(send_request("r = session.get(url)"), 4)
-%>
-    return r.get(<%= quote_string(object.msg_prefix('get')) -%>)
-<%       else -%>
-<%=
-  indent(send_request("return session.get(url)"), 4)
-%>
-<%       end  # object.msg_prefix -%>
+    return get_resource(session)
 <%     else # if is_standard_async -%>
 <%       if  object.async.update_status.allowed -%>
     complete_states = [<%= u_complete_states.join(', ') -%>]
