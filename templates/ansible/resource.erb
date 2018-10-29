@@ -72,8 +72,8 @@ from ansible.module_utils.hwc_utils import (HwcSession, HwcModule,
                                             DictComparison, navigate_hash,
                                             remove_nones_from_dict,
                                             remove_empty_from_dict,
-                                            HwcRequestException,
-                                            HwcRequestException404)
+                                            HwcClientException,
+                                            HwcClientException404)
 <%
   imports = ['json']
   imports << 'time' if object.async
@@ -148,7 +148,9 @@ def main():
 <%= lines(indent_list(mod_props, 12)) -%>
         )
     )
-    session = HwcSession(module, <%= quote_string(prod_name) -%>)
+<%=
+  indent(send_request("session = HwcSession(module, \"#{prod_name}\")"), 4)
+%>
 
     state = module.params['state']
 <% if object.kind? -%>
