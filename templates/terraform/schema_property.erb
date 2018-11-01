@@ -40,7 +40,7 @@
 	enum_values = property.values
 	enum_values.push "" unless property.required
 -%>
-	ValidateFunc: validation.StringInSlice([]string{"<%= enum_values.join '","' -%>"}, false),
+	<% #ValidateFunc: validation.StringInSlice([]string{"<%= enum_values.join '","' -%><% #"}, false),-%>
 <% end -%>
 <% if !property.diff_suppress_func.nil? -%>
   DiffSuppressFunc: <%= property.diff_suppress_func %>,

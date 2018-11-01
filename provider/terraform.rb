@@ -17,6 +17,7 @@ require 'provider/terraform/import'
 require 'provider/terraform/custom_code'
 require 'provider/terraform/property_override'
 require 'provider/terraform/resource_override'
+require 'provider/terraform/request'
 require 'provider/terraform/sub_template'
 require 'google/golang_utils'
 
@@ -25,6 +26,7 @@ module Provider
   # resources.
   class Terraform < Provider::AbstractCore
     include Provider::Terraform::Import
+    include Provider::Terraform::Request
     include Provider::Terraform::SubTemplate
     include Google::GolangUtils
 
