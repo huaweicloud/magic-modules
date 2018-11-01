@@ -260,7 +260,7 @@ def main():
     module = session.module
 <%
   method = indent(send_request(
-     "r = " + method_call("session#{create_verb}", ['link', 'resource_to_create(module)'])
+     "r = " + method_call("session#{create_verb}", ['link', 'create_resource_opts(module)'])
   ), 4)
 -%>
 <%   unless object.async && (object.async.async_methods.nil? || object.async.async_methods.include?("create")) -%>
@@ -341,7 +341,7 @@ def main():
 <%   unless object.async && (object.async.async_methods.nil? || object.async.async_methods.include?("update"))-%>
 <%=
   indent(send_request(
-    method_call("session.put", ['link', 'resource_to_update(module)'])
+    method_call("session.put", ['link', 'update_resource_opts(module)'])
   ), 4)
 %>
 
@@ -349,7 +349,7 @@ def main():
 <%   else -%>
 <%=
   indent(send_request(
-    "r = " + method_call("session.put", ['link', 'resource_to_update(module)'])
+    "r = " + method_call("session.put", ['link', 'update_resource_opts(module)'])
   ), 4)
 %>
 
@@ -759,7 +759,7 @@ def is_different(expect, actual):
 <% end -%>
 
 
-def resource_to_create(module):
+def create_resource_opts(module):
 <%
   properties_in_request = [
     object&.parameters&.reject(&:alone_parameter)&.select { |p| p.input || p.create_update == 'c' || p.create_update == 'cu' },
@@ -798,7 +798,7 @@ def resource_to_create(module):
 <% unless resource_editable_ps.empty? -%>
 
 
-def resource_to_update(module):
+def update_resource_opts(module):
 <%
   properties_in_request = [
     object&.parameters&.reject(&:alone_parameter)&.select { |p| p.create_update == 'u' || p.create_update == 'cu' },
