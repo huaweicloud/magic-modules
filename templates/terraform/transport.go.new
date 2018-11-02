@@ -1,0 +1,78 @@
+package telefonicaopencloud
+
+import (
+	"fmt"
+	"net/url"
+	"reflect"
+	"regexp"
+	"strings"
+
+	"github.com/hashicorp/terraform/helper/schema"
+)
+
+func isEmptyValue(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
+		return v.Len() == 0
+	case reflect.Bool:
+		return !v.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v.Int() == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return v.Uint() == 0
+	case reflect.Float32, reflect.Float64:
+		return v.Float() == 0
+	case reflect.Interface, reflect.Ptr:
+		return v.IsNil()
+	}
+	return false
+}
+
+func addQueryParams(rawurl string, params map[string]string) (string, error) {
+	u, err := url.Parse(rawurl)
+	if err != nil {
+		return "", err
+	}
+	q := u.Query()
+	for k, v := range params {
+		q.Set(k, v)
+	}
+	u.RawQuery = q.Encode()
+	return u.String(), nil
+}
+
+func replaceVars(d *schema.ResourceData, linkTmpl string) (string, error) {
+	re := regexp.MustCompile("{{([[:word:]]+)}}")
+
+	replaceFunc := func(s string) string {
+		m := re.FindStringSubmatch(s)[1]
+		if m == "project" {
+			return "project"
+		}
+		if m == "id" {
+			return d.Id()
+		}
+		v, ok := d.GetOk(m)
+		if ok {
+			return v.(string)
+		}
+		return ""
+	}
+
+	s := re.ReplaceAllStringFunc(linkTmpl, replaceFunc)
+	return strings.Replace(s, "project/", "", 1), nil
+}
+
+func navigateMap(d interface{}, index []string) (interface{}, error) {
+	for _, i := range index {
+		d1, ok := d.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("navigateMap:: Can not convert to map")
+		}
+		d, ok = d1[i]
+		if !ok {
+			return nil, fmt.Errorf("navigateMap:: '%s' may not exist", i)
+		}
+	}
+	return d, nil
+}
