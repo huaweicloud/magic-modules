@@ -35,16 +35,25 @@ require 'provider/puppet/bundle'
 require 'provider/terraform'
 require 'pp' if ENV['COMPILER_DEBUG']
 
+$cloud_name_map = {
+  'telefonica' => ['tfc', 'telefonicaopencloud'],
+  'huawei' => ['hwc', 'huaweicloud'],
+  'opentelekom' => ['otc', 'opentelekomcloud'],
+  'orange' => ['fe', 'flexibleengine']
+}.freeze
+
 def cloud_short_name(name)
-  m = {
-    'telefonica' => 'tfc',
-    'huawei' => 'hwc',
-    'opentelekom' => 'otc',
-  }.freeze
-  unless m.include?(name)
+  unless $cloud_name_map.include?(name)
     raise "Unknown cloud #{name}"
   end
-  m[name]
+  $cloud_name_map[name][0]
+end
+
+def terraform_package(name)
+  unless $cloud_name_map.include?(name)
+    raise "Unknown cloud #{name}"
+  end
+  $cloud_name_map[name][1]
 end
 
 catalog = nil
@@ -104,6 +113,8 @@ pp config if ENV['COMPILER_DEBUG']
 
 if provider.start_with?('ansible')
   provider = config.provider.new(config, api, cloud_name, sn, catalog)
+elsif provider.start_with?('terraform')
+  provider = config.provider.new(config, api, terraform_package(cloud_name), sn)
 else
   provider = config.provider.new(config, api, cloud_name, sn)
 end
