@@ -14,7 +14,7 @@
 <% end -%>
 <%= lines(autogen_notice :go) -%>
 
-package google
+package <%= package %>
 
 <%= lines(compile(object.custom_code.constants)) if object.custom_code.constants %>
 
@@ -120,7 +120,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 -%>
     r := golangsdk.Result{}
     _, r.Err = client.<%= create_verb %>(url, &obj, &r.Body, &golangsdk.RequestOpts{
-        OkCodes: []int{200, 201, 202, 203, 204, 205, 206, 207, 208, 226},
+        OkCodes: successHTTPCodes,
     })
     if r.Err != nil {
         return fmt.Errorf("Error creating <%= object.name -%>: %s", r.Err)
@@ -329,7 +329,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 -%>
     r := golangsdk.Result{}
     _, r.Err = client.<%= update_verb %>(url, &obj, &r.Body, &golangsdk.RequestOpts{
-        OkCodes: []int{200, 201, 202, 203, 204, 205, 206, 207, 208, 226},
+        OkCodes: successHTTPCodes,
     })
     if r.Err != nil {
         return fmt.Errorf("Error updating <%= object.name -%> %q: %s", d.Id(), r.Err)
@@ -359,7 +359,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
     log.Printf("[DEBUG] Deleting <%= object.name -%> %q", d.Id())
     r := golangsdk.Result{}
     _, r.Err = client.Delete(url, &golangsdk.RequestOpts{
-        OkCodes: []int{200, 201, 202, 203, 204, 205, 206, 207, 208, 226},
+        OkCodes: successHTTPCodes,
         JSONResponse: &r.Body,
     })
     if r.Err != nil {

@@ -60,8 +60,8 @@ module Provider
       private
 
       def autogen_notice_contrib
-        ['Please read more about how to change this file in',
-         '.github/CONTRIBUTING.md.']
+        ['Please read more about how to change this file at',
+         'https://www.github.com/huaweicloud/magic-modules']
       end
 
       def autogen_notice_text(line)
