@@ -302,6 +302,47 @@ module Api
       properties.select(&:update_url)
     end
 
+    def ex_properties_of(t)
+      if t == 'external'
+        ex_properties.select{|p1| p1&.ex_property_opts&.get_url}
+
+      elsif t == 'internal'
+        ex_properties.reject{|p1| p1&.ex_property_opts&.get_url}
+      end
+
+      raise 'unknown type to select external properties'
+    end
+
+    def resource_editable_properties
+      properties.reject(&:output).reject(&:update_url).select { |p| p.create_update == 'u' || p.create_update == 'cu' }
+    end
+
+    def update_opts
+      [
+        parameters.reject(&:alone_parameter)&.select { |p| p.create_update == 'u' || p.create_update == 'cu' },
+        resource_editable_properties,
+      ].flatten.compact
+    end
+
+    def update_alone_opts
+      alone_parameters.select { |p| p.create_update == 'u' || p.create_update == 'cu' }
+    end
+
+    def create_opts
+      [
+        parameters.reject(&:alone_parameter)&.select { |p| p.input || p.create_update == 'c' || p.create_update == 'cu' },
+        properties.reject(&:output).select { |p| p.create_update == 'c' || p.create_update == 'cu' },
+      ].flatten.compact
+    end
+
+    def create_internal_opts
+      ex_properties_of('internal').select{|p1| p1.create_update == 'u'}
+    end
+
+    def create_alone_opts
+      alone_parameters.select { |p| p.input || p.create_update == 'c' || p.create_update == 'cu' }
+    end
+
     # the prefix of the request/response body for CRUD
     def msg_prefix(t)
       if @msg_prefix

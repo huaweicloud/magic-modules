@@ -62,8 +62,21 @@ module Provider
     end
 
     def force_new?(property, resource)
-      !property.output &&
-        (property.input || (resource.input && property.update_url.nil?))
+      update_parameters = [
+        resource.update_opts,
+	resource.update_alone_opts,
+	resource.ex_properties
+      ].flatten.compact
+
+      !property.output && !(update_parameters.any? { |p| p.name == property.name })
+    end
+
+    def computed?(property, resource)
+      !property.required && (resource.properties.any? { |p| p.name == property.name })
+    end
+
+    def optional?(property)
+      !property.output && !property.required
     end
 
     # Puts together the links to use to make API calls for a given resource type
