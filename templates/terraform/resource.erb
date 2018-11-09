@@ -30,7 +30,7 @@ func resource<%= resource_name -%>() *schema.Resource {
     return &schema.Resource{
         Create: resource<%= resource_name -%>Create,
         Read: resource<%= resource_name -%>Read,
-        <% if updatable?(object, properties) -%>
+        <% if updatable?(object) -%>
         Update: resource<%= resource_name -%>Update,
         <% end -%>
         Delete: resource<%= resource_name -%>Delete,
@@ -41,7 +41,7 @@ func resource<%= resource_name -%>() *schema.Resource {
 
         Timeouts: &schema.ResourceTimeout {
             Create: schema.DefaultTimeout(<%= object&.async&.operation&.timeouts&.insert_sec ? object&.async&.operation&.timeouts&.insert_sec : 10 -%> * time.Minute),
-            <% if updatable?(object, properties) -%>
+            <% if updatable?(object) -%>
             Update: schema.DefaultTimeout(<%= object&.async&.operation&.timeouts&.update_sec ? object&.async&.operation&.timeouts&.update_sec : 10 -%> * time.Minute),
             <% end -%>
             Delete: schema.DefaultTimeout(<%= object&.async&.operation&.timeouts&.delete_sec ? object&.async&.operation&.timeouts&.delete_sec : 10 -%> * time.Minute),
@@ -53,20 +53,6 @@ func resource<%= resource_name -%>() *schema.Resource {
     <%= lines(build_schema_property(prop, object)) -%>
 <% end -%>
 <%= lines(compile(object.custom_code.extra_schema_entry)) if object.custom_code.extra_schema_entry -%>
-<% if object.base_url.include?("{{project}}") -%>
-            "project": {
-                Type:     schema.TypeString,
-                Optional: true,
-                Computed: true,
-                ForceNew: true,
-            },
-<% end -%>
-<% if (object.exports || []).any? { |e| e.is_a?(Api::Type::SelfLink)} -%>
-            "self_link": {
-                Type:     schema.TypeString,
-                Computed: true,
-            },
-<% end -%>
         },
     }
 }
@@ -79,27 +65,42 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     }
 
     obj := make(map[string]interface{})
-<% settable_properties.each do |prop|
-     k, v, f = request_property(prop)
+<% settable_properties.each_index do |i|
+     prop = settable_properties[i]
+     v2 = i == 0 ? ":=" : "="
+     k, v, f = request_property(prop, "d.Get(\"#{prop.out_name}\")", resource_name)
+     v1 = "#{go_variable(prop)}Prop"
      if f
 -%>
-    <%= prop.api_name -%>Prop, err := <%= v %>
+    <%= v1 -%>, err := <%= v %>
     if err != nil {
         return err
     }
-    obj["<%= k %>"] = <%= prop.api_name -%>Prop
 <%   else -%>
-    obj["<%= k %>"] = <%= v %>
+    <%= v1 -%> := <%= v %>
 <%   end -%>
-<% end -%>
+<%   unless prop.send_empty_value -%>
+    e, err <%= v2 %> isEmptyValue(reflect.ValueOf(<%= v1 -%>))
+    if err != nil {
+        return err
+    }
+    if !e {
+        obj["<%= k -%>"] = <%= v1 -%>
+    }
+<%   else -%>
+    if _, ok := d.GetOkExists("<%= prop.out_name %>"); ok {
+        obj["<%= k -%>"] = <%= v1 -%>
+    }
+<%   end -%>
 
+<% end -%>
   <% if object.custom_code.encoder -%>
   obj, err = resource<%= resource_name -%>Encoder(d, meta, obj)
   if err != nil {
     return err
   }
-  <% end -%>
 
+  <% end -%>
     url, err := replaceVars(d, "<%= collection_url(object) -%>")
     if err != nil {
         return err
@@ -218,7 +219,7 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
     return nil
 }
 
-<% if updatable?(object, properties) -%>
+<% if updatable?(object) -%>
 func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{}) error {
     config := meta.(*Config)
     client, err := config.sdkClient(GetRegion(d, config), "<%= object.service_type %>")
@@ -289,27 +290,43 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
     d.Partial(false)
 <%   else # if object.input -%>
     obj := make(map[string]interface{})
-<%     settable_properties.each do |prop|
-         k, v, f = request_property(prop)
+<%     settable_properties.each_index do |i|
+         prop = settable_properties[i]
+         v2 = i == 0 ? ":=" : "="
+         k, v, f = request_property(prop, "d.Get(\"#{prop.out_name}\")", resource_name)
+         v1 = "#{go_variable(prop)}Prop"
          if f
 -%>
-    <%= prop.api_name -%>Prop, err := <%= v %>
+    <%= v1 -%>, err := <%= v %>
     if err != nil {
         return err
     }
-    obj["<%= k %>"] = <%= prop.api_name -%>Prop
 <%       else -%>
-    obj["<%= k %>"] = <%= v %>
+    <%= v1 -%> := <%= v %>
 <%       end -%>
-<%     end -%>
+<%       unless prop.send_empty_value -%>
+    e, err <%= v2 %> isEmptyValue(reflect.ValueOf(<%= v1 -%>))
+    if err != nil {
+        return err
+    }
+    if !e {
+        obj["<%= k -%>"] = <%= v1 -%>
+    }
+<%       else -%>
+    if _, ok := d.GetOkExists("<%= prop.out_name %>"); ok {
+        obj["<%= k -%>"] = <%= v1 -%>
+    }
+<%       end -%>
 
+<%     end -%>
 <%# We need to decide what encoder to use here - if there's an update encoder, use that! -%>
 <%     if object.custom_code.update_encoder -%>
     obj, err = resource<%= resource_name -%>UpdateEncoder(d, meta, obj)
+
 <%     elsif object.custom_code.encoder -%>
     obj, err = resource<%= resource_name -%>Encoder(d, meta, obj)
-<%     end -%>
 
+<%     end -%>
     url, err := replaceVars(d, "<%= self_link_url(object) -%>")
     if err != nil {
         return err
