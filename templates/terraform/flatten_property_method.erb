@@ -54,7 +54,7 @@ func flatten<%= prefix -%><%= titlelize_property(property) -%>(v interface{}) in
   return v
 <% end # property.is_a?(Api::Type::NestedObject) -%>
 }
-<% if !nested_properties(property).empty? -%>
+<% if !nested_properties(property).nil? -%>
   <% nested_properties(property).each do |prop| -%>
     <%= lines(build_flatten_method(prefix + titlelize_property(property), prop), 1) -%>
   <% end -%>

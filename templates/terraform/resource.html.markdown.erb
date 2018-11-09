@@ -36,12 +36,12 @@ To get more information about <%= object.name -%>, see:
 <%   if !object.references.api.nil? -%>
 * [API documentation](<%= object.references.api -%>)
 <%   end # object...api.nil? -%>
-<%   if !object.references.guides.empty? -%>
+<%   if !object.references.guides.nil? -%>
 * How-to Guides
 <%     object.references.guides.each do |title, link| -%>
     * [<%= title -%>](<%= link -%>)
 <%     end # object...guides.each -%>
-<%   end # object...guides.empty? -%>
+<%   end # object...guides.nil? -%>
 <% end # object...api.nil? -%>
 
 <% unless object.examples.nil? -%>
@@ -97,7 +97,7 @@ This resource provides the following
 [Timeouts](/docs/configuration/resources.html#timeouts) configuration options:
 
 - `create` - Default is 4 minutes.
-<% if updatable?(object, properties) -%>
+<% if updatable?(object) -%>
 - `update` - Default is 4 minutes.
 <% end -%>
 - `delete` - Default is 4 minutes.

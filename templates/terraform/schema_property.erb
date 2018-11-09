@@ -13,7 +13,7 @@
   # limitations under the License.
 <% end -%>
 <% if tf_types.include?(property.class) -%>
-"<%= Google::StringUtils.underscore(property.name) -%>": {
+"<%= property.out_name -%>": {
     Type: <%= tf_types[property.class] %>,
 <%   if property.required -%>
         Required: true,

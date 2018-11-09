@@ -57,15 +57,19 @@ module Provider
       }
     end
 
-    def updatable?(resource, properties)
-      !resource.input || !properties.reject { |p| p.update_url.nil? }.empty?
+    def updatable?(resource)
+      !([
+        resource.update_opts,
+        resource.update_alone_opts,
+        resource.ex_properties
+      ].flatten.compact.empty?)
     end
 
     def force_new?(property, resource)
       update_parameters = [
         resource.update_opts,
-	resource.update_alone_opts,
-	resource.ex_properties
+        resource.update_alone_opts,
+        resource.ex_properties
       ].flatten.compact
 
       !property.output && !(update_parameters.any? { |p| p.name == property.name })
@@ -109,9 +113,13 @@ module Provider
     # Capitalize the first letter of a property name.
     # E.g. "creationTimestamp" becomes "CreationTimestamp".
     def titlelize_property(property)
-      p = property.name.clone
+      p = go_variable(property)
       p[0] = p[0].capitalize
       p
+    end
+
+    def go_variable(property)
+      Google::StringUtils.camelize(property.out_name)
     end
 
     # Returns the nested properties. An empty list is returned if the property
@@ -122,8 +130,6 @@ module Provider
       elsif property.is_a?(Api::Type::Array) &&
             property.item_type.is_a?(Api::Type::NestedObject)
         property.item_type.properties
-      else
-        []
       end
     end
 

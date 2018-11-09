@@ -17,73 +17,80 @@
                            prefix: resource_name,
                            property: property)) -%>
 <% else -%>
-<% if property.is_a?(Api::Type::NameValues) -%>
-func expand<%= prefix -%><%= titlelize_property(property) -%>(v interface{}, d *schema.ResourceData, config *Config) (map[string]string, error) {
-  if v == nil {
-    return map[string]string{}, nil
-  }
-  m := make(map[string]string)
-  for k, val := range v.(map[string]interface{}) {
-    m[k] = val.(string)
-  }
-  return m, nil
+<%   if property.is_a?(Api::Type::NameValues) -%>
+
+func expand<%= prefix -%><%= titlelize_property(property) -%>(v interface{}) (map[string]string, error) {
+    if v == nil {
+        return map[string]string{}, nil
+    }
+    m := make(map[string]string)
+    for k, val := range v.(map[string]interface{}) {
+        m[k] = val.(string)
+    }
+    return m, nil
 }
-<% elsif tf_types.include?(property.class) -%>
-func expand<%= prefix -%><%= titlelize_property(property) -%>(v interface{}, d *schema.ResourceData, config *Config) (interface{}, error) {
-<%
-  if !nested_properties(property).empty?
-    nested_properties = nested_properties(property)
+<%   elsif tf_types.include?(property.class)
+       nested_properties = nested_properties(property)
 -%>
-  l := v.([]interface{})
-  req := make([]interface{}, 0, len(l))
-  for _, raw := range l {
+<%     unless nested_properties.nil? -%>
+
+func expand<%= prefix -%><%= titlelize_property(property) -%>(v interface{}) (interface{}, error) {
+    l := v.([]interface{})
+<%       if property.is_a?(Api::Type::Array) -%>
+    req := make([]interface{}, 0, len(l))
+    for _, raw := range l {
+        if raw == nil {
+            continue
+        }
+<%       else -%>
+    if len(l) == 0 || l[0] == nil{
+        return nil, nil
+    }
+    raw := l[0]
+<%       end -%>
     original := raw.(map[string]interface{})
     transformed := make(map[string]interface{})
 
-    <% nested_properties.each do |prop| -%>
-      transformed<%= titlelize_property(prop) -%>, err := expand<%= prefix -%><%= titlelize_property(property) -%><%= titlelize_property(prop) -%>(original["<%= Google::StringUtils.underscore(prop.name) -%>"], d, config)
-      if err != nil {
-        return nil, err
-      }
-      transformed["<%= prop.name -%>"] = transformed<%= titlelize_property(prop) -%>
-
-    <% end -%>
-
-    req = append(req, transformed)
-  }
-  return req, nil
-}
-
-  <% nested_properties.each do |prop| -%>
-    <%= lines(build_expand_method(prefix + titlelize_property(property), prop), 1) -%>
-  <% end -%>
-<% elsif property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::ResourceRef) -%>
-  l := v.([]interface{})
-  req := make([]interface{}, 0, len(l))
-  for _, raw := range l {
-    f, err := <%= build_expand_resource_ref('raw.(string)', property.item_type) %>
+<%       nested_properties.each_index do |i|
+           prop = settable_properties[i]
+           v2 = i == 0 ? ":=" : "="
+           k, v, f = request_property(prop, "original[\"#{prop.out_name}\"]", prefix)
+	   v1 = "#{go_variable(prop)}Prop"
+           if f
+-%>
+    <%= v1 -%>, err := <%= v %>
     if err != nil {
-      return nil, fmt.Errorf("Invalid value for <%= Google::StringUtils.underscore(property.name) -%>: %s", err)
+        return nil, err
     }
-    req = append(req, f.RelativeLink())
-  }
-  return req, nil
+<%         else -%>
+    <%= v1 -%> := <%= v %>
+<%         end -%>
+<%         unless prop.send_empty_value -%>
+    e, err <%= v2 %> isEmptyValue(reflect.ValueOf(<%= v1 -%>))
+    if err != nil {
+        return nil, err
+    }
+    if !e {
+        transformed["<%= k -%>"] = <%= v1 -%>
+    }
+<%         else -%>
+        transformed["<%= k -%>"] = <%= v1 -%>
+<%         end -%>
+
+<%       end -%>
+<%       if property.is_a?(Api::Type::Array) -%>
+    req = append(req, transformed)
+    }
+    return req, nil
+<%       else -%>
+    return transformed, nil
+<%       end -%>
 }
-<% else -%>
-  <% if property.is_a?(Api::Type::ResourceRef) -%>
-  f, err := <%= build_expand_resource_ref('v.(string)', property) %>
-  if err != nil {
-    return nil, fmt.Errorf("Invalid value for <%= Google::StringUtils.underscore(property.name) -%>: %s", err)
-  }
-  return f.RelativeLink(), nil
-}
-  <% else -%>
-  return v, nil
-}
-  <% end -%>
-<% end -%>
-<% else -%>
-  // TODO: Property '<%= property.name -%>' of type <%= property.class -%> is not supported
-}
-<% end # tf_types.include?(property.class) -%>
+<%       nested_properties.each do |prop| -%>
+<%=        lines(build_expand_method(prefix + titlelize_property(property), prop), 1) -%>
+<%       end -%>
+<%     end # nested_properties.nil? -%>
+<%   else -%>
+    // TODO: Property '<%= property.name -%>' of type <%= property.class -%> is not supported
+<%   end # tf_types.include?(property.class) -%>
 <% end # custom_code check -%>

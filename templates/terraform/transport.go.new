@@ -10,22 +10,26 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-func isEmptyValue(v reflect.Value) bool {
+var successHTTPCodes = []int{200, 201, 202, 203, 204, 205, 206, 207, 208, 226}
+
+func isEmptyValue(v reflect.Value) (bool, error) {
 	switch v.Kind() {
 	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
-		return v.Len() == 0
+		return v.Len() == 0, nil
 	case reflect.Bool:
-		return !v.Bool()
+		return !v.Bool(), nil
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v.Int() == 0
+		return v.Int() == 0, nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return v.Uint() == 0
+		return v.Uint() == 0, nil
 	case reflect.Float32, reflect.Float64:
-		return v.Float() == 0
+		return v.Float() == 0, nil
 	case reflect.Interface, reflect.Ptr:
-		return v.IsNil()
+		return v.IsNil(), nil
+	case reflect.Invalid:
+		return true, nil
 	}
-	return false
+	return false, fmt.Errorf("isEmptyValue:: unknown type")
 }
 
 func addQueryParams(rawurl string, params map[string]string) (string, error) {

@@ -101,7 +101,7 @@ module Provider
         fn = prop.field_name
         fn = fn.include?("/") ? fn[0, fn.index("/")] : fn
 
-	return fn, request_output(prop, hash_name, module_name, invoker).to_s, false
+	return [fn, request_output(prop, hash_name, module_name, invoker)].flatten
       end
 
       def response_property(prop, hash_name='', module_name='', invoker='')
@@ -143,50 +143,21 @@ module Provider
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
-      def request_output(prop, hash_name, module_name, invoker='')
+      def request_output(prop, hash_name, prefix, invoker='')
         #if prop.to_request
         #  [
         #    "#{invoker}_#{prop.out_name}_convert_to_request(",
         #    "#{hash_name}.get(#{quote_string(prop.out_name)}))",
         #  ].join
         if prop.is_a? Api::Type::NestedObject
-          [
-            "#{prop.property_class[-1]}(",
-            "#{hash_name}.get(#{quote_string(prop.out_name)}, {})",
-            ").to_request()"
-          ].join
+	  return "expand#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
+
         elsif prop.is_a?(Api::Type::Array) && \
               prop.item_type.is_a?(Api::Type::NestedObject)
-          [
-            "#{prop.property_class[-1]}(",
-            "#{hash_name}.get(#{quote_string(prop.out_name)}, [])",
-            ").to_request()"
-          ].join
-        elsif prop.is_a?(Api::Type::ResourceRef) && !prop.resource_ref.virtual
-          prop_name = Google::StringUtils.underscore(prop.name)
-          [
-            "replace_resource_dict(#{hash_name}",
-            ".get(#{unicode_string(prop_name)}, {}), ",
-            "#{quote_string(prop.imports)})"
-          ].join
-        elsif prop.is_a?(Api::Type::ResourceRef) && \
-              prop.resource_ref.virtual && prop.imports == 'selfLink'
-          func_name = Google::StringUtils.underscore("#{prop.name}_selflink")
-          [
-            "#{func_name}(#{hash_name}.get(#{quote_string(prop.out_name)}),",
-            "#{module_name}.params)"
-          ].join(' ')
-        elsif prop.is_a?(Api::Type::Array) && \
-              prop.item_type.is_a?(Api::Type::ResourceRef) && \
-              !prop.item_type.resource_ref.virtual
-          prop_name = Google::StringUtils.underscore(prop.name)
-          [
-            "replace_resource_dict(#{hash_name}",
-            ".get(#{quote_string(prop_name)}, []), ",
-            "#{quote_string(prop.item_type.imports)})"
-          ].join
+	  return "expand#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
+
         else
-          "d.Get(\"#{prop.out_name}\")"
+          return hash_name, false
         end
       end
       # rubocop:enable Metrics/MethodLength
