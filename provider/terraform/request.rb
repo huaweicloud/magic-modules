@@ -101,40 +101,35 @@ module Provider
         fn = prop.field_name
         fn = fn.include?("/") ? fn[0, fn.index("/")] : fn
 
-	return [fn, request_output(prop, hash_name, module_name, invoker)].flatten
+        return [fn, request_output(prop, hash_name, module_name, invoker)].flatten
       end
 
-      def response_property(prop, hash_name='', module_name='', invoker='')
-        return prop.out_name, response_output(prop, hash_name, module_name, invoker).to_s, false
+      def response_property(prop, hash_name='', prefix='', invoker='')
+        return response_output(prop, hash_name, prefix, invoker)
       end
 
       # rubocop:disable Metrics/MethodLength
-      def response_output(prop, hash_name, module_name, invoker='')
-        # If input true, treat like request, but use module names.
-        return request_output(prop, "#{module_name}.params", module_name) \
-          if prop.input
+      def response_output(prop, hash_name, prefix, invoker='')
         fn = prop.field_name
         fn = fn.include?("/") ? fn[fn.index("/") + 1..-1] : fn
+
         #if prop.from_response
         #  [
         #    "#{invoker}_#{prop.out_name}_convert_from_response(",
         #    "\n    #{hash_name}.get(#{quote_string(fn)}))",
         #  ].join
         if prop.is_a? Api::Type::NestedObject
-          [
-            "#{prop.property_class[-1]}(",
-            "\n    #{hash_name}.get(#{unicode_string(fn)}, {})",
-            ").from_response()"
-          ].join
+          return fn, "flatten#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
+
         elsif prop.is_a?(Api::Type::Array) && \
               prop.item_type.is_a?(Api::Type::NestedObject)
-          [
-            "#{prop.property_class[-1]}(",
-            "\n    #{hash_name}.get(#{unicode_string(fn)}, [])",
-            ").from_response()"
-          ].join
+          return fn, "flatten#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
+
+        elsif prop.is_a?(Api::Type::Integer)
+          return fn, "convertToInt(#{hash_name})", true
+
         else
-          "#{hash_name}[\"#{fn}\"]"
+          return fn, hash_name, false
         end
       end
       # rubocop:enable Metrics/MethodLength
@@ -150,11 +145,11 @@ module Provider
         #    "#{hash_name}.get(#{quote_string(prop.out_name)}))",
         #  ].join
         if prop.is_a? Api::Type::NestedObject
-	  return "expand#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
+          return "expand#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
 
         elsif prop.is_a?(Api::Type::Array) && \
               prop.item_type.is_a?(Api::Type::NestedObject)
-	  return "expand#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
+          return "expand#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
 
         else
           return hash_name, false
