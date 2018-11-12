@@ -17,49 +17,56 @@
                            prefix: resource_name,
                            property: property)) -%>
 <% else -%>
-<% if tf_types.include?(property.class) -%>
+<%   if tf_types.include?(property.class)
+       nested_properties = nested_properties(property)
+-%>
+<%     unless nested_properties.nil? -%>
 func flatten<%= prefix -%><%= titlelize_property(property) -%>(v interface{}) interface{} {
-<% if property.is_a?(Api::Type::NestedObject) -%>
-  if v == nil {
-    return nil
-  }
-  original := v.(map[string]interface{})
-  transformed := make(map[string]interface{})
-  <% property.properties.each do |prop| -%>
-    transformed["<%= Google::StringUtils.underscore(prop.name) -%>"] =
-    flatten<%= prefix -%><%= titlelize_property(property) -%><%= titlelize_property(prop) -%>(original["<%= prop.name -%>"])
-  <% end -%>
-  return []interface{}{transformed}
-<% elsif property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
-  l := v.([]interface{})
-  transformed := make([]interface{}, 0, len(l))
-  for _, raw := range l {
-    original := raw.(map[string]interface{})
-    transformed = append(transformed, map[string]interface{}{
-    <% property.item_type.properties.each do |prop| -%>
-      "<%= Google::StringUtils.underscore(prop.name) -%>": flatten<%= prefix -%><%= titlelize_property(property) -%><%= titlelize_property(prop) -%>(original["<%= prop.name -%>"]),
-    <% end -%>
-    })
-  }
-  return transformed
-<% elsif property.is_a?(Api::Type::Integer) -%>
-	// Handles the string fixed64 format
-	if strVal, ok := v.(string); ok {
-		if intVal, err := strconv.ParseInt(strVal, 10, 64); err == nil {
-			return intVal
-		} // let terraform core handle it if we can't convert the string to an int.
-	}
-	return v
-<% else -%>
-  return v
-<% end # property.is_a?(Api::Type::NestedObject) -%>
+    if v == nil {
+        return nil
+    }
+<%       if property.is_a?(Api::Type::NestedObject) -%>
+    original := v.(map[string]interface{})
+    transformed := make(map[string]interface{})
+<%       else -%>
+    l := v.([]interface{})
+    result := make([]interface{}, 0, len(l))
+    for _, raw := range l {
+        original := raw.(map[string]interface{})
+        transformed := make(map[string]interface{})
+<%       end -%>
+
+<%       property.properties.each do |prop|
+           k, v, f = response_property(prop, 'val', prefix)
+           v1 = "#{go_variable(prop)}Prop"
+-%>
+    if val, ok := original["<%= k %>"]; ok {
+<%         if f -%>
+        <%= v1 %>, err := <%= v %>
+        if err != nil {
+            return fmt.Errorf("Error reading <%= property.out_name -%>:<%= prop.out_name %>, err: %s", err)   
+        }
+	transformed["<%= prop.out_name %>"] = <%= v1 %>
+<%         else -%>
+	transformed["<%= prop.out_name %>"] = <%= v %>
+<%         end -%>
+    }
+
+<%       end -%>
+<%       if property.is_a?(Api::Type::NestedObject) -%>
+    return []interface{}{transformed}
+<%       else -%>
+	result = append(result, transformed)
+    }
+
+    return result
+<%       end -%>
 }
-<% if !nested_properties(property).nil? -%>
-  <% nested_properties(property).each do |prop| -%>
+<%       nested_properties.each do |prop| -%>
     <%= lines(build_flatten_method(prefix + titlelize_property(property), prop), 1) -%>
-  <% end -%>
-<% end -%>
-<% else -%>
-  // TODO: Property '<%= property.name -%>' of type <%= property.class -%> is not supported
-<% end # tf_types.include?(property.class) -%>
+<%       end -%>
+<%     end # nested_properties.nil? -%>
+<%   else -%>
+    // TODO: Property '<%= property.name -%>' of type <%= property.class -%> is not supported
+<%   end # tf_types.include?(property.class) -%>
 <% end # custom code check -%>
