@@ -182,5 +182,15 @@ module Provider
     def package
       @cloud_name
     end
+
+    def async_operation_url(async)
+      "#{async.operation.base_url.gsub('{{', '{').gsub('}}', '}')}"
+    end
+
+    # Converts a path in the form a/b/c/d into "a", "b", "c", "d"
+    def path2navigate(path)
+      path.split('/').map { |x| "\"#{x}\"" }.join(', ')
+    end
+
   end
 end

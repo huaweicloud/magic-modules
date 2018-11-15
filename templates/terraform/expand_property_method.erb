@@ -52,7 +52,7 @@ func expand<%= prefix -%><%= titlelize_property(property) -%>(v interface{}) (in
     transformed := make(map[string]interface{})
 
 <%       nested_properties.each_index do |i|
-           prop = settable_properties[i]
+           prop = nested_properties[i]
            v2 = i == 0 ? ":=" : "="
            k, v, f = request_property(prop, "original[\"#{prop.out_name}\"]", prefix)
 	   v1 = "#{go_variable(prop)}Prop"

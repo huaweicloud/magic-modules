@@ -57,6 +57,21 @@ module Provider
         )
       end
 
+      def build_async_wait_method(async, status, return_v, timeout, client)
+        compile_template 'templates/terraform/async_wait_method.erb',
+                         async: async,
+                         status: status,
+                         return_v: return_v,
+                         timeout: timeout,
+                         client: client
+      end
+
+      def build_resource_async_op(object, op)
+        compile_template 'templates/terraform/resource_async.erb',
+                         object: object,
+                         op: op
+      end
+
       private
 
       def autogen_notice_contrib
