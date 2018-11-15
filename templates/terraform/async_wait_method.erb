@@ -1,0 +1,32 @@
+    <%= return_v %>, err := waitToFinish(
+        []string{<%= status.complete.compact.map { |x| "#{x}" } %>},
+        []string{<%= status.allowed.compact.map { |x| "#{x}" } %>, "Pending"},
+	<%= timeout %>,
+        <%= sprintf('%d', async.operation.wait_ms / 1000) %> * time.Second,
+        func() (interface{}, string, error) {
+            r := golangsdk.Result{}
+            _, r.Err = <%= client %>.Get(url, &r.Body, nil)
+            if r.Err != nil {
+                return nil, "Pending", nil
+            }
+            <% if async.error -%>
+
+            code, err := navigateMap(r.Body, []string{<%= path2navigate(async.error.path) %>})
+            if err == nil {
+                if v, err = convertToInt(code), err == nil {
+                    msg, err := navigateMap(r.Body, []string{<%= path2navigate(async.error.message) %>})
+                    if err != nil {
+                        return r.Body, "", fmt.Errorf("async operation failed: %v", msg)
+                    }
+                    return r.Body, "", fmt.Errorf("async operation failed: error code = %v", v)
+                }
+            }
+            <% end -%>
+
+            status, err := navigateMap(r.Body, []string{<%= path2navigate(status.path) %>})
+            if err != nil {
+                return nil, "Pending", nil
+            }
+            return r.Body, status.(string), nil
+        },
+    )

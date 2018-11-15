@@ -94,14 +94,14 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 <%   end -%>
 
 <% end -%>
-  <% if object.custom_code.encoder -%>
+<% if object.custom_code.encoder -%>
   obj, err = resource<%= resource_name -%>Encoder(d, meta, obj)
   if err != nil {
     return err
   }
 
-  <% end -%>
-    url, err := replaceVars(d, "<%= collection_url(object) -%>")
+<% end -%>
+    url, err := replaceVars(d, "<%= collection_url(object) -%>", nil)
     if err != nil {
         return err
     }
@@ -140,23 +140,16 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     }
     d.SetId(id.(string))
 <% else -%>
-
-    op := &<%= api_name_lower -%>.Operation{}
-    err = Convert(res, op)
+    <%= lines(build_resource_async_op(object, "Create"), 1) %>
     if err != nil {
         return err
     }
-
-    waitErr := <%= api_name_lower -%>OperationWaitTime(
-        config.client<%= product_ns -%>, op, project, "Creating <%= object.name -%>",
-        int(d.Timeout(schema.TimeoutCreate).Minutes()))
-
-    if waitErr != nil {
-        // The resource didn't actually create
-        d.SetId("")
-        return fmt.Errorf("Error waiting to create <%= object.name -%>: %s", waitErr)
+    id, err := navigateMap(obj, []string{<%= path2navigate(object.async.result.path) %>})
+    if err != nil {
+        return fmt.Errorf("Error constructing id: %s", err)
     }
-<% end -%>
+    d.SetId(id.(string))
+<% end # unless object.async -%>
 <%= lines(compile(object.custom_code.post_create)) if object.custom_code.post_create -%>
 
     return resource<%= resource_name -%>Read(d, meta)
@@ -169,7 +162,7 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
         return fmt.Errorf("Error creating sdk client, err=%s", err)
     }
 
-    url, err := replaceVars(d, "<%= self_link_url(object) -%>")
+    url, err := replaceVars(d, "<%= self_link_url(object) -%>", nil)
     if err != nil {
         return err
     }
@@ -180,16 +173,18 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
     if r.Err != nil {
         return fmt.Errorf("Error reading %s: %s", fmt.Sprintf("<%= resource_name -%> %q", d.Id()), r.Err)
     }
+<% unless object.msg_prefix('get') -%>
     res, ok := r.Body.(map[string]interface{})
     if !ok {
         return fmt.Errorf("Error reading %s: the result is not map", fmt.Sprintf("<%= resource_name -%> %q", d.Id()))
     }
-<% if object.msg_prefix('get') -%>
-    res, ok = res["<%= object.msg_prefix('get') %>"]
-    if !ok {
+<% else -%>
+    v, err := navigateMap(r.Body, []string{"<%= object.msg_prefix('get') %>"})
+    if err != nil {
         return fmt.Errorf("Error reading %s: the result does not contain <%= object.msg_prefix('get') %>", fmt.Sprintf("<%= resource_name -%> %q", d.Id()))
     }
-<%   end -%>
+    res := v.(map[string]interface{})
+<% end -%>
 <% if object.custom_code.decoder -%>
 
   res, err = <%= resource_name -%>Decoder(d, meta, res)
@@ -262,7 +257,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
       <% end -%>
         <% end -%>
         }
-        url, err = replaceVars(d, "<%= update_url(object, key[:update_url]) -%>")
+        url, err = replaceVars(d, "<%= update_url(object, key[:update_url]) -%>", nil)
         if err != nil {
             return err
         }
@@ -330,7 +325,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
     obj, err = resource<%= resource_name -%>Encoder(d, meta, obj)
 
 <%     end -%>
-    url, err := replaceVars(d, "<%= self_link_url(object) -%>")
+    url, err := replaceVars(d, "<%= self_link_url(object) -%>", nil)
     if err != nil {
         return err
     }
@@ -355,6 +350,12 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
         return fmt.Errorf("Error updating <%= object.name -%> %q: %s", d.Id(), r.Err)
     }
 
+<%     if object.async && (object.async.async_methods.nil? || object.async.async_methods.include?("update")) -%>
+    <%= lines(build_resource_async_op(object, "Update"), 1) %>
+    if err != nil {
+        return err
+    }
+<%     end # unless object.async -%>
 <%   end -%>
 
 <%= lines(compile(object.custom_code.post_update)) if object.custom_code.post_update -%>
@@ -369,7 +370,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
         return fmt.Errorf("Error creating sdk client, err=%s", err)
     }
 
-    url, err := replaceVars(d, "<%= self_link_url(object) -%>")
+    url, err := replaceVars(d, "<%= self_link_url(object) -%>", nil)
     if err != nil {
         return err
     }
@@ -386,7 +387,45 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
         return fmt.Errorf("Error deleting <%= object.name -%> %q: %s", d.Id(), r.Err)
     }
 
+<% unless object.async && (object.async.async_methods.nil? || object.async.async_methods.include?("delete"))
+-%>
     return nil
+<% else -%>
+    <%= lines(build_resource_async_op(object, "Delete"), 1) %>
+<%   unless is_resource_standard_async(object) -%>
+<%     async = object.async -%>
+    _, err := waitToFinish(
+        []string{"Done"}, []string{"Pending"},
+        d.Timeout(schema.TimeoutDelete),
+        <%= sprintf('%d', async.operation.wait_ms / 1000) %> * time.Second,
+        func() (interface{}, string, error) {
+            r := golangsdk.Result{}
+            _, r.Err = client.Get(url, &r.Body, nil)
+            if r.Err != nil {
+                if _, ok := r.Err.(golangsdk.ErrDefault404); ok{
+                    return nil, "Done", nil
+                }
+                return nil, "Pending", r.Err
+            }
+            <% if async.error -%>
+
+            code, err := navigateMap(r.Body, []string{<%= path2navigate(async.error.path) %>})
+            if err == nil {
+                if v, err = convertToInt(code), err == nil {
+                    msg, err := navigateMap(r.Body, []string{<%= path2navigate(async.error.message) %>})
+                    if err != nil {
+                        return r.Body, "", fmt.Errorf("async operation failed: %v", msg)
+                    }
+                    return r.Body, "", fmt.Errorf("async operation failed: error code = %v", v)
+                }
+            }
+            <% end -%>
+            return nil, "Pending", nil
+        },
+    )
+<%   end # unless is_resource_standard_async -%>
+    return err
+<% end # unless object.async -%>
 }
 
 <% object.properties.reject(&:required).each do |prop| -%>

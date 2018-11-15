@@ -5,8 +5,11 @@ import (
 	"net/url"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -45,26 +48,33 @@ func addQueryParams(rawurl string, params map[string]string) (string, error) {
 	return u.String(), nil
 }
 
-func replaceVars(d *schema.ResourceData, linkTmpl string) (string, error) {
+func replaceVars(d *schema.ResourceData, linkTmpl string, kv map[string]string) (string, error) {
 	re := regexp.MustCompile("{{([[:word:]]+)}}")
 
 	replaceFunc := func(s string) string {
 		m := re.FindStringSubmatch(s)[1]
+		if kv != nil {
+			if v, ok := kv[m]; ok {
+				return v
+			}
+		}
 		if m == "project" {
-			return "project"
+			return "replace_holder"
 		}
-		if m == "id" {
-			return d.Id()
-		}
-		v, ok := d.GetOk(m)
-		if ok {
-			return v.(string)
+		if d != nil {
+			if m == "id" {
+				return d.Id()
+			}
+			v, ok := d.GetOk(m)
+			if ok {
+				return v.(string)
+			}
 		}
 		return ""
 	}
 
 	s := re.ReplaceAllStringFunc(linkTmpl, replaceFunc)
-	return strings.Replace(s, "project/", "", 1), nil
+	return strings.Replace(s, "replace_holder/", "", 1), nil
 }
 
 func navigateMap(d interface{}, index []string) (interface{}, error) {
@@ -81,13 +91,23 @@ func navigateMap(d interface{}, index []string) (interface{}, error) {
 	return d, nil
 }
 
-
-func convertToInt(v interface{}) interface{} {
+func convertToInt(v interface{}) (interface{}, error) {
 	// Handles the string fixed64 format
 	if strVal, ok := v.(string); ok {
-		if intVal, err := strconv.ParseInt(strVal, 10, 64); err == nil {
-			return intVal
-		} // let terraform core handle it if we can't convert the string to an int.
+		return strconv.ParseInt(strVal, 10, 64)
 	}
-	return v
+	return nil, fmt.Errorf("can not convert to integer")
+}
+
+func waitToFinish(target, pending []string, timeout, interval time.Duration, f resource.StateRefreshFunc) (interface{}, error) {
+	stateConf := &resource.StateChangeConf{
+		Target:     target,
+		Pending:    pending,
+		Refresh:    f,
+		Timeout:    timeout,
+		Delay:      5 * time.Second,
+		MinTimeout: interval,
+	}
+
+	return stateConf.WaitForState()
 }
