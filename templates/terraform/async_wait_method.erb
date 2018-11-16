@@ -1,9 +1,20 @@
-    <%= return_v %>, err := waitToFinish(
+<% custom_complemte_method = !status.is_a?(Api::Async::Status) -%>
+    <%= return_v %>, err <%= return_v.eql?("_") ? "=" : ":=" %> waitToFinish(
+<% unless custom_complemte_method -%>
         []string{<%= status.complete.compact.map { |x| "#{x}" } %>},
         []string{<%= status.allowed.compact.map { |x| "#{x}" } %>, "Pending"},
-	<%= timeout %>,
+<% else -%>
+        []string{"Done"}, []string{"Pending"},
+<% end -%>
+        <%= timeout %>,
         <%= sprintf('%d', async.operation.wait_ms / 1000) %> * time.Second,
+<% unless custom_complemte_method -%>
         func() (interface{}, string, error) {
+<% else -%>
+        func() resource.StateRefreshFunc {
+            isComplete := <%= status %>
+            return func() (interface{}, string, error) {
+<% end -%>
             r := golangsdk.Result{}
             _, r.Err = <%= client %>.Get(url, &r.Body, nil)
             if r.Err != nil {
@@ -23,10 +34,19 @@
             }
             <% end -%>
 
+<% unless custom_complemte_method -%>
             status, err := navigateMap(r.Body, []string{<%= path2navigate(status.path) %>})
             if err != nil {
                 return nil, "Pending", nil
             }
             return r.Body, status.(string), nil
         },
+<% else -%>
+                if isComplete(r.Body) {
+                    return r.Body, "Done", nil
+                }
+                return r.Body, "Pending", nil
+            }
+        }(),
+<% end -%>
     )

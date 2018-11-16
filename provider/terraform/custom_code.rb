@@ -98,6 +98,10 @@ module Provider
       # is useful for parsing attributes that are necessary for
       # the Read() method to succeed.
       attr_reader :post_import
+      # This code is used to check whether the async operation completes.
+      attr_reader :async_create_complete
+      # This code is used to check whether the async operation completes.
+      attr_reader :async_update_complete
 
       def validate
         super
@@ -114,6 +118,8 @@ module Provider
         check_optional_property :pre_delete, String
         check_optional_property :custom_import, String
         check_optional_property :post_import, String
+        check_optional_property :async_create_complete, String
+        check_optional_property :async_update_complete, String
       end
     end
   end
