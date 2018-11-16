@@ -66,7 +66,7 @@ GEM
       multipart-post (>= 1.2, < 3)
     fauxhai (4.1.0)
       net-ssh
-    ffi (1.9.23)
+    ffi (1.9.24)
     ffi-yajl (2.3.1)
       libyajl2 (~> 1.2)
     foodcritic (13.1.1)
@@ -140,7 +140,7 @@ GEM
       mini_portile2 (~> 2.3.0)
     ohai (14.0.29)
       chef-config (>= 12.8, < 15)
-      ffi (~> 1.9)
+      ffi (~> 1.9.24)
       ffi-yajl (~> 2.2)
       ipaddress
       mixlib-cli
