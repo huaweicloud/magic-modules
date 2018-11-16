@@ -33,13 +33,16 @@
 <%   unless op.eql?("Delete") -%>
     url = <%= cl %>.ServiceURL(url)
 
-<%     if async.status.allowed -%>
+<%     if custom_complete_method.nil? -%>
     <%= lines(build_async_wait_method(
 	    async, op.eql?("Update") ? async.update_status || async.status : async.status,
 	    op.eql?("Create") ? "obj" : "_",
 	    "d.Timeout(schema.Timeout#{op})", cl), 1) %>
 <%     else -%>
-    // custom check whether the async is finished
+    <%= lines(build_async_wait_method(
+	    async, custom_complete_method,
+	    op.eql?("Create") ? "obj" : "_",
+	    "d.Timeout(schema.Timeout#{op})", cl), 1) %>
 <%     end # if async.status.allowed -%>
 <%   end # unless op.eql?("Delete") -%>
 <% end # if is_resource_standard_async -%>

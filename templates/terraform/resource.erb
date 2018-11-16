@@ -64,7 +64,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
         return fmt.Errorf("Error creating sdk client, err=%s", err)
     }
 
-    obj := make(map[string]interface{})
+    opts := make(map[string]interface{})
 <% object.create_opts.each_index do |i|
      prop = object.create_opts[i]
      v2 = i == 0 ? ":=" : "="
@@ -85,17 +85,17 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
         return err
     }
     if !e {
-        obj["<%= k -%>"] = <%= v1 -%>
+        opts["<%= k -%>"] = <%= v1 -%>
     }
 <%   else -%>
     if _, ok := d.GetOkExists("<%= prop.out_name %>"); ok {
-        obj["<%= k -%>"] = <%= v1 -%>
+        opts["<%= k -%>"] = <%= v1 -%>
     }
 <%   end -%>
 
 <% end -%>
 <% if object.custom_code.encoder -%>
-  obj, err = resource<%= resource_name -%>Encoder(d, meta, obj)
+  opts, err = resource<%= resource_name -%>Encoder(d, meta, opts)
   if err != nil {
     return err
   }
@@ -107,7 +107,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     }
     url = client.ServiceURL(url)
 
-    log.Printf("[DEBUG] Creating new <%= object.name -%>: %#v", obj)
+    log.Printf("[DEBUG] Creating new <%= object.name -%>: %#v", opts)
 <%
    if object.create_verb.nil? || object.create_verb == :POST
      create_verb = 'Post'
@@ -120,7 +120,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
    end
 -%>
     r := golangsdk.Result{}
-    _, r.Err = client.<%= create_verb %>(url, &obj, &r.Body, &golangsdk.RequestOpts{
+    _, r.Err = client.<%= create_verb %>(url, &opts, &r.Body, &golangsdk.RequestOpts{
         OkCodes: successHTTPCodes,
     })
     if r.Err != nil {
@@ -140,7 +140,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     }
     d.SetId(id.(string))
 <% else -%>
-    <%= lines(build_resource_async_op(object, "Create"), 1) %>
+    <%= lines(build_resource_async_op(object, "Create", object.custom_code.async_create_complete), 1) %>
     if err != nil {
         return err
     }
@@ -287,7 +287,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 
     d.Partial(false)
 <%   else # if object.input -%>
-    obj := make(map[string]interface{})
+    opts := make(map[string]interface{})
 <%     object.update_opts.each_index do |i|
          prop = object.update_opts[i]
          v2 = i == 0 ? ":=" : "="
@@ -308,21 +308,21 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
         return err
     }
     if !e {
-        obj["<%= k -%>"] = <%= v1 -%>
+        opts["<%= k -%>"] = <%= v1 -%>
     }
 <%       else -%>
     if _, ok := d.GetOkExists("<%= prop.out_name %>"); ok {
-        obj["<%= k -%>"] = <%= v1 -%>
+        opts["<%= k -%>"] = <%= v1 -%>
     }
 <%       end -%>
 
 <%     end -%>
 <%# We need to decide what encoder to use here - if there's an update encoder, use that! -%>
 <%     if object.custom_code.update_encoder -%>
-    obj, err = resource<%= resource_name -%>UpdateEncoder(d, meta, obj)
+    opts, err = resource<%= resource_name -%>UpdateEncoder(d, meta, opts)
 
 <%     elsif object.custom_code.encoder -%>
-    obj, err = resource<%= resource_name -%>Encoder(d, meta, obj)
+    opts, err = resource<%= resource_name -%>Encoder(d, meta, opts)
 
 <%     end -%>
     url, err := replaceVars(d, "<%= self_link_url(object) -%>", nil)
@@ -331,7 +331,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
     }
     url = client.ServiceURL(url)
 
-    log.Printf("[DEBUG] Updating <%= object.name -%> %q: %#v", d.Id(), obj)
+    log.Printf("[DEBUG] Updating <%= object.name -%> %q: %#v", d.Id(), opts)
 <%= lines(compile(object.custom_code.pre_update)) if object.custom_code.pre_update -%>
 <%
        if object.update_verb.nil? || object.update_verb == :PUT
@@ -343,7 +343,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
        end
 -%>
     r := golangsdk.Result{}
-    _, r.Err = client.<%= update_verb %>(url, &obj, &r.Body, &golangsdk.RequestOpts{
+    _, r.Err = client.<%= update_verb %>(url, &opts, &r.Body, &golangsdk.RequestOpts{
         OkCodes: successHTTPCodes,
     })
     if r.Err != nil {
@@ -351,7 +351,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
     }
 
 <%     if object.async && (object.async.async_methods.nil? || object.async.async_methods.include?("update")) -%>
-    <%= lines(build_resource_async_op(object, "Update"), 1) %>
+    <%= lines(build_resource_async_op(object, "Update", object.custom_code.async_update_complete), 1) %>
     if err != nil {
         return err
     }
@@ -391,10 +391,10 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 -%>
     return nil
 <% else -%>
-    <%= lines(build_resource_async_op(object, "Delete"), 1) %>
+    <%= lines(build_resource_async_op(object, "Delete", nil), 1) %>
 <%   unless is_resource_standard_async(object) -%>
 <%     async = object.async -%>
-    _, err := waitToFinish(
+    _, err = waitToFinish(
         []string{"Done"}, []string{"Pending"},
         d.Timeout(schema.TimeoutDelete),
         <%= sprintf('%d', async.operation.wait_ms / 1000) %> * time.Second,
