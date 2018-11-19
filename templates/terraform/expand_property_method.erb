@@ -17,9 +17,19 @@
                            prefix: resource_name,
                            property: property)) -%>
 <% else -%>
-<%   if property.is_a?(Api::Type::NameValues) -%>
+<%   go_on = property.to_request.nil? || property.to_request.include?('{class}(')
+     postfix = property&.to_request&.include?('{class}(') ? "Internal" : ""
+-%>
+<%   unless property.to_request.nil? -%>
+<%     internal = "expand#{prefix}#{titlelize_property(property)}Internal" -%>
 
-func expand<%= prefix -%><%= titlelize_property(property) -%>(v interface{}) (map[string]string, error) {
+func expand<%= prefix -%><%= titlelize_property(property) -%>(v interface{}) (interface{}, error) {
+    <%= lines(convert_custom_method(property, property.to_request, internal)) %>
+}
+<%   end -%>
+<%   if go_on && property.is_a?(Api::Type::NameValues) -%>
+
+func expand<%= prefix -%><%= titlelize_property(property) -%><%= postfix -%>(v interface{}) (map[string]string, error) {
     if v == nil {
         return map[string]string{}, nil
     }
@@ -29,12 +39,12 @@ func expand<%= prefix -%><%= titlelize_property(property) -%>(v interface{}) (ma
     }
     return m, nil
 }
-<%   elsif tf_types.include?(property.class)
+<%   elsif go_on && tf_types.include?(property.class)
        nested_properties = nested_properties(property)
 -%>
 <%     unless nested_properties.nil? -%>
 
-func expand<%= prefix -%><%= titlelize_property(property) -%>(v interface{}) (interface{}, error) {
+func expand<%= prefix -%><%= titlelize_property(property) -%><%= postfix -%>(v interface{}) (interface{}, error) {
     l := v.([]interface{})
 <%       if property.is_a?(Api::Type::Array) -%>
     req := make([]interface{}, 0, len(l))
@@ -54,7 +64,7 @@ func expand<%= prefix -%><%= titlelize_property(property) -%>(v interface{}) (in
 <%       nested_properties.each_index do |i|
            prop = nested_properties[i]
            v2 = i == 0 ? ":=" : "="
-           k, v, f = request_property(prop, "original[\"#{prop.out_name}\"]", prefix)
+           k, v, f = request_property(prop, "original[\"#{prop.out_name}\"]", prefix + titlelize_property(property))
 	   v1 = "#{go_variable(prop)}Prop"
            if f
 -%>

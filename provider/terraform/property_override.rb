@@ -57,6 +57,12 @@ module Provider
       # so the function header *is* part of the custom code template.
       # As with flatten, `property` and `prefix` are available.
       attr_reader :custom_expand
+
+      # similar to :custom_expand/:custom_flatten, but to_request/from_response
+      # includes the codes not the file path to the codes template.
+      attr_reader :to_request
+      attr_reader :from_response
+
     end
 
     # Support for schema ValidateFunc functionality.
@@ -142,6 +148,8 @@ module Provider
         check_optional_property :diff_suppress_func, String
         check_optional_property :state_func, String
         check_optional_property :validation, Provider::Terraform::Validation
+        check_optional_property :to_request, String
+        check_optional_property :from_response, String
       end
 
       def apply(api_property)

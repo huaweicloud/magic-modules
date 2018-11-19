@@ -88,9 +88,9 @@ module Provider
         end.compact.flatten
       end
 
-      def convert_custom_method(p, f)
+      def convert_custom_method(p, f, fn)
         if p.is_a? Api::Type::NestedObject || p.is_a?(Api::Type::Array)
-          return f.gsub(/{class}\(/, p.property_class[-1] + '(')
+          return f.gsub(/{class}\(/, fn + '(')
         end
         f
       end
@@ -113,12 +113,10 @@ module Provider
         fn = prop.field_name
         fn = fn.include?("/") ? fn[fn.index("/") + 1..-1] : fn
 
-        #if prop.from_response
-        #  [
-        #    "#{invoker}_#{prop.out_name}_convert_from_response(",
-        #    "\n    #{hash_name}.get(#{quote_string(fn)}))",
-        #  ].join
-        if prop.is_a? Api::Type::NestedObject
+        if prop.from_response
+          return fn, "flatten#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
+
+        elsif prop.is_a? Api::Type::NestedObject
           return fn, "flatten#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
 
         elsif prop.is_a?(Api::Type::Array) && \
@@ -139,12 +137,10 @@ module Provider
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def request_output(prop, hash_name, prefix, invoker='')
-        #if prop.to_request
-        #  [
-        #    "#{invoker}_#{prop.out_name}_convert_to_request(",
-        #    "#{hash_name}.get(#{quote_string(prop.out_name)}))",
-        #  ].join
-        if prop.is_a? Api::Type::NestedObject
+        if prop.to_request
+          return "expand#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
+
+        elsif prop.is_a? Api::Type::NestedObject
           return "expand#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
 
         elsif prop.is_a?(Api::Type::Array) && \

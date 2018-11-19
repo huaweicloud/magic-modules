@@ -17,13 +17,26 @@
                            prefix: resource_name,
                            property: property)) -%>
 <% else -%>
-<%   if tf_types.include?(property.class)
+<%   go_on = property.from_response.nil? || property.from_response.include?('{class}(')
+     postfix = property&.from_response&.include?('{class}(') ? "Internal" : ""
+-%>
+<%   unless property.from_response.nil? -%>
+<%     internal = "flatten#{prefix}#{titlelize_property(property)}Internal" -%>
+
+func flatten<%= prefix -%><%= titlelize_property(property) -%>(v interface{}) (interface{}, error) {
+    if v == nil {
+        return nil, nil
+    }
+    <%= lines(convert_custom_method(property, property.from_response, internal)) %>
+}
+<%   end -%>
+<%   if go_on && tf_types.include?(property.class)
        nested_properties = nested_properties(property)
 -%>
 <%     unless nested_properties.nil? -%>
-func flatten<%= prefix -%><%= titlelize_property(property) -%>(v interface{}) interface{} {
+func flatten<%= prefix -%><%= titlelize_property(property) -%><%= postfix -%>(v interface{}) (interface{}, error) {
     if v == nil {
-        return nil
+        return nil, nil
     }
 <%       if property.is_a?(Api::Type::NestedObject) -%>
     original := v.(map[string]interface{})
@@ -37,14 +50,14 @@ func flatten<%= prefix -%><%= titlelize_property(property) -%>(v interface{}) in
 <%       end -%>
 
 <%       property.properties.each do |prop|
-           k, v, f = response_property(prop, 'val', prefix)
+           k, v, f = response_property(prop, 'val', prefix + titlelize_property(property))
            v1 = "#{go_variable(prop)}Prop"
 -%>
     if val, ok := original["<%= k %>"]; ok {
 <%         if f -%>
         <%= v1 %>, err := <%= v %>
         if err != nil {
-            return fmt.Errorf("Error reading <%= property.out_name -%>:<%= prop.out_name %>, err: %s", err)   
+            return nil, fmt.Errorf("Error reading <%= property.out_name -%>:<%= prop.out_name %>, err: %s", err)
         }
 	transformed["<%= prop.out_name %>"] = <%= v1 %>
 <%         else -%>
@@ -54,12 +67,12 @@ func flatten<%= prefix -%><%= titlelize_property(property) -%>(v interface{}) in
 
 <%       end -%>
 <%       if property.is_a?(Api::Type::NestedObject) -%>
-    return []interface{}{transformed}
+    return []interface{}{transformed}, nil
 <%       else -%>
 	result = append(result, transformed)
     }
 
-    return result
+    return result, nil
 <%       end -%>
 }
 <%       nested_properties.each do |prop| -%>
