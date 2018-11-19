@@ -147,6 +147,9 @@ module Provider
               prop.item_type.is_a?(Api::Type::NestedObject)
           return "expand#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
 
+	elsif prop.is_a?(Api::Type::NameValues)
+          return "expand#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
+
         else
           return hash_name, false
         end
