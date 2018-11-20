@@ -40,11 +40,11 @@ func resource<%= resource_name -%>() *schema.Resource {
         },
 
         Timeouts: &schema.ResourceTimeout {
-            Create: schema.DefaultTimeout(<%= object&.async&.operation&.timeouts&.insert_sec ? object&.async&.operation&.timeouts&.insert_sec : 10 -%> * time.Minute),
+            Create: schema.DefaultTimeout(<%= object&.async&.operation&.timeouts&.insert_sec ? object&.async&.operation&.timeouts&.insert_sec / 60 : 10 -%> * time.Minute),
             <% if updatable?(object) -%>
-            Update: schema.DefaultTimeout(<%= object&.async&.operation&.timeouts&.update_sec ? object&.async&.operation&.timeouts&.update_sec : 10 -%> * time.Minute),
+            Update: schema.DefaultTimeout(<%= object&.async&.operation&.timeouts&.update_sec ? object&.async&.operation&.timeouts&.update_sec / 60 : 10 -%> * time.Minute),
             <% end -%>
-            Delete: schema.DefaultTimeout(<%= object&.async&.operation&.timeouts&.delete_sec ? object&.async&.operation&.timeouts&.delete_sec : 10 -%> * time.Minute),
+            Delete: schema.DefaultTimeout(<%= object&.async&.operation&.timeouts&.delete_sec ? object&.async&.operation&.timeouts&.delete_sec / 60 : 10 -%> * time.Minute),
         },
 <%= lines(compile(object.custom_code.resource_definition)) if object.custom_code.resource_definition -%>
 
