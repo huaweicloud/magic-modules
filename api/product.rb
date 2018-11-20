@@ -22,6 +22,10 @@ module Api
     attr_reader :prefix
     attr_reader :scopes
     attr_reader :versions
+    attr_accessor :cloud_short_name      # hwc
+    attr_accessor :cloud_half_full_name  # huawei
+    attr_accessor :cloud_full_name       # huaweicloud
+    attr_accessor :cloud_full_name_upper # HuaweiCloud
 
     include Compile::Core
 
@@ -33,6 +37,12 @@ module Api
       check_property :prefix, String
       check_property :scopes, ::Array
       check_property_list :scopes, String
+      check_optional_property :cloud_full_name, String
+      unless @cloud_full_name.nil?
+        check_property :cloud_short_name, String
+        check_property :cloud_half_full_name, String
+        check_property :cloud_full_name_upper, String
+      end
 
       check_versions
     end

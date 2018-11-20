@@ -67,8 +67,8 @@ module Provider
       include Provider::Ansible::Request
       include Provider::Ansible::SelfLink
 
-      def initialize(config, api, cloud_name, cloud_short_name, product_folder)
-        super(config, api, cloud_name, cloud_short_name)
+      def initialize(config, api, product_folder)
+        super(config, api)
         @max_columns = 160
         @product_folder = product_folder
       end
@@ -130,7 +130,7 @@ module Provider
       # Returns the name of the module according to Ansible naming standards.
       # Example: hwc_dns_managed_zone
       def module_name(object)
-        ["%s_#{object.__product.prefix[1..-1]}" % @cloud_short_name,
+        ["%s_#{object.__product.prefix[1..-1]}" % @api.cloud_short_name,
          Google::StringUtils.underscore(object.name)].join('_')
       end
 
@@ -306,7 +306,7 @@ module Provider
         generate_resource_file data.clone.merge(
           default_template: 'templates/ansible/resource.erb',
           out_file: File.join(target_folder,
-                              "lib/ansible/modules/cloud/" + @cloud_name + "/#{name}.py")
+                              "lib/ansible/modules/cloud/" + @api.cloud_half_full_name + "/#{name}.py")
         )
       end
 
@@ -337,6 +337,12 @@ module Provider
           out_file: File.join(target_folder,
                               "test/integration/targets/#{name}/tasks/main.yml")
         )
+      end
+
+      def cloud_name
+        @api.cloud_full_name_upper
+          .gsub(/([A-Z]+)([A-Z][a-z])/, '\1 \2')
+          .gsub(/([a-z\d])([A-Z])/, '\1 \2')
       end
 
       def generate_network_datas(data, object) end

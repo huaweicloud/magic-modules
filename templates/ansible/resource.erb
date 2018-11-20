@@ -27,7 +27,7 @@ DOCUMENTATION = '''
 module: <%= module_name(object) %>
 description:
 <%= lines(indent(bullet_lines(object.description, 4), 4)) -%>
-short_description: Creates a resource of <%= object.name %> in <%= cloud_name %> Cloud
+short_description: Creates a resource of <%= object.name %> in <%= cloud_name %>
 version_added: <%= lines(@config.manifest.get('version_added', config)) -%>
 author: <%= lines(@config.manifest.get('author', config)) -%>
 requirements:
@@ -37,7 +37,7 @@ requirements:
 options:
     state:
         description:
-            - Whether the given object should exist in <%= cloud_name %> Cloud.
+            - Whether the given object should exist in <%= cloud_name %>.
         choices: ['present', 'absent']
         default: 'present'
 <% object.all_user_properties.reject(&:output).each do |prop| -%>

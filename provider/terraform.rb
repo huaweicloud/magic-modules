@@ -150,11 +150,11 @@ module Provider
     # per resource. The resource.erb template forms the basis of a single
     # GCP Resource on Terraform.
     def generate_resource(data)
-      target_folder = File.join(data[:output_folder], @cloud_name)
+      target_folder = File.join(data[:output_folder], package)
       FileUtils.mkpath target_folder
       name = Google::StringUtils.underscore(data[:object].name)
       product_name = Google::StringUtils.underscore(data[:product_name])
-      filepath = File.join(target_folder, "resource_#{@cloud_name}_#{product_name}_#{name}.go")
+      filepath = File.join(target_folder, "resource_#{package}_#{product_name}_#{name}.go")
       generate_resource_file data.clone.merge(
         default_template: 'templates/terraform/resource.erb',
         out_file: filepath
@@ -180,7 +180,11 @@ module Provider
     end
 
     def package
-      @cloud_name
+      @api.cloud_full_name
+    end
+
+    def cloud_name
+      @api.cloud_full_name_upper
     end
 
     def async_operation_url(async)
