@@ -36,25 +36,11 @@ require 'provider/terraform'
 require 'pp' if ENV['COMPILER_DEBUG']
 
 $cloud_name_map = {
-  'telefonica' => ['tfc', 'telefonicaopencloud'],
-  'huawei' => ['hwc', 'huaweicloud'],
-  'opentelekom' => ['otc', 'opentelekomcloud'],
-  'orange' => ['fe', 'flexibleengine']
+  'telefonica' => ['tfc', 'telefonicaopencloud', 'TelefonicaOpenCloud'],
+  'huawei' => ['hwc', 'huaweicloud', 'HuaweiCloud'],
+  'opentelekom' => ['otc', 'opentelekomcloud', 'OpenTelekomCloud'],
+  'flexibleengine' => ['fe', 'flexibleengine', 'FlexibleEngine']
 }.freeze
-
-def cloud_short_name(name)
-  unless $cloud_name_map.include?(name)
-    raise "Unknown cloud #{name}"
-  end
-  $cloud_name_map[name][0]
-end
-
-def terraform_package(name)
-  unless $cloud_name_map.include?(name)
-    raise "Unknown cloud #{name}"
-  end
-  $cloud_name_map[name][1]
-end
 
 catalog = nil
 output = nil
@@ -89,7 +75,6 @@ end.parse!
 raise 'Option -p/--product is a required parameter' if catalog.nil?
 raise 'Option -o/--output is a required parameter' if output.nil?
 raise 'Option -e/--engine is a required parameter' if provider.nil?
-raise 'Option -c/--cloud is a required parameter' if cloud_name.nil?
 
 raise "Product '#{catalog}' does not have api.yaml" \
   unless File.exist?(File.join(catalog, 'api.yaml'))
@@ -97,8 +82,6 @@ raise "Product '#{catalog}' does not have #{provider} settings" \
   unless File.exist?(File.join(catalog, provider))
 
 raise "Output '#{output}' is not a directory" unless Dir.exist?(output)
-
-sn = cloud_short_name(cloud_name)
 
 Google::LOGGER.info "Compiling '#{catalog}' output to '#{output}'"
 Google::LOGGER.info \
@@ -111,11 +94,23 @@ pp api if ENV['COMPILER_DEBUG']
 config = Provider::Config.parse(File.join(catalog, provider), api)
 pp config if ENV['COMPILER_DEBUG']
 
+if cloud_name.nil? && api.cloud_full_name.nil?
+  raise 'Unknown cloud, please specify it with option of -c or in the api.yaml'
+
+elsif api.cloud_full_name.nil?
+  unless $cloud_name_map.include?(cloud_name)
+    raise "Unknown cloud #{cloud_name}"
+  end
+  c = $cloud_name_map[cloud_name]
+  api.cloud_short_name = c[0]
+  api.cloud_half_full_name = cloud_name
+  api.cloud_full_name = c[1]
+  api.cloud_full_name_upper = c[2]
+end
+
 if provider.start_with?('ansible')
-  provider = config.provider.new(config, api, cloud_name, sn, catalog)
-elsif provider.start_with?('terraform')
-  provider = config.provider.new(config, api, terraform_package(cloud_name), sn)
+  provider = config.provider.new(config, api, catalog)
 else
-  provider = config.provider.new(config, api, cloud_name, sn)
+  provider = config.provider.new(config, api)
 end
 provider.generate output, types_to_generate

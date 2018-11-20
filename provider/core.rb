@@ -42,11 +42,9 @@ module Provider
 
     attr_reader :test_data
 
-    def initialize(config, api, cloud_name, cloud_short_name)
+    def initialize(config, api)
       @config = config
       @api = api
-      @cloud_name = cloud_name
-      @cloud_short_name = cloud_short_name
       @property = Provider::TestData::Property.new(self)
       @constants = Provider::TestData::Constants.new(self)
       @data_gen = Provider::TestData::Generator.new
@@ -179,7 +177,7 @@ module Provider
     # rubocop:disable Metrics/AbcSize
     def compile_file_list(output_folder, files, data = {})
       files.each do |target, source|
-        target = target.tr('hwc', @cloud_short_name)
+        target = target.sub('hwc', @api.cloud_short_name)
         Google::LOGGER.info "Compiling #{source} => #{target}"
         target_file = File.join(output_folder, target)
                           .gsub('{{product_name}}', @api.prefix[1..-1])
@@ -726,10 +724,6 @@ module Provider
         return matcher[:year] unless matcher.nil?
       end
       Time.now.year
-    end
-
-    def cloud_name
-      @cloud_name[0].upcase + @cloud_name[1..-1]
     end
 
     def is_resource_standard_async(resource)
