@@ -18,15 +18,15 @@
   properties = object.all_user_properties
 -%>
 ---
-<%= lines(autogen_notice :yaml) -%>
-layout: "google"
-page_title: "Google: google_<%= api_name_lower -%>_<%= resource_name -%>"
-sidebar_current: "docs-google-<%= api_name_lower -%>-<%= resource_name.gsub("_", "-") -%>"
+<%#= lines(autogen_notice :yaml) -%>
+layout: "<%= package %>"
+page_title: "<%= cloud_name %>: <%= package %>_<%= api_name_lower -%>_<%= resource_name -%>"
+sidebar_current: "docs-<%= package %>-resource-<%= api_name_lower -%>-<%= resource_name.gsub("_", "-") -%>"
 description: |-
 <%= indent(Google::StringUtils.first_sentence(object.description), 2) %>
 ---
 
-# google\_<%= api_name_lower -%>\_<%= resource_name.gsub("_", "\\_") %>
+# <%= package %>\_<%= api_name_lower -%>\_<%= resource_name.gsub("_", "\\_") %>
 
 <%= lines(object.description) -%>
 
@@ -53,25 +53,17 @@ To get more information about <%= object.name -%>, see:
 ## Argument Reference
 
 The following arguments are supported:
-
 <% properties.select(&:required).each do |prop| -%>
 <%= lines(build_property_documentation(prop)) -%>
 <% end -%>
-
 <% properties.select(&:required).each do |prop| -%>
 <%= lines(build_nested_property_documentation(prop)) -%>
 <% end -%>
 
 - - -
-
 <% properties.reject(&:required).reject(&:output).each do |prop| -%>
 <%= lines(build_property_documentation(prop)) -%>
 <% end -%>
-<% if object.base_url.include?("{{project}}") -%>
-* `project` (Optional) The ID of the project in which the resource belongs.
-    If it is not provided, the provider project is used.
-<% end -%>
-
 <% properties.reject(&:required).reject(&:output).each do |prop| -%>
 <%= lines(build_nested_property_documentation(prop)) -%>
 <% end -%>
@@ -79,35 +71,28 @@ The following arguments are supported:
 ## Attributes Reference
 
 In addition to the arguments listed above, the following computed attributes are exported:
-
 <% properties.select(&:output).each do |prop| -%>
 <%= lines(build_property_documentation(prop)) -%>
 <% end -%>
-<% if (object.exports || []).any? { |e| e.is_a?(Api::Type::SelfLink)} -%>
-* `self_link` - The URI of the created resource.
-<% end -%>
-
 <% properties.select(&:output).each do |prop| -%>
 <%= lines(build_nested_property_documentation(prop)) -%>
 <% end -%>
+<% unless object.async.nil? -%>
 
 ## Timeouts
 
-This resource provides the following
-[Timeouts](/docs/configuration/resources.html#timeouts) configuration options:
-
-- `create` - Default is 4 minutes.
-<% if updatable?(object) -%>
-- `update` - Default is 4 minutes.
+This resource provides the following timeouts configuration options:
+- `create` - Default is <%= object&.async&.operation&.timeouts&.insert_sec ? object&.async&.operation&.timeouts&.insert_sec / 60 : 10 -%> minutes.
+<%   if updatable?(object) -%>
+- `update` - Default is <%= object&.async&.operation&.timeouts&.update_sec ? object&.async&.operation&.timeouts&.update_sec / 60 : 10 -%> minutes.
+<%   end -%>
+- `delete` - Default is <%= object&.async&.operation&.timeouts&.delete_sec ? object&.async&.operation&.timeouts&.delete_sec / 60 : 10 -%> minutes.
 <% end -%>
-- `delete` - Default is 4 minutes.
 
 ## Import
 
-<%= object.name -%> can be imported using any of these accepted formats:
+<%= object.name -%> can be imported using the following format:
 
 ```
-<% import_id_formats(object).each do |id_format| -%>
-$ terraform import google_<%= api_name_lower -%>_<%= resource_name -%>.default <%= id_format %>
-<% end -%>
+$ terraform import <%= package %>_<%= api_name_lower -%>_<%= resource_name -%>.default {{ resource id}}
 ```
