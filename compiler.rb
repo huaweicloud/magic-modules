@@ -108,9 +108,5 @@ elsif api.cloud_full_name.nil?
   api.cloud_full_name_upper = c[2]
 end
 
-if provider.start_with?('ansible')
-  provider = config.provider.new(config, api, catalog)
-else
-  provider = config.provider.new(config, api)
-end
+provider = config.provider.new(config, api, catalog)
 provider.generate output, types_to_generate

@@ -67,10 +67,9 @@ module Provider
       include Provider::Ansible::Request
       include Provider::Ansible::SelfLink
 
-      def initialize(config, api, product_folder)
+      def initialize(config, api)
         super(config, api)
         @max_columns = 160
-        @product_folder = product_folder
       end
 
       # Returns a string representation of the corresponding Python type
