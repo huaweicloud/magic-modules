@@ -42,9 +42,10 @@ module Provider
 
     attr_reader :test_data
 
-    def initialize(config, api)
+    def initialize(config, api, product_folder)
       @config = config
       @api = api
+      @product_folder = product_folder
       @property = Provider::TestData::Property.new(self)
       @constants = Provider::TestData::Constants.new(self)
       @data_gen = Provider::TestData::Generator.new

@@ -15,6 +15,7 @@ require 'provider/abstract_core'
 require 'provider/terraform/config'
 require 'provider/terraform/import'
 require 'provider/terraform/custom_code'
+require 'provider/terraform/example'
 require 'provider/terraform/property_override'
 require 'provider/terraform/resource_override'
 require 'provider/terraform/request'
@@ -196,5 +197,22 @@ module Provider
       path.split('/').map { |x| "\"#{x}\"" }.join(', ')
     end
 
+    def generate_resource_tests(data)
+      return if data[:object].examples.nil? || data[:object].examples&.select(&:is_basic)&.empty?
+
+      target_folder = File.join(data[:output_folder], package)
+      FileUtils.mkpath target_folder
+      name = Google::StringUtils.underscore(data[:object].name)
+      product_name = Google::StringUtils.underscore(data[:product_name])
+      filepath = File.join(target_folder, "resource_#{package}_#{product_name}_#{name}_test.go")
+
+      generate_resource_file data.clone.merge(
+        default_template: 'templates/terraform/acc_test.go.erb',
+        out_file: filepath,
+	product_folder: @product_folder
+      )
+      # TODO: error check goimports
+      %x(goimports -w #{filepath})
+    end
   end
 end

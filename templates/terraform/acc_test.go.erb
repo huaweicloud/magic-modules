@@ -1,0 +1,97 @@
+<%= lines(autogen_notice :go) -%>
+
+package <%= package %>
+
+import (
+  "fmt"
+  "testing"
+
+  "github.com/hashicorp/terraform/helper/acctest"
+  "github.com/hashicorp/terraform/helper/resource"
+)
+<%
+   example = object.examples.select(&:is_basic).pop
+   resource_name = product_ns + object.name
+   test_case_name = resource_name + "_basic"
+   terraform_name = "#{package}_" + Google::StringUtils.underscore(resource_name)
+   terraform_resource_name = "#{terraform_name}.#{example.primary_resource_id}"
+%>
+
+func TestAcc<%= test_case_name -%>(t *testing.T) {
+    resource.Test(t, resource.TestCase{
+        PreCheck:     func() { testAccPreCheck(t) },
+        Providers:    testAccProviders,
+        CheckDestroy: testAccCheck<%= "#{resource_name}" -%>Destroy,
+        Steps: []resource.TestStep{
+            {
+                Config: testAcc<%= test_case_name -%>(acctest.RandString(10)),
+                Check: resource.ComposeTestCheckFunc(
+                    testAccCheck<%= "#{resource_name}" -%>Exists(),
+                ),
+            },
+        },
+    })
+}
+
+func testAcc<%= test_case_name -%>(val string) string {
+<%= example.config_test product_folder -%>
+}
+
+func testAccCheck<%= resource_name -%>Destroy(s *terraform.State) error {
+    config := testAccProvider.Meta().(*Config)
+    client, err := config.sdkClient(OS_REGION_NAME, "<%= object.service_type %>")
+    if err != nil {
+        return fmt.Errorf("Error creating sdk client, err=%s", err)
+    }
+
+    for _, rs := range s.RootModule().Resources {
+        if rs.Type != "<%= terraform_name -%>" {
+            continue
+        }
+
+        url, err := replaceVarsForTest(rs, "<%= self_link_url(object) -%>")
+        if err != nil {
+            return err
+        }
+        url = client.ServiceURL(url)
+
+        r := golangsdk.Result{}
+        _, r.Err = client.Get(url, &r.Body, nil)
+        if r.Err == nil {
+            return fmt.Errorf("<%= terraform_name -%> still exists at %s", url)
+        }
+    }
+
+    return nil
+}
+
+func testAccCheck<%= resource_name -%>Exists() resource.TestCheckFunc {
+    config := testAccProvider.Meta().(*Config)
+    client, err := config.sdkClient(OS_REGION_NAME, "<%= object.service_type %>")
+    if err != nil {
+        return fmt.Errorf("Error creating sdk client, err=%s", err)
+    }
+
+    return func(s *terraform.State) error {
+        rs, ok := s.RootModule().Resources["<%= terraform_resource_name -%>"]
+        if !ok {
+            return fmt.Errorf("Error checking <%= terraform_resource_name -%> exist, err=not found <%= terraform_resource_name -%>")
+        }
+
+        url, err := replaceVarsForTest(rs, "<%= self_link_url(object) -%>")
+        if err != nil {
+            return fmt.Errorf("Error checking <%= terraform_resource_name -%> exist, err=building url failed: %s", err)
+        }
+        url = client.ServiceURL(url)
+
+        r := golangsdk.Result{}
+        _, r.Err = client.Get(url, &r.Body, nil)
+        if r.Err != nil {
+            if _, ok := r.Err.(golangsdk.ErrDefault404); ok{
+                return fmt.Errorf("<%= terraform_resource_name -%> is not exist")
+            }
+            return fmt.Errorf("Error checking <%= terraform_resource_name -%> exist, err=send request failed: %s", r.Err)
+        }
+        return nil
+    }
+}

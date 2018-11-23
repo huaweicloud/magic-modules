@@ -14,6 +14,7 @@
 require 'provider/abstract_core'
 require 'provider/resource_override'
 require 'provider/terraform/custom_code'
+require 'provider/terraform/example'
 
 module Provider
   class Terraform < Provider::AbstractCore
@@ -41,7 +42,8 @@ module Provider
 
         check_property :id_format, String
 
-        check_optional_property :examples, String
+        check_optional_property :examples, Array
+        check_optional_property_list :examples, Provider::Terraform::Example
         check_optional_property :custom_code, Provider::Terraform::CustomCode
       end
 
