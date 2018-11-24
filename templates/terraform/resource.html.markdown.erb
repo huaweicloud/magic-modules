@@ -29,8 +29,8 @@ description: |-
 # <%= package %>\_<%= api_name_lower -%>\_<%= resource_name.gsub("_", "\\_") %>
 
 <%= lines(object.description) -%>
-
 <% if !object.references.nil? -%>
+
 To get more information about <%= object.name -%>, see:
 
 <%   if !object.references.api.nil? -%>
@@ -43,11 +43,15 @@ To get more information about <%= object.name -%>, see:
 <%     end # object...guides.each -%>
 <%   end # object...guides.nil? -%>
 <% end # object...api.nil? -%>
-
 <% unless object.examples.nil? -%>
-## Example Usage
 
-<%= object.examples  -%>
+## Example Usage
+<%   object.examples.each do |example| -%>
+
+### <%= Google::StringUtils.uncombine(Google::StringUtils.camelize(example.name, :upper)) %>
+
+<%= example.config_documentation(product_folder) -%>
+<%   end -%>
 <% end -%>
 
 ## Argument Reference

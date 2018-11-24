@@ -1,4 +1,5 @@
-# 2018.11.23 add a new method of substitute_tf_var, and remove unused methods
+# 2018.11.23 add a new method of substitute_tf_var[1], and remove
+# unused methods
 #
 # Copyright 2017 Google Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,19 +46,15 @@ module Provider
       # basic example for each resource
       attr_reader :is_basic
 
-      def config_documentation
+      def config_documentation(product_dir)
         body = lines(compile_file(
-                       {
-                         vars: vars,
-                         primary_resource_id: primary_resource_id,
-                         version: version
-                       },
-                       "templates/terraform/examples/#{name}.tf.erb"
+          {
+            primary_resource_id: primary_resource_id,
+          },
+          product_dir + "examples/terraform/#{name}.tf"
         ))
-        lines(compile_file(
-                { content: body },
-                'templates/terraform/examples/base_configs/documentation.tf.erb'
-        ))
+
+        substitute_tf_var1 body
       end
 
       def config_test(product_dir)
@@ -97,7 +94,7 @@ module Provider
         ig.each_index do |i|
          r << [ig[i], gv[i].sub("env-", "")]
         end
-	r1 = []
+        r1 = []
         r.sort { |x, y| x[0] <=> y[0] }.each { |i| r1 << i[1]}
 
         s = tf.gsub(/env-OS_[A-Z_]+/, "%s")
@@ -106,6 +103,23 @@ module Provider
           " return fmt.Sprintf(`",
           s[0..-2],
           "\t`, " + r1.join(', ') + ")"
+        ])
+      end
+
+      def substitute_tf_var1(tf)
+        gv = tf.scan(/env-OS_[A-Z_]+/)
+
+        h = Hash.new
+        gv.each do |i|
+          h[i] = "{{ " + i.sub("env-OS_", "").downcase + " }}"
+        end
+
+        s = tf.gsub(/env-OS_[A-Z_]+/, h)
+        s = s.gsub(/_env-val/, "")
+        lines([
+          "``hcl",
+          s[0..-2],
+          "```"
         ])
       end
 
