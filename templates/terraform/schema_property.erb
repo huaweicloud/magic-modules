@@ -13,18 +13,19 @@
   # limitations under the License.
 <% end -%>
 <% if tf_types.include?(property.class) -%>
+<%   optional, computed, forcenew = optional_compute_forcenew?(property, object) -%>
 "<%= property.out_name -%>": {
     Type: <%= tf_types[property.class] %>,
 <%   if property.required -%>
         Required: true,
 <%   end -%>
-<%   if computed?(property, object) -%>
+<%   if computed -%>
         Computed: true,
 <%   end -%>
-<%   if optional?(property) -%>
+<%   if optional -%>
         Optional: true,
 <%   end -%>
-<%   if force_new?(property, object) -%>
+<%   if forcenew -%>
         ForceNew: true,
 <%   end -%>
 <%   unless property.validation.nil? -%>

@@ -224,16 +224,18 @@ objects:
         description: |
           Specifies the time when AS configurations are created. The time
           format complies with UTC.
+        crud: 'r'
         output: true
       - !ruby/object:Api::Type::NestedObject
         name: 'config'
         description: "Specifies the information about instance configurations."
-        create_update: 'c'
+        crud: 'rc'
         field: 'instance_config'
         properties:
           - !ruby/object:Api::Type::String
             name: 'adminPass'
             description: "This field is reserved."
+            crud: 'r'
             exclude: true
             output: true
           - !ruby/object:Api::Type::Array
@@ -241,12 +243,14 @@ objects:
             description: |
               Specifies the disk group information. System disks are mandatory
               and data disks are optional.
+            crud: 'rc'
             item_type: !ruby/object:Api::Type::NestedObject
               properties:
                 - !ruby/object:Api::Type::String
                   name: 'image_id'
                   description: |
                     Specifies a data disk image for exporting data.
+                  crud: 'rc'
                   field: 'data_disk_image_id'
                 - !ruby/object:Api::Type::String
                   name: 'storage_id'
@@ -258,12 +262,14 @@ objects:
                     data stores must belong to the same AZ, and the disk types
                     supported by a DSS device for a disk must be the same as
                     the volume_type value.
+                  crud: 'rc'
                   field: 'dedicated_storage_id'
                 - !ruby/object:Api::Type::Enum
                   name: 'disk_type'
                   description: |
                     Specifies whether the disk is a system disk or a data disk.
                     DATA indicates a data disk. SYS indicates a system disk.
+                  crud: 'rc'
                   required: true
                   values:
                     - :DATA
@@ -278,6 +284,7 @@ objects:
                     of the system disk specified in the image.
 
                     The data disk size ranges from 10 to 32768.
+                  crud: 'rc'
                   required: true
                 - !ruby/object:Api::Type::String
                   name: 'snapshot_id'
@@ -289,6 +296,7 @@ objects:
                     NOTE: Regarding snapshot_id, each disk in an AS
                     configuration must correspond to a disk backup at the
                     ECS-level.
+                  crud: 'rc'
                 - !ruby/object:Api::Type::Enum
                   name: 'volume_type'
                   description: |
@@ -307,6 +315,7 @@ objects:
 
                     NOTE: For HANA and HL1 ECSs, use co-p1 or uh-l1 disks. For
                     other ECSs, do not use co-p1 or uh-l1 disks.
+                  crud: 'rc'
                   required: true
                   values:
                     - :SATA
@@ -318,10 +327,12 @@ objects:
             description: |
               Specifies the ECS specifications ID, which defines the
               specifications of the CPU and memory for the ECS. 
+            crud: 'rc'
             field: 'flavorRef'
           - !ruby/object:Api::Type::String
             name: 'image'
             description: "Specifies the image ID."
+            crud: 'rc'
             field: 'imageRef'
           - !ruby/object:Api::Type::String
             name: 'instance_id'
@@ -333,14 +344,17 @@ objects:
 
               If the instance_id field is not specified, flavor, image, and
               disk fields are mandatory.
+            crud: 'rc'
           - !ruby/object:Api::Type::String
             name: 'instance_name'
             description: "This field is reserved."
+            crud: 'r'
             output: true
           - !ruby/object:Api::Type::String
             name: 'key_name'
             description: |
               Specifies the name of the SSH key pair used to log in to the ECS.
+            crud: 'rc'
             required: true
           - !ruby/object:Api::Type::NameValues
             name: 'metadata'
@@ -350,6 +364,7 @@ objects:
               The total length of the user-defined data cannot be longer than
               512 bytes. The user-defined key cannot be empty, contain symbol
               dot (.), or start with symbol dollar ($).
+            crud: 'rc'
             key_type: Api::Type::String
             value_type: Api::Type::String
           - !ruby/object:Api::Type::Array
@@ -358,6 +373,7 @@ objects:
               Specifies information about the injected file. Only text files
               can be injected. A maximum of five files can be injected at a
               time and the maximum size of each file is 1 KB.
+            crud: 'rc'
             item_type: !ruby/object:Api::Type::NestedObject
               properties:
                 - !ruby/object:Api::Type::String
@@ -365,6 +381,7 @@ objects:
                   description: |
                     Specifies the content of the injected file, which must be
                     encoded with base64.
+                  crud: 'rc'
                   required: true
                 - !ruby/object:Api::Type::String
                   name: 'path'
@@ -378,6 +395,7 @@ objects:
                     in the root directory of disk C. You only need to specify
                     the file name, for example foo. The file name can contain
                     only letters and digits.
+                  crud: 'rc'
                   required: true
           - !ruby/object:Api::Type::NestedObject
             name: 'public_ip'
@@ -388,10 +406,12 @@ objects:
               Not configured (delete this field)
 
               Assigned automatically
+            crud: 'rc'
             properties:
               - !ruby/object:Api::Type::NestedObject
                 name: 'bandwidth'
                 description: "Specifies the bandwidth."
+                crud: 'rc'
                 properties:
                   - !ruby/object:Api::Type::String
                     name: 'charging_mode'
@@ -402,6 +422,7 @@ objects:
                       by traffic.
 
                       If the field value is others, the ECS creation will fail.
+                    crud: 'rc'
                     required: true
                   - !ruby/object:Api::Type::String
                     name: 'share_type'
@@ -411,12 +432,14 @@ objects:
                       Enumerated value: PER (indicates exclusive bandwidth)
 
                       Only exclusive bandwidth is available.
+                    crud: 'rc'
                     required: true
                   - !ruby/object:Api::Type::Integer
                     name: 'size'
                     description: |
                       Specifies the bandwidth (Mbit/s). The value range is 1 to
                       300.
+                    crud: 'rc'
                     required: true
                 required: true
               - !ruby/object:Api::Type::String
@@ -426,6 +449,7 @@ objects:
 
                   Enumerated value of the IP address type: 5_bgp (indicates
                   dynamic BGP)
+                crud: 'rc'
                 required: true
           - !ruby/object:Api::Type::String
             name: 'user_data'
@@ -435,11 +459,13 @@ objects:
               Text, text files, and gzip files can be injected. The file
               content must be encoded with Base64, and the maximum allowed file
               size is 32 KB.
+            crud: 'rc'
         required: true
       - !ruby/object:Api::Type::String
         name: 'id'
         description: |
           Specifies the AS configuration ID. This parameter is globally unique.
+        crud: 'r'
         field: 'scaling_configuration_id'
         is_id: true
         output: true
@@ -449,10 +475,9 @@ objects:
           Specifies the AS configuration name. The name can contain letters,
           digits, underscores (_), and hyphens (-), and must be between 1 and
           64 characters in length.
-        create_update: 'c'
+        crud: 'rc'
         field: 'scaling_configuration_name'
         required: true
-
   - !ruby/object:Api::Resource
     name: 'ASGroup'
     service_type: 'as'

@@ -314,33 +314,33 @@ module Api
     end
 
     def resource_editable_properties
-      properties.reject(&:output).reject(&:update_url).select { |p| p.create_update == 'u' || p.create_update == 'cu' }
+      properties.reject(&:output).reject(&:update_url).select { |p| p.crud.include?('u') }
     end
 
     def update_opts
       [
-        parameters.reject(&:alone_parameter)&.select { |p| p.create_update == 'u' || p.create_update == 'cu' },
+        parameters.reject(&:alone_parameter)&.select { |p| p.crud.include?('u') },
         resource_editable_properties,
       ].flatten.compact
     end
 
     def update_alone_opts
-      alone_parameters.select { |p| p.create_update == 'u' || p.create_update == 'cu' }
+      alone_parameters.select { |p| p.crud.include?('u') }
     end
 
     def create_opts
       [
-        parameters.reject(&:alone_parameter)&.select { |p| p.input || p.create_update == 'c' || p.create_update == 'cu' },
-        properties.reject(&:output).select { |p| p.create_update == 'c' || p.create_update == 'cu' },
+        parameters.reject(&:alone_parameter)&.select { |p| p.input || p.crud.include?('c') },
+        properties.reject(&:output).select { |p| p.crud.include?('c') },
       ].flatten.compact
     end
 
     def create_internal_opts
-      ex_properties_of('internal').select{|p1| p1.create_update == 'u'}
+      ex_properties_of('internal').reject{|p1| p1.crud.include?('c')}
     end
 
     def create_alone_opts
-      alone_parameters.select { |p| p.input || p.create_update == 'c' || p.create_update == 'cu' }
+      alone_parameters.select { |p| p.input || p.crud.include?('c') }
     end
 
     # the prefix of the request/response body for CRUD

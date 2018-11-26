@@ -66,22 +66,33 @@ module Provider
       ].flatten.compact.empty?)
     end
 
-    def force_new?(property, resource)
-      update_parameters = [
-        resource.update_opts,
-        resource.update_alone_opts,
-        resource.ex_properties
-      ].flatten.compact
+    def optional_compute_forcenew?(property, resource)
+      optional = !property.required
+      m = {
+        "c__"   => [optional, false,    true],
+        "_u_"   => [optional, false,    false],
+        "__r"   => [false,    true,     false],
+        "c_u_"  => [optional, false,    false],
+        "c__r"  => [optional, optional, true],
+        "_u_r"  => [optional, optional, false],
+        "c_u_r" => [optional, optional, false],
+      }
 
-      !property.output && !(update_parameters.any? { |p| p.name == property.name })
-    end
+      k = ["", "", ""]
+      property.crud.each_char do |c|
+        case c
+        when 'c'
+          k[0] = 'c'
+        when 'u'
+          k[1] = 'u'
+        when 'r'
+          k[2] = 'r'
+        else
+          raise "Calc optional_compute_forcenew for property(" + property.out_name + ") :unkonw crud(" + property.crud + ")"
+        end
+      end
 
-    def computed?(property, resource)
-      !property.required && (resource.properties.any? { |p| p.name == property.name })
-    end
-
-    def optional?(property)
-      !property.output && !property.required
+      m[k.join('_')]
     end
 
     # Puts together the links to use to make API calls for a given resource type
