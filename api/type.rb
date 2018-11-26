@@ -36,6 +36,16 @@ module Api
       # u:  this field is only the parameter of update
       # cu: both
       attr_reader :create_update
+      # Specify what will this parameter be used for.
+      # c:  this field will used at creating, and only the parameter of
+      #     resource's create will be set as this value
+      # u:  this field will used at updating, including several scenarios:
+      #       1. the parameter of resource's update api
+      #       2. the parameter which has standalone update url
+      # r:  like output, the parameter will be sent back by backend service,
+      #     including the parameter of resource's get api and external properties.
+      # d:  this parameter will be used at deleting
+      attr_reader :crud
       attr_reader :ex_property_opts
       attr_reader :is_id # If true, this parameter stands for the unique identifier of resource
       # If true, we will include the empty value in requests made including
@@ -72,6 +82,7 @@ module Api
       check_optional_property :create_update, ::String
       check_optional_property_oneof_default \
         :create_update, %w(c u cu), nil, ::String
+      check_optional_property :crud, ::String
 
       check_optional_property :ex_property_opts, ExPropertyFields
       check_optional_property :is_id, :boolean
