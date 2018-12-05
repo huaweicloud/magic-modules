@@ -49,7 +49,7 @@ module Api
       attr_reader :get_codes    # the successful codes of Get
       attr_reader :delete_codes # the successful codes of Delete
       attr_reader :service_type # the endpoint service type of this resource
-      attr_reader :list_url     # the list url of the resource
+      attr_reader :list_op      # the list operation of the resource
     end
 
     include Properties
@@ -236,7 +236,7 @@ module Api
       check_optional_property :label_override, String
       check_optional_property :transport, Transport
       check_optional_property :references, ReferenceLinks
-      check_optional_property :msg_prefix, Hash # key is create, update, get, list
+      check_optional_property :msg_prefix, Hash # key is create, update, get
       check_optional_property :create_codes, Array
       check_optional_property :update_codes, Array
       check_optional_property :delete_codes, Array
@@ -246,7 +246,9 @@ module Api
       check_optional_property_list :delete_codes, Integer
       check_optional_property_list :get_codes, Integer
       check_property :service_type, String
-      check_property :list_url, String
+      check_property :list_op, Api::ListOp
+      @list_op.set_variable(self, :__resource)
+      @list_op.check_identity
 
       check_property :properties, Array unless @exclude
 

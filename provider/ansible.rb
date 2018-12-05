@@ -67,8 +67,8 @@ module Provider
       include Provider::Ansible::Request
       include Provider::Ansible::SelfLink
 
-      def initialize(config, api)
-        super(config, api)
+      def initialize(config, api, product_folder)
+        super(config, api, product_folder)
         @max_columns = 160
       end
 
@@ -112,7 +112,28 @@ module Provider
       end
 
       def list_url(resource)
-        base_url = resource.list_url.split("\n").map(&:strip).compact
+        op = resource.list_op
+        v = []
+        unless op.query_params.nil?
+          op.identity.each do |i|
+            if op.query_params.include?(i)
+              v << i
+            end
+          end
+
+          if v.count != op.identity.count
+            ["marker", "limit", "offset"].each do |i|
+              if op.query_params.include?(i)
+                v << i
+              end
+            end
+          end
+        end
+
+        base_url = op.path
+        unless v.empty?
+          base_url = base_url + "?" + v.map { |i| "#{i}={#{i}}" }.join("&")
+        end
         full_url = [resource.__product.default_version.base_url,
                     base_url].flatten.join
         # Double {} replaced with single {} to support Python string
