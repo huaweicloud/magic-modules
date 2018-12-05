@@ -592,9 +592,11 @@ def link_wrapper(f):
     extra_param = (extra_map.keys & list_url_format_keys).collect { |i| extra_map[i] }
     check_code = ""
     check_code1 = ""
-    unless object.check_items.nil?
-      if object.check_items.length == 1
-        p1 = object.parameter(object.check_items[0])
+    list_op = object.list_op
+    identity = list_op.identity
+    unless identity.nil?
+      if identity.length == 1
+        p1 = object.parameter(identity[0])
         check_code1 = "v = module.params.get(\'#{p1.name}\')"
         cp = "i.get(\'#{p1.field_name}\') == v"
         check_code = [
@@ -602,10 +604,10 @@ def link_wrapper(f):
                        indent("if #{cp}:", 4),
                        indent("ids.add(i.get(\'#{object.resource_id}\'))", 8)
                      ].join("\n")
-      elsif object.check_items.length > 1
+      elsif identity.length > 1
         cp = []
         cp1 = []
-        for i in object.check_items
+        for i in identity
           p1 = object.parameter(i)
           cp << "i.get(\'#{p1.field_name}\')"
           cp1 << "module.params.get(\'#{p1.name}\')"
@@ -648,8 +650,8 @@ def get_resource_id(session):
 %>
     if r is None:
         return None
-<%    if object.msg_prefix('list') -%>
-    r = r.get(<%= quote_string(object.msg_prefix('list')) %>, [])
+<%    if list_op.msg_prefix -%>
+    r = r.get(<%= quote_string(list_op.msg_prefix) %>, [])
 <%    end  # object.msg_prefix -%>
 <%    unless check_code1.empty? -%>
 <%= indent(check_code1, 4) %>
@@ -678,8 +680,8 @@ def get_resource_id(session):
 %>
         if r is None:
             break
-<%    if object.msg_prefix('list') -%>
-        r = r.get(<%= quote_string(object.msg_prefix('list')) %>, [])
+<%    if list_op.msg_prefix -%>
+        r = r.get(<%= quote_string(list_op.msg_prefix) %>, [])
 <%    end  # object.msg_prefix -%>
         if r == []:
             break
