@@ -88,13 +88,13 @@ from ansible.module_utils.hwc_utils import (HwcSession, HwcModule,
 
 <%
   prod_name = object.__product.prefix[1..-1]
-  resource_editable_ps = object.properties.reject(&:output).reject(&:update_url).select { |p| p.create_update == 'u' || p.create_update == 'cu' }
+  resource_editable_ps = object.resource_editable_properties
   internals_create = []
   externals = []
   no_ex_properties = object.ex_properties.empty?
   unless no_ex_properties
-    internals_create = object.ex_properties.reject{|p1| p1.ex_property_opts&.get_url}.select{|p1| p1.create_update == 'u'}
-    externals = object.ex_properties.select{|p1| p1.ex_property_opts&.get_url}
+    internals_create = object.create_internal_opts
+    externals = object.ex_properties_of("external")
   end
   if object.async
     async_op_st = object.async.operation.service_type
@@ -763,10 +763,7 @@ def is_different(expect, actual):
 
 def create_resource_opts(module):
 <%
-  properties_in_request = [
-    object&.parameters&.reject(&:alone_parameter)&.select { |p| p.input || p.create_update == 'c' || p.create_update == 'cu' },
-    object.properties.reject(&:output).select { |p| p.create_update == 'c' || p.create_update == 'cu' },
-  ].flatten.compact
+  properties_in_request = object.create_opts
 -%>
     request = remove_empty_from_dict({
 <% if object.kind? -%>
@@ -775,7 +772,7 @@ def create_resource_opts(module):
 <%= lines(indent(request_properties(properties_in_request), 4)) -%>
     })
 <%
-  alone = object.alone_parameters.select { |p| p.input || p.create_update == 'c' || p.create_update == 'cu' }
+  alone = object.create_alone_opts
 -%>
 <% if not alone.empty? -%>
     alone_param = remove_empty_from_dict({
@@ -802,10 +799,7 @@ def create_resource_opts(module):
 
 def update_resource_opts(module):
 <%
-  properties_in_request = [
-    object&.parameters&.reject(&:alone_parameter)&.select { |p| p.create_update == 'u' || p.create_update == 'cu' },
-    resource_editable_ps,
-  ].flatten.compact
+  properties_in_request = object.update_opts
 -%>
     request = remove_nones_from_dict({
 <% if object.kind? -%>
@@ -814,7 +808,7 @@ def update_resource_opts(module):
 <%= lines(indent(request_properties(properties_in_request), 4)) -%>
     })
 <%
-  alone = object.alone_parameters.select { |p| p.create_update == 'u' || p.create_update == 'cu' }
+  alone = object.update_alone_opts
 -%>
 <% if not alone.empty? -%>
     alone_param = remove_nones_from_dict({
@@ -851,7 +845,7 @@ def _get_resource_editable_properties(module):
 
 def _get_editable_properties(module):
 <%
-  ps = object.properties.reject(&:output).select { |p| p.create_update == 'u' || p.create_update == 'cu' }
+  ps = object.properties.reject(&:output).select { |p| p.crud.include?('u') }
 -%>
     return remove_nones_from_dict({
 <% ps.map do |p| -%>
