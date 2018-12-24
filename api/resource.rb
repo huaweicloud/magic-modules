@@ -247,6 +247,8 @@ module Api
       check_optional_property_list :get_codes, Integer
       check_property :service_type, String
       check_property :list_op, Api::ListOp
+      check_property :paths, Hash
+
       @list_op.set_variable(self, :__resource)
       @list_op.check_identity
 
@@ -349,6 +351,13 @@ module Api
     def msg_prefix(t)
       if @msg_prefix
         @msg_prefix.fetch(t, nil)
+      end
+    end
+
+    # the path for CRUD operation
+    def path(t)
+      if @paths
+        @paths.fetch(t, nil)
       end
     end
 

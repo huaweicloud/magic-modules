@@ -325,7 +325,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
     opts, err = resource<%= resource_name -%>Encoder(d, meta, opts)
 
 <%     end -%>
-    url, err := replaceVars(d, "<%= self_link_url(object) -%>", nil)
+    url, err := replaceVars(d, "<%= update_url(object, nil) -%>", nil)
     if err != nil {
         return err
     }
@@ -370,7 +370,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
         return fmt.Errorf("Error creating sdk client, err=%s", err)
     }
 
-    url, err := replaceVars(d, "<%= self_link_url(object) -%>", nil)
+    url, err := replaceVars(d, "<%= delete_url(object) -%>", nil)
     if err != nil {
         return err
     }
