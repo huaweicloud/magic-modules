@@ -97,18 +97,19 @@ module Provider
 
     # Puts together the links to use to make API calls for a given resource type
     def self_link_url(resource)
-      (product_url, resource_url) = self_link_raw_url(resource)
-      [product_url, resource_url].flatten.join
+      resource.path("read")
     end
 
     def collection_url(resource)
-      base_url = resource.base_url.split("\n").map(&:strip).compact
-      [resource.__product.default_version.base_url, base_url].flatten.join
+      resource.path("create")
     end
 
     def update_url(resource, url_part)
-      return self_link_url(resource) if url_part.nil?
-      [resource.__product.default_version.base_url, url_part].flatten.join
+      resource.path("update")
+    end
+
+    def delete_url(resource)
+      resource.path("delete")
     end
 
     # Transforms a format string with field markers to a regex string with
