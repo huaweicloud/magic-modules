@@ -363,7 +363,7 @@ module Api
 
     def resource_id
       ps = properties.select(&:is_id)
-      ps.empty? ? 'id' : ps[0].field_name
+      ps.empty? ? 'id' : ps[0].field("read")
     end
 
     def parameter(name)

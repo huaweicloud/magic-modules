@@ -27,7 +27,6 @@ module Api
 
       attr_reader :output # If set value will not be sent to server on sync
       attr_reader :input # If set to true value is used only on creation
-      attr_reader :field
       attr_reader :required
       attr_reader :update_verb
       attr_reader :update_url
@@ -65,7 +64,7 @@ module Api
       check_property :exclude, :boolean
 
       check_optional_property :output, :boolean
-      check_optional_property :field, ::String
+      check_property :field, Hash
       check_optional_property :required, :boolean
 
       raise 'Property cannot be output and required at the same time.' \
@@ -98,8 +97,8 @@ module Api
       ).downcase
     end
 
-    def field_name
-      @field || @name
+    def field(t)
+      @field.fetch(t, nil)
     end
 
     def parent
