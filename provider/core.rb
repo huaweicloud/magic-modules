@@ -727,14 +727,14 @@ module Provider
       Time.now.year
     end
 
-    def is_resource_standard_async(resource)
-      if resource.async
-        async_op_st = resource.async.operation.service_type
+    def is_resource_standard_async(resource, async)
+      if async
+        async_op_st = async.operation.service_type
         if (async_op_st && async_op_st != resource.service_type)
 		return true
 	end
 
-        async_op_url = resource.async.operation.base_url.gsub(/{.*}/, ' ')
+        async_op_url = async.operation.base_url.gsub(/{.*}/, ' ')
         async_op_url != self_link_url(resource).gsub(/{.*}/, ' ')
       end
     end

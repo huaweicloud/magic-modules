@@ -53,9 +53,12 @@ module Api
         super
 
         check_optional_property :kind, String
-        check_property :path, String
+        check_optional_property :path, String
         check_property :base_url, String
-        check_property :wait_ms, Integer
+
+	@wait_ms ||= 1000
+        check_optional_property :wait_ms, Integer
+
 	check_optional_property :service_type, String
       end
     end
@@ -77,12 +80,14 @@ module Api
       attr_reader :path
       attr_reader :complete
       attr_reader :allowed
+      attr_reader :custom_function
 
       def validate
         super
         check_property :path, String
         check_property :complete, Array
         check_optional_property :allowed, Array
+        check_optional_property :custom_function, String
       end
     end
 

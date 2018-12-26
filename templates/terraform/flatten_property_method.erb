@@ -49,7 +49,7 @@ func flatten<%= prefix -%><%= titlelize_property(property) -%><%= postfix -%>(v 
         transformed := make(map[string]interface{})
 <%       end -%>
 
-<%       property.properties.each do |prop|
+<%       nested_properties.each do |prop|
            k, v, f = response_property(prop, 'val', prefix + titlelize_property(property))
            v1 = "#{go_variable(prop)}Prop"
 -%>
