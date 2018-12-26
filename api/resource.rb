@@ -222,7 +222,9 @@ module Api
     # rubocop:disable Metrics/MethodLength
     def validate
       super
-      check_optional_property :async, Api::Async
+      check_optional_property :async, Hash
+      @async.each {|k, v| check_property_value("async:#{k}", v, Api::Async)}
+
       check_optional_property :base_url, String
       check_property :description, String
       check_optional_property :exclude, :boolean

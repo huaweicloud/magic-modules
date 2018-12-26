@@ -38,14 +38,24 @@ func resource<%= resource_name -%>() *schema.Resource {
         Importer: &schema.ResourceImporter{
             State: schema.ImportStatePassthrough,
         },
+        <% unless object.async.nil? -%>
+        <%   async_c = object.async.fetch("create", nil)
+             async_u = object.async.fetch("update", nil)
+             async_d = object.async.fetch("delete", nil)
+        -%>
 
         Timeouts: &schema.ResourceTimeout {
-            Create: schema.DefaultTimeout(<%= object&.async&.operation&.timeouts&.insert_sec ? object&.async&.operation&.timeouts&.insert_sec / 60 : 10 -%> * time.Minute),
-            <% if updatable?(object) -%>
-            Update: schema.DefaultTimeout(<%= object&.async&.operation&.timeouts&.update_sec ? object&.async&.operation&.timeouts&.update_sec / 60 : 10 -%> * time.Minute),
+            <% unless async_c.nil? -%>
+            Create: schema.DefaultTimeout(<%= sprintf('%d',  async_c&.timeout / 60) -%> * time.Minute),
             <% end -%>
-            Delete: schema.DefaultTimeout(<%= object&.async&.operation&.timeouts&.delete_sec ? object&.async&.operation&.timeouts&.delete_sec / 60 : 10 -%> * time.Minute),
+            <% unless async_u.nil? -%>
+            Update: schema.DefaultTimeout(<%= sprintf('%d',  async_u&.timeout / 60) -%> * time.Minute),
+            <% end -%>
+            <% unless async_d.nil? -%>
+            Delete: schema.DefaultTimeout(<%= sprintf('%d',  async_d&.timeout / 60) -%> * time.Minute),
+            <% end -%>
         },
+        <% end -%>
 <%= lines(compile(object.custom_code.resource_definition)) if object.custom_code.resource_definition -%>
 
         Schema: map[string]*schema.Schema{
