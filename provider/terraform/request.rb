@@ -98,8 +98,7 @@ module Provider
       private
 
       def request_property(prop, hash_name='', module_name='', invoker='')
-        fn = prop.field_name
-        fn = fn.include?("/") ? fn[0, fn.index("/")] : fn
+        fn = prop.field("create") || prop.field("update") || prop.field("read")
 
         return [fn, request_output(prop, hash_name, module_name, invoker)].flatten
       end
@@ -110,8 +109,7 @@ module Provider
 
       # rubocop:disable Metrics/MethodLength
       def response_output(prop, hash_name, prefix, invoker='')
-        fn = prop.field_name
-        fn = fn.include?("/") ? fn[fn.index("/") + 1..-1] : fn
+        fn = prop.field("read")
 
         if prop.from_response
           return fn, "flatten#{prefix}#{titlelize_property(prop)}(#{hash_name})", true

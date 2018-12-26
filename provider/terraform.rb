@@ -97,19 +97,19 @@ module Provider
 
     # Puts together the links to use to make API calls for a given resource type
     def self_link_url(resource)
-      resource.path("read")
+      resource.paths.fetch("read", nil)
     end
 
     def collection_url(resource)
-      resource.path("create")
+      resource.paths.fetch("create", nil)
     end
 
     def update_url(resource, url_part)
-      resource.path("update")
+      resource.paths.fetch("update", nil)
     end
 
     def delete_url(resource)
-      resource.path("delete")
+      resource.paths.fetch("delete", nil)
     end
 
     # Transforms a format string with field markers to a regex string with
