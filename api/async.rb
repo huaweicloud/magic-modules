@@ -21,6 +21,7 @@ module Api
     attr_reader :status
     attr_reader :error
     attr_reader :async_methods
+    attr_reader :timeout
 
     def validate
       super
@@ -31,6 +32,9 @@ module Api
       check_optional_property :error, Error
       check_optional_property :update_status, Status
       check_optional_property :aync_methods, Array
+
+      @timeout ||= 10 * 60
+      check_optional_property :timeout, Integer
     end
 
     def update_status
@@ -43,7 +47,6 @@ module Api
       attr_reader :path
       attr_reader :base_url
       attr_reader :wait_ms
-      attr_reader :timeouts
       attr_reader :service_type
 
       def validate
@@ -53,33 +56,7 @@ module Api
         check_property :path, String
         check_property :base_url, String
         check_property :wait_ms, Integer
-        check_optional_property :timeouts, Timeouts
 	check_optional_property :service_type, String
-      end
-
-      # Provides timeout information for the different operation types
-      class Timeouts < Api::Object
-        # Default timeout for all operation types is 4 minutes. This can be
-        # overridden for each resource.
-        DEFAULT_INSERT_TIMEOUT_SEC = 4 * 60
-        DEFAULT_UPDATE_TIMEOUT_SEC = 4 * 60
-        DEFAULT_DELETE_TIMEOUT_SEC = 4 * 60
-
-        attr_reader :insert_sec
-        attr_reader :update_sec
-        attr_reader :delete_sec
-
-        def validate
-          super
-
-          @insert_sec ||= DEFAULT_INSERT_TIMEOUT_SEC
-          @update_sec ||= DEFAULT_UPDATE_TIMEOUT_SEC
-          @delete_sec ||= DEFAULT_DELETE_TIMEOUT_SEC
-
-          check_property :insert_sec, Integer
-          check_property :update_sec, Integer
-          check_property :delete_sec, Integer
-        end
       end
     end
 
