@@ -1,8 +1,8 @@
 <% custom_complemte_method = !status.is_a?(Api::Async::Status) -%>
     <%= return_v %>, err <%= return_v.eql?("_") ? "=" : ":=" %> waitToFinish(
 <% unless custom_complemte_method -%>
-        []string{<%= status.complete.compact.map { |x| "#{x}" } %>},
-        []string{<%= status.allowed.compact.map { |x| "#{x}" } %>, "Pending"},
+        []string{<%= status.complete.compact.map { |x| "\"#{x}\"" }.join(", ") %>},
+        []string{<%= status.allowed.compact.map { |x| "\"#{x}\"" }.join(", ") %>, "Pending"},
 <% else -%>
         []string{"Done"}, []string{"Pending"},
 <% end -%>
@@ -24,7 +24,7 @@
 
             code, err := navigateMap(r.Body, []string{<%= path2navigate(async.error.path) %>})
             if err == nil {
-                if v, err = convertToInt(code), err == nil {
+                if v, err := convertToInt(code); err == nil {
                     msg, err := navigateMap(r.Body, []string{<%= path2navigate(async.error.message) %>})
                     if err != nil {
                         return r.Body, "", fmt.Errorf("async operation failed: %v", msg)

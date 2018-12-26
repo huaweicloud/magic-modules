@@ -66,11 +66,10 @@ module Provider
                          client: client
       end
 
-      def build_resource_async_op(object, op, custom_complete_method)
+      def build_resource_async_op(object, op)
         compile_template 'templates/terraform/resource_async.erb',
                          object: object,
-                         op: op,
-                         custom_complete_method: custom_complete_method
+                         op: op
       end
 
       private

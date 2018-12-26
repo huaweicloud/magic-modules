@@ -132,7 +132,8 @@ module Provider
     end
 
     def go_variable(property)
-      Google::StringUtils.camelize(property.out_name)
+      s = property.out_name.gsub(/_(..)_/, &:upcase).gsub(/_(..)$/, &:upcase)
+      Google::StringUtils.camelize(s)
     end
 
     # Returns the nested properties. An empty list is returned if the property

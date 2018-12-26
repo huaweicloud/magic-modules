@@ -1,7 +1,7 @@
 <%
-   async = object.async
+   async = object.async.fetch(op.downcase, nil)
    cl = "client"
-   unless op.eql?("Delete") && !is_resource_standard_async(object)
+   unless op.eql?("Delete") && !is_resource_standard_async(object, async)
 -%>
     opID, err := navigateMap(r.Body, []string{<%= path2navigate(async.operation.path) %>})
     if err != nil {
@@ -13,7 +13,7 @@
         return err
     }
 <% end -%>
-<% if is_resource_standard_async(object) -%>
+<% if is_resource_standard_async(object, async) -%>
 <%   async_st = async.operation.service_type -%>
 <%   if async_st && async_st != object.service_type -%>
 
@@ -33,14 +33,14 @@
 <%   unless op.eql?("Delete") -%>
     url = <%= cl %>.ServiceURL(url)
 
-<%     if custom_complete_method.nil? -%>
+<%     if async.status.custom_function.nil? -%>
     <%= lines(build_async_wait_method(
 	    async, op.eql?("Update") ? async.update_status || async.status : async.status,
 	    op.eql?("Create") ? "obj" : "_",
 	    "d.Timeout(schema.Timeout#{op})", cl), 1) %>
 <%     else -%>
     <%= lines(build_async_wait_method(
-	    async, custom_complete_method,
+	    async, async.status.custom_function,
 	    op.eql?("Create") ? "obj" : "_",
 	    "d.Timeout(schema.Timeout#{op})", cl), 1) %>
 <%     end # if async.status.allowed -%>

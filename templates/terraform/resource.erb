@@ -143,7 +143,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
         return fmt.Errorf("Error creating <%= object.name -%>: %s", r.Err)
     }
 
-<% unless object.async && (object.async.async_methods.nil? || object.async.async_methods.include?("create"))
+<% unless (object.async && object.async.include?("create"))
      keys = []
      if object.msg_prefix('create')
        keys.push("\"#{object.msg_prefix('create')}\"")
@@ -156,11 +156,11 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     }
     d.SetId(id.(string))
 <% else -%>
-    <%= lines(build_resource_async_op(object, "Create", object.custom_code.async_create_complete), 1) %>
+    <%= lines(build_resource_async_op(object, "Create"), 1) %>
     if err != nil {
         return err
     }
-    id, err := navigateMap(obj, []string{<%= path2navigate(object.async.result.path) %>})
+    id, err := navigateMap(obj, []string{<%= path2navigate(object.async.fetch("create").result.path) %>})
     if err != nil {
         return fmt.Errorf("Error constructing id: %s", err)
     }
@@ -366,8 +366,8 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
         return fmt.Errorf("Error updating <%= object.name -%> %q: %s", d.Id(), r.Err)
     }
 
-<%     if object.async && (object.async.async_methods.nil? || object.async.async_methods.include?("update")) -%>
-    <%= lines(build_resource_async_op(object, "Update", object.custom_code.async_update_complete), 1) %>
+<%     if object.async && object.async.include?("update") -%>
+    <%= lines(build_resource_async_op(object, "Update"), 1) %>
     if err != nil {
         return err
     }
@@ -403,12 +403,12 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
         return fmt.Errorf("Error deleting <%= object.name -%> %q: %s", d.Id(), r.Err)
     }
 
-<% unless object.async && (object.async.async_methods.nil? || object.async.async_methods.include?("delete"))
+<% unless object.async && object.async.include?("delete")
 -%>
     return nil
 <% else -%>
-    <%= lines(build_resource_async_op(object, "Delete", nil), 1) %>
-<%   unless is_resource_standard_async(object) -%>
+    <%= lines(build_resource_async_op(object, "Delete"), 1) %>
+<%   unless is_resource_standard_async(object, object.async.fetch("delete")) -%>
 <%     async = object.async -%>
     _, err = waitToFinish(
         []string{"Done"}, []string{"Pending"},
