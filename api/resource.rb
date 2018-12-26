@@ -50,6 +50,7 @@ module Api
       attr_reader :delete_codes # the successful codes of Delete
       attr_reader :service_type # the endpoint service type of this resource
       attr_reader :list_op      # the list operation of the resource
+      attr_reader :paths
     end
 
     include Properties
@@ -223,7 +224,9 @@ module Api
     def validate
       super
       check_optional_property :async, Hash
-      @async.each {|k, v| check_property_value("async:#{k}", v, Api::Async)}
+      if @async
+        @async.each {|k, v| check_property_value("async:#{k}", v, Api::Async)}
+      end
 
       check_optional_property :base_url, String
       check_property :description, String
@@ -353,13 +356,6 @@ module Api
     def msg_prefix(t)
       if @msg_prefix
         @msg_prefix.fetch(t, nil)
-      end
-    end
-
-    # the path for CRUD operation
-    def path(t)
-      if @paths
-        @paths.fetch(t, nil)
       end
     end
 

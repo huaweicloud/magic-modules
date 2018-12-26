@@ -14,7 +14,7 @@
 <% end -%>
 <% if tf_types.include?(property.class) -%>
 <%   optional, computed, forcenew = optional_compute_forcenew?(property, object) -%>
-"<%= property.out_name -%>": {
+"<%= property.out_name -%>": &schema.Schema{
     Type: <%= tf_types[property.class] %>,
 <%   if property.required -%>
         Required: true,
