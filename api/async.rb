@@ -43,7 +43,6 @@ module Api
 
     # Represents the operations (requests) issues to watch for completion
     class Operation < Api::Object
-      attr_reader :kind
       attr_reader :path
       attr_reader :base_url
       attr_reader :wait_ms
@@ -51,10 +50,12 @@ module Api
 
       def validate
         super
-
-        check_optional_property :kind, String
-        check_optional_property :path, String
         check_property :base_url, String
+
+        check_optional_property :path, Hash
+	if @path
+          @path.each {|k, v| check_property_value("async.operation.path:#{k}", v, String)}
+	end
 
 	@wait_ms ||= 1000
         check_optional_property :wait_ms, Integer
