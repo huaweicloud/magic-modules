@@ -136,9 +136,17 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
    end
 -%>
     r := golangsdk.Result{}
+<% unless object.msg_prefix('create') -%>
     _, r.Err = client.<%= create_verb %>(url, &opts, &r.Body, &golangsdk.RequestOpts{
         OkCodes: successHTTPCodes,
     })
+<% else -%>
+    _, r.Err = client.<%= create_verb %>(
+        url,
+        &map[string]interface{}{"<%= object.msg_prefix('create') %>": opts},
+        &r.Body,
+        &golangsdk.RequestOpts{OkCodes: successHTTPCodes,})
+<% end -%>
     if r.Err != nil {
         return fmt.Errorf("Error creating <%= object.name -%>: %s", r.Err)
     }
@@ -189,15 +197,15 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
     if r.Err != nil {
         return fmt.Errorf("Error reading %s: %s", fmt.Sprintf("<%= resource_name -%> %q", d.Id()), r.Err)
     }
-<% unless object.msg_prefix('get') -%>
+<% unless object.msg_prefix('read') -%>
     res, ok := r.Body.(map[string]interface{})
     if !ok {
         return fmt.Errorf("Error reading %s: the result is not map", fmt.Sprintf("<%= resource_name -%> %q", d.Id()))
     }
 <% else -%>
-    v, err := navigateMap(r.Body, []string{"<%= object.msg_prefix('get') %>"})
+    v, err := navigateMap(r.Body, []string{"<%= object.msg_prefix('read') %>"})
     if err != nil {
-        return fmt.Errorf("Error reading %s: the result does not contain <%= object.msg_prefix('get') %>", fmt.Sprintf("<%= resource_name -%> %q", d.Id()))
+        return fmt.Errorf("Error reading %s: the result does not contain <%= object.msg_prefix('read') %>", fmt.Sprintf("<%= resource_name -%> %q", d.Id()))
     }
     res := v.(map[string]interface{})
 <% end -%>
@@ -359,9 +367,17 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
        end
 -%>
     r := golangsdk.Result{}
+<% unless object.msg_prefix('update') -%>
     _, r.Err = client.<%= update_verb %>(url, &opts, &r.Body, &golangsdk.RequestOpts{
         OkCodes: successHTTPCodes,
     })
+<% else -%>
+    _, r.Err = client.<%= update_verb %>(
+        url,
+        &map[string]interface{}{"<%= object.msg_prefix('update') %>": opts},
+        &r.Body,
+        &golangsdk.RequestOpts{OkCodes: successHTTPCodes,})
+<% end -%>
     if r.Err != nil {
         return fmt.Errorf("Error updating <%= object.name -%> %q: %s", d.Id(), r.Err)
     }
@@ -408,8 +424,8 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
     return nil
 <% else -%>
     <%= lines(build_resource_async_op(object, "Delete"), 1) %>
-<%   unless is_resource_standard_async(object, object.async.fetch("delete")) -%>
-<%     async = object.async -%>
+<%   async = object.async.fetch("delete") -%>
+<%   unless is_resource_standard_async(object, async) -%>
     _, err = waitToFinish(
         []string{"Done"}, []string{"Pending"},
         d.Timeout(schema.TimeoutDelete),
@@ -436,7 +452,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
                 }
             }
             <% end -%>
-            return nil, "Pending", nil
+            return r.Body, "Pending", nil
         },
     )
 <%   end # unless is_resource_standard_async -%>

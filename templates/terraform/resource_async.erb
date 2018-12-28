@@ -5,7 +5,7 @@
 -%>
 <% unless op.eql?("Delete") && !is_resource_standard_async(object, async) -%>
 <%   if async_op.path -%>
-    pathParameters := map[string]string {
+    pathParameters := map[string][]string {
 <%     async_op.path.each do |k, v| -%>
 <%=     sprintf("\"%s\": []string{%s},", k, path2navigate(v))  %>
 <%     end -%>
