@@ -121,8 +121,8 @@ module Provider
               prop.item_type.is_a?(Api::Type::NestedObject)
           return fn, "flatten#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
 
-        elsif prop.is_a?(Api::Type::Integer)
-          return fn, "convertToInt(#{hash_name})", true
+        # elsif prop.is_a?(Api::Type::Integer)
+        #   return fn, "convertToInt(#{hash_name})", true
 
         else
           return fn, hash_name, false

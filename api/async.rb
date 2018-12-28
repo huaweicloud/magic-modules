@@ -27,11 +27,13 @@ module Api
       super
 
       check_property :operation, Operation
-      check_property :result, Result
-      check_property :status, Status
+
+      # for delete, the custom status method is generated, no need config.
+      check_optional_property :status, Status
       check_optional_property :error, Error
       check_optional_property :update_status, Status
       check_optional_property :aync_methods, Array
+      check_optional_property :result, Result # not all async operations have result
 
       @timeout ||= 10 * 60
       check_optional_property :timeout, Integer
@@ -66,12 +68,12 @@ module Api
 
     # Represents the results of an Operation request
     class Result < Api::Object
-      attr_reader :path
-      attr_reader :base_url
+      attr_reader :path # used to navigate the original resource id
+      attr_reader :base_url #not used, delete later
       def validate
         super
         check_property :path, String
-	check_property :base_url, String
+	check_optional_property :base_url, String
       end
     end
 

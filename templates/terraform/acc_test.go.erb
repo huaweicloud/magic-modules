@@ -66,13 +66,13 @@ func testAccCheck<%= resource_name -%>Destroy(s *terraform.State) error {
 }
 
 func testAccCheck<%= resource_name -%>Exists() resource.TestCheckFunc {
-    config := testAccProvider.Meta().(*Config)
-    client, err := config.sdkClient(OS_REGION_NAME, "<%= object.service_type %>")
-    if err != nil {
-        return fmt.Errorf("Error creating sdk client, err=%s", err)
-    }
-
     return func(s *terraform.State) error {
+        config := testAccProvider.Meta().(*Config)
+        client, err := config.sdkClient(OS_REGION_NAME, "<%= object.service_type %>")
+        if err != nil {
+            return fmt.Errorf("Error creating sdk client, err=%s", err)
+        }
+
         rs, ok := s.RootModule().Resources["<%= terraform_resource_name -%>"]
         if !ok {
             return fmt.Errorf("Error checking <%= terraform_resource_name -%> exist, err=not found <%= terraform_resource_name -%>")
