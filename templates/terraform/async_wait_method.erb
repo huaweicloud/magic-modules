@@ -16,9 +16,11 @@
             return func() (interface{}, string, error) {
 <% end -%>
             r := golangsdk.Result{}
-            _, r.Err = <%= client %>.Get(url, &r.Body, nil)
+	    _, r.Err = <%= client %>.Get(
+	        url, &r.Body,
+		&golangsdk.RequestOpts{MoreHeaders: map[string]string{"Content-Type": "application/json"}})
             if r.Err != nil {
-                return nil, "Pending", nil
+                return nil, "", nil
             }
             <% if async.error -%>
 
@@ -27,9 +29,9 @@
                 if v, err := convertToInt(code); err == nil {
                     msg, err := navigateMap(r.Body, []string{<%= path2navigate(async.error.message) %>})
                     if err != nil {
-                        return r.Body, "", fmt.Errorf("async operation failed: %v", msg)
+                        return nil, "", fmt.Errorf("async operation failed: %v", msg)
                     }
-                    return r.Body, "", fmt.Errorf("async operation failed: error code = %v", v)
+                    return nil, "", fmt.Errorf("async operation failed: error code = %v", v)
                 }
             }
             <% end -%>
@@ -37,7 +39,7 @@
 <% unless custom_complemte_method -%>
             status, err := navigateMap(r.Body, []string{<%= path2navigate(status.path) %>})
             if err != nil {
-                return nil, "Pending", nil
+                return nil, "", nil
             }
             return r.Body, status.(string), nil
         },

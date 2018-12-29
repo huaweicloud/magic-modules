@@ -55,9 +55,10 @@ func testAccCheck<%= resource_name -%>Destroy(s *terraform.State) error {
         }
         url = client.ServiceURL(url)
 
-        r := golangsdk.Result{}
-        _, r.Err = client.Get(url, &r.Body, nil)
-        if r.Err == nil {
+        _, err = client.Get(
+            url, nil,
+            &golangsdk.RequestOpts{MoreHeaders: map[string]string{"Content-Type": "application/json"}})
+        if err == nil {
             return fmt.Errorf("<%= terraform_name -%> still exists at %s", url)
         }
     }
@@ -84,13 +85,14 @@ func testAccCheck<%= resource_name -%>Exists() resource.TestCheckFunc {
         }
         url = client.ServiceURL(url)
 
-        r := golangsdk.Result{}
-        _, r.Err = client.Get(url, &r.Body, nil)
-        if r.Err != nil {
-            if _, ok := r.Err.(golangsdk.ErrDefault404); ok{
+        _, err = client.Get(
+            url, nil,
+            &golangsdk.RequestOpts{MoreHeaders: map[string]string{"Content-Type": "application/json"}})
+        if err != nil {
+            if _, ok := err.(golangsdk.ErrDefault404); ok{
                 return fmt.Errorf("<%= terraform_resource_name -%> is not exist")
             }
-            return fmt.Errorf("Error checking <%= terraform_resource_name -%> exist, err=send request failed: %s", r.Err)
+            return fmt.Errorf("Error checking <%= terraform_resource_name -%> exist, err=send request failed: %s", err)
         }
         return nil
     }

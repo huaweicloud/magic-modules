@@ -193,7 +193,9 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
     url = client.ServiceURL(url)
 
     r := golangsdk.Result{}
-    _, r.Err = client.Get(url, &r.Body, nil)
+    _, r.Err = client.Get(
+        url, &r.Body,
+        &golangsdk.RequestOpts{MoreHeaders: map[string]string{"Content-Type": "application/json"}})
     if r.Err != nil {
         return fmt.Errorf("Error reading %s: %s", fmt.Sprintf("<%= resource_name -%> %q", d.Id()), r.Err)
     }
@@ -217,7 +219,7 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
   }
 <% end -%>
 
-<% object.properties.reject(&:required).each do |prop|
+<% properties_to_show(object).each do |prop|
      k, v, f = response_property(prop, 'v', resource_name)
      v1 = "#{go_variable(prop)}Prop"
 -%>
@@ -414,6 +416,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
     _, r.Err = client.Delete(url, &golangsdk.RequestOpts{
         OkCodes: successHTTPCodes,
         JSONResponse: &r.Body,
+	MoreHeaders:  map[string]string{"Content-Type": "application/json"},
     })
     if r.Err != nil {
         return fmt.Errorf("Error deleting <%= object.name -%> %q: %s", d.Id(), r.Err)
@@ -431,28 +434,16 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
         d.Timeout(schema.TimeoutDelete),
         <%= sprintf('%d', async.operation.wait_ms / 1000) %> * time.Second,
         func() (interface{}, string, error) {
-            r := golangsdk.Result{}
-            _, r.Err = client.Get(url, &r.Body, nil)
-            if r.Err != nil {
-                if _, ok := r.Err.(golangsdk.ErrDefault404); ok{
-                    return nil, "Done", nil
+            resp, err := client.Get(
+                url, nil,
+                &golangsdk.RequestOpts{MoreHeaders: map[string]string{"Content-Type": "application/json"}})
+            if err != nil {
+                if _, ok := err.(golangsdk.ErrDefault404); ok{
+                    return resp, "Done", nil
                 }
-                return nil, "Pending", r.Err
+                return nil, "", nil
             }
-            <% if async.error -%>
-
-            code, err := navigateMap(r.Body, []string{<%= path2navigate(async.error.path) %>})
-            if err == nil {
-                if v, err = convertToInt(code), err == nil {
-                    msg, err := navigateMap(r.Body, []string{<%= path2navigate(async.error.message) %>})
-                    if err != nil {
-                        return r.Body, "", fmt.Errorf("async operation failed: %v", msg)
-                    }
-                    return r.Body, "", fmt.Errorf("async operation failed: error code = %v", v)
-                }
-            }
-            <% end -%>
-            return r.Body, "Pending", nil
+            return resp, "Pending", nil
         },
     )
 <%   end # unless is_resource_standard_async -%>
@@ -460,7 +451,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <% end # unless object.async -%>
 }
 
-<% object.properties.reject(&:required).each do |prop| -%>
+<% properties_to_show(object).each do |prop| -%>
 <%= lines(build_flatten_method(resource_name, prop), 1) -%>
 <% end -%>
 
