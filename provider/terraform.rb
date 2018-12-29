@@ -228,5 +228,28 @@ module Provider
       # TODO: error check goimports
       %x(goimports -w #{filepath})
     end
+
+    def has_output_property(property)
+      if !property.required && property.crud.include?("r")
+        return true
+      end
+
+      v = nested_properties(property)
+      unless v.nil?
+        v.each do |i|
+          if has_output_property(i)
+            return true
+          end
+        end
+      end
+
+      return false
+    end
+
+    def properties_to_show(object)
+      r = object.properties.reject(&:required)
+      r1 = object.properties.select(&:required).select {|p| has_output_property(p)}
+      [r, r1].flatten
+    end
   end
 end

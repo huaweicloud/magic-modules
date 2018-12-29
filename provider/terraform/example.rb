@@ -117,7 +117,7 @@ module Provider
         s = tf.gsub(/env-OS_[A-Z_]+/, h)
         s = s.gsub(/_env-val/, "")
         lines([
-          "``hcl",
+          "```hcl",
           s[0..-2],
           "```"
         ])

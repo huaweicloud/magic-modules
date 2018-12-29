@@ -61,7 +61,7 @@ func expand<%= prefix -%><%= titlelize_property(property) -%><%= postfix -%>(v i
     original := raw.(map[string]interface{})
     transformed := make(map[string]interface{})
 
-<%       nested_properties.each_index do |i|
+<%       nested_properties.reject{|p| p.crud == "r"}.each_index do |i|
            prop = nested_properties[i]
            v2 = i == 0 ? ":=" : "="
            k, v, f = request_property(prop, "original[\"#{prop.out_name}\"]", prefix + titlelize_property(property))
@@ -96,7 +96,7 @@ func expand<%= prefix -%><%= titlelize_property(property) -%><%= postfix -%>(v i
     return transformed, nil
 <%       end -%>
 }
-<%       nested_properties.each do |prop| -%>
+<%       nested_properties.reject{|p| p.crud == "r"}.each do |prop| -%>
 <%=        lines(build_expand_method(prefix + titlelize_property(property), prop), 1) -%>
 <%       end -%>
 <%     end # nested_properties.nil? -%>
