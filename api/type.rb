@@ -30,6 +30,7 @@ module Api
       attr_reader :required
       attr_reader :update_verb
       attr_reader :update_url
+      attr_reader :field
       # Specify what will this parameter be used for.
       # c:  this field will used at creating, and only the parameter of
       #     resource's create will be set as this value
@@ -65,7 +66,7 @@ module Api
       check_property :exclude, :boolean
 
       check_optional_property :output, :boolean
-      check_optional_property :field, Hash
+      check_optional_property :field, ::String
       check_optional_property :required, :boolean
 
       raise 'Property cannot be output and required at the same time.' \
@@ -97,10 +98,6 @@ module Api
         'property',
         type
       ).downcase
-    end
-
-    def field(t)
-      @field.fetch(t, nil)
     end
 
     def parent

@@ -211,6 +211,10 @@ module Provider
       path.split('/').map { |x| "\"#{x}\"" }.join(', ')
     end
 
+    def index2navigate(index)
+      index.split('.').map { |x| "\"#{x}\"" }.join(', ')
+    end
+
     def generate_resource_tests(data)
       return if data[:object].examples.nil? || data[:object].examples&.select(&:is_basic)&.empty?
 

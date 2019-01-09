@@ -98,7 +98,7 @@ module Provider
       private
 
       def request_property(prop, hash_name='', module_name='', invoker='')
-        fn = prop.field("create") || prop.field("update") || prop.field("read")
+        fn = prop.field
 
         return [fn, request_output(prop, hash_name, module_name, invoker)].flatten
       end
@@ -109,7 +109,7 @@ module Provider
 
       # rubocop:disable Metrics/MethodLength
       def response_output(prop, hash_name, prefix, invoker='')
-        fn = prop.field("read")
+        fn = prop.field
 
         if prop.from_response
           return fn, "flatten#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
@@ -145,7 +145,7 @@ module Provider
               prop.item_type.is_a?(Api::Type::NestedObject)
           return "expand#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
 
-	elsif prop.is_a?(Api::Type::NameValues)
+        elsif prop.is_a?(Api::Type::NameValues)
           return "expand#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
 
         else
@@ -174,6 +174,30 @@ module Provider
           "except HwcClientException" + (code_if_error.empty? ? " as ex:" : ":"),
           indent(code_if_error.empty? ? module_name + ".fail_json(msg=str(ex))" : code_if_error, 4),
         ].compact
+      end
+
+      def convert_parameter(prop, arguments, prefix, invoker="")
+	n = invoker == "Read" ? "flatten" : "expand"
+        f = "#{n}#{prefix}#{titlelize_property(prop)}(#{arguments})"
+
+        #if prop.custom_convert_method
+        #  return f
+
+        if prop.is_a? Api::Type::NestedObject
+          return f
+
+        elsif prop.is_a?(Api::Type::Array) && \
+              prop.item_type.is_a?(Api::Type::NestedObject)
+          return f
+
+        elsif prop.is_a?(Api::Type::NameValues)
+          return f
+
+        else
+          d, ai = arguments.split(", ")
+          i = "[]string{#{index2navigate(prop.field)}}"
+          return "navigateValue(#{d}, #{i}, #{ai})"
+        end
       end
     end
     # rubocop:enable Metrics/ModuleLength

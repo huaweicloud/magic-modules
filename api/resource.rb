@@ -50,6 +50,7 @@ module Api
       attr_reader :service_type # the endpoint service type of this resource
       attr_reader :list_op      # the list operation of the resource
       attr_reader :paths
+      attr_reader :apis
     end
 
     include Properties
@@ -247,9 +248,14 @@ module Api
       check_property :service_type, String
       check_property :list_op, Api::ListOp
       check_property :paths, Hash
+      check_property :apis, Hash
 
       @list_op.set_variable(self, :__resource)
       @list_op.check_identity
+
+      @apis.each do |k, v|
+	check_property_value "apis::#{k}", v, Api::ApiObject
+      end
 
       check_property :properties, Array unless @exclude
 
@@ -355,7 +361,7 @@ module Api
 
     def resource_id
       ps = properties.select(&:is_id)
-      ps.empty? ? 'id' : ps[0].field("read")
+      ps.empty? ? 'id' : ps[0].field
     end
 
     def parameter(name)
