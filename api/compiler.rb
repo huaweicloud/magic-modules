@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require 'api/api'
 require 'api/async'
 require 'api/bundle'
 require 'api/list_op'

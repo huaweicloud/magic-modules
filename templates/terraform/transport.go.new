@@ -116,6 +116,35 @@ func navigateMap(d interface{}, index []string) (interface{}, error) {
 	return d, nil
 }
 
+func navigateValue(d interface{}, index []string, arrayIndex map[string]init) (interface{}, error) {
+	for _, i := range index {
+		if d1, ok := d.(map[string]interface{}); ok {
+			d, ok = d1[i]
+			if !ok {
+				return nil, fmt.Errorf("navigate:: '%s' may not exist", i)
+			}
+		} else {
+			return nil, fmt.Errorf("navigate:: Can not convert (%s) to map", reflect.TypeOf(d))
+		}
+
+		if arrayIndex != nil {
+			if j, ok := arrayIndex[i]; ok {
+				if d2, ok := d.([]interface{}); ok {
+					if j >= len(d2) {
+						return nil, fmt.Errorf("navigate:: The index is out of array")
+					}
+
+					d = d2[j]
+				} else {
+					return nil, fmt.Errorf("navigate:: Can not convert (%s) to array", reflect.TypeOf(d))
+				}
+			}
+		}
+	}
+
+	return d, nil
+}
+
 func convertToInt(v interface{}) (interface{}, error) {
 	// Handles the string fixed64 format
 	if strVal, ok := v.(string); ok {

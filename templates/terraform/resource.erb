@@ -81,31 +81,32 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     }
 
     opts := make(map[string]interface{})
-<% object.create_opts.each_index do |i|
-     prop = object.create_opts[i]
+<% object.create_opts.each do |prop| -%>
+    opts["<%= prop.name %>"] = d.Get("<%= prop.name %>")
+<% end -%>
+
+    params := make(map[string]interface{})
+<% create_params = object.apis["create"].parameters -%>
+<% create_params.each_index do |i|
+     prop = create_params[i]
      v2 = i == 0 ? ":=" : "="
-     k, v, f = request_property(prop, "d.Get(\"#{prop.out_name}\")", resource_name)
      v1 = "#{go_variable(prop)}Prop"
-     if f
 -%>
-    <%= v1 -%>, err := <%= v %>
+    <%= v1 -%>, err := <%= convert_parameter(prop, "opts, nil", "Create" + resource_name) %>
     if err != nil {
         return err
     }
-<%   else -%>
-    <%= v1 -%> := <%= v %>
-<%   end -%>
 <%   unless prop.send_empty_value -%>
     e, err <%= v2 %> isEmptyValue(reflect.ValueOf(<%= v1 -%>))
     if err != nil {
         return err
     }
     if !e {
-        opts["<%= k -%>"] = <%= v1 -%>
+        params["<%= prop.name -%>"] = <%= v1 -%>
     }
 <%   else -%>
     if _, ok := d.GetOkExists("<%= prop.out_name %>"); ok {
-        opts["<%= k -%>"] = <%= v1 -%>
+        params["<%= prop.name -%>"] = <%= v1 -%>
     }
 <%   end -%>
 
@@ -123,7 +124,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     }
     url = client.ServiceURL(url)
 
-    log.Printf("[DEBUG] Creating new <%= object.name -%>: %#v", opts)
+    log.Printf("[DEBUG] Creating new <%= object.name -%>: %#v", params)
 <%
    if object.create_verb.nil? || object.create_verb == :POST
      create_verb = 'Post'
@@ -137,13 +138,13 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 -%>
     r := golangsdk.Result{}
 <% unless object.msg_prefix('create') -%>
-    _, r.Err = client.<%= create_verb %>(url, &opts, &r.Body, &golangsdk.RequestOpts{
+    _, r.Err = client.<%= create_verb %>(url, &params, &r.Body, &golangsdk.RequestOpts{
         OkCodes: successHTTPCodes,
     })
 <% else -%>
     _, r.Err = client.<%= create_verb %>(
         url,
-        &map[string]interface{}{"<%= object.msg_prefix('create') %>": opts},
+        &map[string]interface{}{"<%= object.msg_prefix('create') %>": params},
         &r.Body,
         &golangsdk.RequestOpts{OkCodes: successHTTPCodes,})
 <% end -%>
@@ -220,23 +221,14 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
 <% end -%>
 
 <% properties_to_show(object).each do |prop|
-     k, v, f = response_property(prop, 'v', resource_name)
      v1 = "#{go_variable(prop)}Prop"
 -%>
-    if v, ok := res["<%= k %>"]; ok {
-<%   if f -%>
-        <%= v1 %>, err := <%= v %>
-        if err != nil {
-            return fmt.Errorf("Error reading <%= object.name -%>:<%= prop.out_name %>, err: %s", err)
-        }
-        if err := d.Set("<%= prop.out_name %>", <%= v1 %>); err != nil {
-            return fmt.Errorf("Error reading <%= object.name -%>:<%= prop.out_name %>, err: %s", err)
-        }
-<%   else -%>
-        if err := d.Set("<%= prop.out_name %>", <%= v %>); err != nil {
-            return fmt.Errorf("Error reading <%= object.name -%>:<%= prop.out_name %>, err: %s", err)
-        }
-<%   end -%>
+    <%= v1 %>, err := <%= convert_parameter(prop, 'res, nil', resource_name, "Read") %>
+    if err != nil {
+        return fmt.Errorf("Error reading <%= object.name -%>:<%= prop.out_name %>, err: %s", err)
+    }
+    if err := d.Set("<%= prop.out_name %>", <%= v1 %>); err != nil {
+        return fmt.Errorf("Error setting <%= object.name -%>:<%= prop.out_name %>, err: %s", err)
     }
 
 <% end -%>
@@ -314,31 +306,32 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
     d.Partial(false)
 <%   else # if object.input -%>
     opts := make(map[string]interface{})
-<%     object.update_opts.each_index do |i|
-         prop = object.update_opts[i]
+<%     object.update_opts.each do |prop| -%>
+    opts["<%= prop.name %>"] = d.Get("<%= prop.name %>")
+<%     end -%>
+
+    params := make(map[string]interface{})
+<%     update_params = object.apis["update"].parameters -%>
+<%     update_params.each_index do |i|
+         prop = update_params[i]
          v2 = i == 0 ? ":=" : "="
-         k, v, f = request_property(prop, "d.Get(\"#{prop.out_name}\")", resource_name)
          v1 = "#{go_variable(prop)}Prop"
-         if f
 -%>
-    <%= v1 -%>, err := <%= v %>
+    <%= v1 -%>, err := <%= convert_parameter(prop, "opts, nil", "Update" + resource_name) %>
     if err != nil {
         return err
     }
-<%       else -%>
-    <%= v1 -%> := <%= v %>
-<%       end -%>
 <%       unless prop.send_empty_value -%>
     e, err <%= v2 %> isEmptyValue(reflect.ValueOf(<%= v1 -%>))
     if err != nil {
         return err
     }
     if !e {
-        opts["<%= k -%>"] = <%= v1 -%>
+        params["<%= prop.name -%>"] = <%= v1 -%>
     }
 <%       else -%>
     if _, ok := d.GetOkExists("<%= prop.out_name %>"); ok {
-        opts["<%= k -%>"] = <%= v1 -%>
+        params["<%= prop.name -%>"] = <%= v1 -%>
     }
 <%       end -%>
 
@@ -357,7 +350,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
     }
     url = client.ServiceURL(url)
 
-    log.Printf("[DEBUG] Updating <%= object.name -%> %q: %#v", d.Id(), opts)
+    log.Printf("[DEBUG] Updating <%= object.name -%> %q: %#v", d.Id(), params)
 <%= lines(compile(object.custom_code.pre_update)) if object.custom_code.pre_update -%>
 <%
        if object.update_verb.nil? || object.update_verb == :PUT
@@ -370,13 +363,13 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 -%>
     r := golangsdk.Result{}
 <% unless object.msg_prefix('update') -%>
-    _, r.Err = client.<%= update_verb %>(url, &opts, &r.Body, &golangsdk.RequestOpts{
+    _, r.Err = client.<%= update_verb %>(url, &params, &r.Body, &golangsdk.RequestOpts{
         OkCodes: successHTTPCodes,
     })
 <% else -%>
     _, r.Err = client.<%= update_verb %>(
         url,
-        &map[string]interface{}{"<%= object.msg_prefix('update') %>": opts},
+        &map[string]interface{}{"<%= object.msg_prefix('update') %>": params},
         &r.Body,
         &golangsdk.RequestOpts{OkCodes: successHTTPCodes,})
 <% end -%>
@@ -455,8 +448,14 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <%= lines(build_flatten_method(resource_name, prop), 1) -%>
 <% end -%>
 
-<% object.all_user_properties.reject(&:output).each do |prop| -%>
-<%= lines(build_expand_method(resource_name, prop), 1) -%>
+<% create_params.each do |prop| -%>
+<%= lines(build_expand_method("Create" + resource_name, prop), 1) -%>
+<% end -%>
+<% if updatable?(object) -%>
+
+<%   update_params.each do |prop| -%>
+<%= lines(build_expand_method("Update" + resource_name, prop), 1) -%>
+<%   end -%>
 <% end -%>
 <% if object.custom_code.encoder -%>
 

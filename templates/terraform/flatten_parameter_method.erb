@@ -1,0 +1,72 @@
+<% if false # the license inside this if block pertains to this file -%>
+  # Copyright 2017 Google Inc.
+  # Licensed under the Apache License, Version 2.0 (the "License");
+  # you may not use this file except in compliance with the License.
+  # You may obtain a copy of the License at
+  #
+  #     http://www.apache.org/licenses/LICENSE-2.0
+  #
+  # Unless required by applicable law or agreed to in writing, software
+  # distributed under the License is distributed on an "AS IS" BASIS,
+  # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  # See the License for the specific language governing permissions and
+  # limitations under the License.
+<% end -%>
+<% postfix = ""
+   nested_properties = nested_properties(property)
+-%>
+<% if property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
+func flatten<%= prefix -%><%= titlelize_property(property) -%><%= postfix -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
+    l, err := navigateValue(d, []string{<%= index2navigate(property.field) %>}, arrayIndex)
+    if err != nil {
+    	return nil, err
+    }
+    if arrayIndex == nil {
+    	arrayIndex = make(map[string]int)
+    }
+
+    resp := make([]interface{}, 0, len(l))
+    for i := 0; i < len(l); i++ {
+        arrayIndex["<%= property.name %>"] = i
+        transformed := make(map[string]interface{})
+
+<%   nested_properties.each_index do |i|
+       prop = nested_properties[i]
+       v1 = "#{go_variable(prop)}Prop"
+-%>
+    <%= v1 -%>, err := <%= convert_parameter(prop, "d, arrayIndex", prefix + titlelize_property(property), "Read") %>
+    if err != nil {
+        return nil, fmt.Errorf("Error reading <%= property.out_name -%>:<%= prop.out_name %>, err: %s", err)
+    }
+    transformed["<%= prop.name -%>"] = <%= v1 %>
+
+<%   end -%>
+    resp = append(resp, transformed)
+    }
+
+    return resp, nil
+}
+<% elsif property.is_a?(Api::Type::NestedObject) -%>
+func flatten<%= prefix -%><%= titlelize_property(property) -%><%= postfix -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
+    resp := make(map[string]interface{})
+
+<%   nested_properties.each_index do |i|
+       prop = nested_properties[i]
+       v1 = "#{go_variable(prop)}Prop"
+-%>
+    <%= v1 -%>, err := <%= convert_parameter(prop, "d, arrayIndex", prefix + titlelize_property(property), "Read") %>
+    if err != nil {
+        return nil, fmt.Errorf("Error reading <%= property.out_name -%>:<%= prop.out_name %>, err: %s", err)
+    }
+    resp["<%= prop.name -%>"] = <%= v1 %>
+
+<%   end -%>
+    return resp, nil
+}
+<% end # if property.is_a?(Api::Type::Array) -%>
+<% unless nested_properties.nil? -%>
+<%   nested_properties.each do |prop| -%>
+
+<%= lines(build_flatten_method(prefix + titlelize_property(property), prop), 1) -%>
+<%   end -%>
+<% end -%>
