@@ -86,7 +86,9 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 <% end -%>
 
     params := make(map[string]interface{})
-<% create_params = object.apis["create"].parameters -%>
+<% create_api = object.apis["create"]
+   create_params = create_api.parameters
+-%>
 <% create_params.each_index do |i|
      prop = create_params[i]
      v2 = i == 0 ? ":=" : "="
@@ -111,14 +113,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 <%   end -%>
 
 <% end -%>
-<% if object.custom_code.encoder -%>
-  opts, err = resource<%= resource_name -%>Encoder(d, meta, opts)
-  if err != nil {
-    return err
-  }
-
-<% end -%>
-    url, err := replaceVars(d, "<%= collection_url(object) -%>", nil)
+    url, err := replaceVars(d, "<%= create_api.path -%>", nil)
     if err != nil {
         return err
     }
@@ -126,14 +121,13 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 
     log.Printf("[DEBUG] Creating new <%= object.name -%>: %#v", params)
 <%
-   if object.create_verb.nil? || object.create_verb == :POST
+   verb = create_api.verb
+   if verb.nil? || verb == :POST
      create_verb = 'Post'
-     create_link = 'collection(session)'
-   elsif object.create_verb == :PUT
+   elsif verb == :PUT
      create_verb = 'Put'
-     create_link = 'self_link(session)'
    else
-     raise "Ansible does not support create_verb #{object.create_verb}"
+     raise "Ansible does not support create_verb #{verb}"
    end
 -%>
     r := golangsdk.Result{}
@@ -311,7 +305,9 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 <%     end -%>
 
     params := make(map[string]interface{})
-<%     update_params = object.apis["update"].parameters -%>
+<%     update_api = object.apis["update"]
+       update_params = update_api.parameters
+-%>
 <%     update_params.each_index do |i|
          prop = update_params[i]
          v2 = i == 0 ? ":=" : "="
@@ -336,29 +332,21 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 <%       end -%>
 
 <%     end -%>
-<%# We need to decide what encoder to use here - if there's an update encoder, use that! -%>
-<%     if object.custom_code.update_encoder -%>
-    opts, err = resource<%= resource_name -%>UpdateEncoder(d, meta, opts)
-
-<%     elsif object.custom_code.encoder -%>
-    opts, err = resource<%= resource_name -%>Encoder(d, meta, opts)
-
-<%     end -%>
-    url, err := replaceVars(d, "<%= update_url(object, nil) -%>", nil)
+    url, err := replaceVars(d, "<%= update_api.path -%>", nil)
     if err != nil {
         return err
     }
     url = client.ServiceURL(url)
 
     log.Printf("[DEBUG] Updating <%= object.name -%> %q: %#v", d.Id(), params)
-<%= lines(compile(object.custom_code.pre_update)) if object.custom_code.pre_update -%>
 <%
-       if object.update_verb.nil? || object.update_verb == :PUT
+       verb = update_api.verb
+       if verb.nil? || verb == :PUT
          update_verb = 'Put'
-       elsif object.update_verb == :POST
+       elsif verb == :POST
          update_verb = 'Post'
        else
-         raise "Ansible does not support update_verb #{object.update_verb}"
+         raise "Ansible does not support update_verb #{verb}"
        end
 -%>
     r := golangsdk.Result{}
@@ -397,7 +385,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
         return fmt.Errorf("Error creating sdk client, err=%s", err)
     }
 
-    url, err := replaceVars(d, "<%= delete_url(object) -%>", nil)
+    url, err := replaceVars(d, "<%= object.apis["delete"].path -%>", nil)
     if err != nil {
         return err
     }

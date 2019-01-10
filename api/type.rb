@@ -73,7 +73,7 @@ module Api
         if @output && @required
 
       check_optional_property_oneof_default \
-        :update_verb, %i[POST PUT PATCH NONE], @__resource&.update_verb, Symbol
+        :update_verb, %i[POST PUT PATCH NONE], :PUT, Symbol
       check_optional_property :update_url, ::String
       check_optional_property :crud, ::String
 
