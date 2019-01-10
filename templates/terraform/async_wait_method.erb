@@ -24,10 +24,10 @@
             }
             <% if async.error -%>
 
-            code, err := navigateMap(r.Body, []string{<%= path2navigate(async.error.path) %>})
+            code, err := navigateValue(r.Body, []string{<%= path2navigate(async.error.path) %>}, nil)
             if err == nil {
                 if v, err := convertToInt(code); err == nil {
-                    msg, err := navigateMap(r.Body, []string{<%= path2navigate(async.error.message) %>})
+                    msg, err := navigateValue(r.Body, []string{<%= path2navigate(async.error.message) %>}, nil)
                     if err != nil {
                         return nil, "", fmt.Errorf("async operation failed: %v", msg)
                     }
@@ -37,7 +37,7 @@
             <% end -%>
 
 <% unless custom_complemte_method -%>
-            status, err := navigateMap(r.Body, []string{<%= path2navigate(status.path) %>})
+            status, err := navigateValue(r.Body, []string{<%= path2navigate(status.path) %>}, nil)
             if err != nil {
                 return nil, "", nil
             }

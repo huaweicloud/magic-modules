@@ -12,7 +12,7 @@
     }
     var data = make(map[string]string)
     for key, path := range pathParameters {
-        value, err := navigateMap(r.Body, path)
+        value, err := navigateValue(r.Body, path, nil)
         if err != nil {
             return fmt.Errorf("Error retrieving async operation path parameter: %s", err)
         }
