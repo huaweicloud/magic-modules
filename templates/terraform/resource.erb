@@ -131,26 +131,15 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
    end
 -%>
     r := golangsdk.Result{}
-<% unless object.msg_prefix('create') -%>
     _, r.Err = client.<%= create_verb %>(url, &params, &r.Body, &golangsdk.RequestOpts{
         OkCodes: successHTTPCodes,
     })
-<% else -%>
-    _, r.Err = client.<%= create_verb %>(
-        url,
-        &map[string]interface{}{"<%= object.msg_prefix('create') %>": params},
-        &r.Body,
-        &golangsdk.RequestOpts{OkCodes: successHTTPCodes,})
-<% end -%>
     if r.Err != nil {
         return fmt.Errorf("Error creating <%= object.name -%>: %s", r.Err)
     }
 
 <% unless (object.async && object.async.include?("create"))
      keys = []
-     if object.msg_prefix('create')
-       keys.push("\"#{object.msg_prefix('create')}\"")
-     end # object.msg_prefix
      keys.push("\"#{object.resource_id}\"")
 -%>
     id, err := navigateMap(r.Body, []string{<%= keys.compact.join(', ') %>})
@@ -194,25 +183,10 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
     if r.Err != nil {
         return fmt.Errorf("Error reading %s: %s", fmt.Sprintf("<%= resource_name -%> %q", d.Id()), r.Err)
     }
-<% unless object.msg_prefix('read') -%>
     res, ok := r.Body.(map[string]interface{})
     if !ok {
         return fmt.Errorf("Error reading %s: the result is not map", fmt.Sprintf("<%= resource_name -%> %q", d.Id()))
     }
-<% else -%>
-    v, err := navigateMap(r.Body, []string{"<%= object.msg_prefix('read') %>"})
-    if err != nil {
-        return fmt.Errorf("Error reading %s: the result does not contain <%= object.msg_prefix('read') %>", fmt.Sprintf("<%= resource_name -%> %q", d.Id()))
-    }
-    res := v.(map[string]interface{})
-<% end -%>
-<% if object.custom_code.decoder -%>
-
-  res, err = <%= resource_name -%>Decoder(d, meta, res)
-  if err != nil {
-    return err
-  }
-<% end -%>
 
 <% properties_to_show(object).each do |prop|
      v1 = "#{go_variable(prop)}Prop"
@@ -350,17 +324,9 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
        end
 -%>
     r := golangsdk.Result{}
-<% unless object.msg_prefix('update') -%>
     _, r.Err = client.<%= update_verb %>(url, &params, &r.Body, &golangsdk.RequestOpts{
         OkCodes: successHTTPCodes,
     })
-<% else -%>
-    _, r.Err = client.<%= update_verb %>(
-        url,
-        &map[string]interface{}{"<%= object.msg_prefix('update') %>": params},
-        &r.Body,
-        &golangsdk.RequestOpts{OkCodes: successHTTPCodes,})
-<% end -%>
     if r.Err != nil {
         return fmt.Errorf("Error updating <%= object.name -%> %q: %s", d.Id(), r.Err)
     }

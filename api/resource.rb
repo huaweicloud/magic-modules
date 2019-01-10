@@ -233,7 +233,6 @@ module Api
       check_optional_property :label_override, String
       check_optional_property :transport, Transport
       check_optional_property :references, ReferenceLinks
-      check_optional_property :msg_prefix, Hash # key is create, update, get
       check_optional_property :create_codes, Array
       check_optional_property :update_codes, Array
       check_optional_property :delete_codes, Array
@@ -343,13 +342,6 @@ module Api
 
     def create_alone_opts
       alone_parameters.select { |p| p.input || p.crud.include?('c') }
-    end
-
-    # the prefix of the request/response body for CRUD
-    def msg_prefix(t)
-      if @msg_prefix
-        @msg_prefix.fetch(t, nil)
-      end
     end
 
     def resource_id
