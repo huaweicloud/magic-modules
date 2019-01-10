@@ -46,7 +46,6 @@ module Api
       attr_reader :get_codes    # the successful codes of Get
       attr_reader :delete_codes # the successful codes of Delete
       attr_reader :service_type # the endpoint service type of this resource
-      attr_reader :list_op      # the list operation of the resource
       attr_reader :apis
     end
 
@@ -242,14 +241,15 @@ module Api
       check_optional_property_list :delete_codes, Integer
       check_optional_property_list :get_codes, Integer
       check_property :service_type, String
-      check_property :list_op, Api::ListOp
       check_property :apis, Hash
-
-      @list_op.set_variable(self, :__resource)
-      @list_op.check_identity
 
       @apis.each do |k, v|
 	check_property_value "apis::#{k}", v, Api::ApiObject
+      end
+      if @apis.include?("list")
+	list_op = @apis["list"]
+	list_op.set_variable(self, :__resource)
+        list_op.check_identity
       end
 
       check_property :properties, Array unless @exclude

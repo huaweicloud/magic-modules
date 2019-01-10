@@ -112,7 +112,7 @@ module Provider
       end
 
       def list_url(resource)
-        op = resource.list_op
+        op = resource.apis["list"]
         v = []
         unless op.query_params.nil?
           op.identity.each do |i|
