@@ -2,7 +2,7 @@ require 'api/object'
 
 module Api
   # Represents a list operation definition
-  class ApiObject < Api::Object
+  class ApiBasic < Api::Object
     attr_reader :path
     attr_reader :verb
     attr_reader :parameters
@@ -20,7 +20,17 @@ module Api
     end
   end
 
-  class ListOp < Api::ApiObject
+  class ApiCreate < Api::ApiBasic
+    attr_reader :resource_id_path
+
+    def validate
+      super
+
+      check_property :resource_id_path, String
+    end
+  end
+
+  class ApiList < Api::ApiBasic
     attr_reader :query_params
     # an array with items that uniquely identify the resource.
     attr_reader :identity
@@ -43,5 +53,4 @@ module Api
       end
     end
   end
-
 end

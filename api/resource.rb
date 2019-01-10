@@ -244,7 +244,7 @@ module Api
       check_property :apis, Hash
 
       @apis.each do |k, v|
-	check_property_value "apis::#{k}", v, Api::ApiObject
+	check_property_value "apis::#{k}", v, Api::ApiBasic
       end
       if @apis.include?("list")
 	list_op = @apis["list"]
