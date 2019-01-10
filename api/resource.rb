@@ -40,8 +40,6 @@ module Api
       attr_reader :label_override
       attr_reader :transport
       attr_reader :references
-      attr_reader :create_verb
-      attr_reader :update_verb
       attr_reader :input # If true, resource is not updatable as a whole unit
       attr_reader :create_codes # the successful codes of Create
       attr_reader :update_codes # the successful codes of Update
@@ -49,7 +47,6 @@ module Api
       attr_reader :delete_codes # the successful codes of Delete
       attr_reader :service_type # the endpoint service type of this resource
       attr_reader :list_op      # the list operation of the resource
-      attr_reader :paths
       attr_reader :apis
     end
 
@@ -247,7 +244,6 @@ module Api
       check_optional_property_list :get_codes, Integer
       check_property :service_type, String
       check_property :list_op, Api::ListOp
-      check_property :paths, Hash
       check_property :apis, Hash
 
       @list_op.set_variable(self, :__resource)
@@ -259,9 +255,6 @@ module Api
 
       check_property :properties, Array unless @exclude
 
-      check_property_oneof_default :create_verb, %i[POST PUT], :POST, Symbol
-      check_property_oneof_default \
-        :update_verb, %i[POST PUT PATCH], :PUT, Symbol
       check_optional_property :input, :boolean
 
       check_optional_property :input, :boolean
