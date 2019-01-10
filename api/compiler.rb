@@ -14,7 +14,6 @@
 require 'api/api'
 require 'api/async'
 require 'api/bundle'
-require 'api/list_op'
 require 'api/product'
 require 'api/resource'
 require 'api/type'
