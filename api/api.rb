@@ -3,12 +3,16 @@ require 'api/object'
 module Api
   # Represents a list operation definition
   class ApiBasic < Api::Object
+    attr_reader :name
     attr_reader :path
     attr_reader :verb
     attr_reader :parameters
+    attr_reader :async
 
     def validate
       super
+
+      check_property :name, String
       check_property :path, String
       check_optional_property :verb, Symbol
 
@@ -17,6 +21,7 @@ module Api
         check_property_list :parameters, Api::Type
       end
 
+      check_optional_property :async, Api::Async
     end
   end
 
