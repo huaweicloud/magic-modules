@@ -81,23 +81,20 @@ In addition to the arguments listed above, the following computed attributes are
 <% properties.select(&:output).each do |prop| -%>
 <%= lines(build_nested_property_documentation(prop)) -%>
 <% end -%>
-<% unless object.async.nil? -%>
-<%   async_c = object.async.fetch("create", nil)
-     async_u = object.async.fetch("update", nil)
-     async_d = object.async.fetch("delete", nil)
--%>
+<% at = async_timout(object) %>
+<% unless at.nil? -%>
 
 ## Timeouts
 
 This resource provides the following timeouts configuration options:
-<%   unless async_c.nil? -%>
-- `create` - Default is <%= sprintf('%d',  async_c&.timeout / 60) -%> minute.
+<%   unless at["create"].nil? -%>
+- `create` - Default is <%= sprintf('%d', at["create"] / 60) -%> minute.
 <%   end -%>
-<%   unless async_u.nil? -%>
-- `update` - Default is <%= sprintf('%d',  async_u&.timeout / 60) -%> minute.
+<%   unless at["update"].nil? -%>
+- `update` - Default is <%= sprintf('%d', at["update"] / 60) -%> minute.
 <%   end -%>
-<%   unless async_d.nil? -%>
-- `delete` - Default is <%= sprintf('%d',  async_d&.timeout / 60) -%> minute.
+<%   unless at["delete"].nil? -%>
+- `delete` - Default is <%= sprintf('%d', at["delete"] / 60) -%> minute.
 <%   end -%>
 <% end -%>
 

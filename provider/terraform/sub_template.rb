@@ -66,10 +66,12 @@ module Provider
                          client: client
       end
 
-      def build_resource_async_op(object, op)
-        compile_template 'templates/terraform/resource_async.erb',
+      def build_resource_async_op(object, api, timeout, return_variable)
+        compile_template 'templates/terraform/async_wait.erb',
                          object: object,
-                         op: op
+                         api: api,
+                         timeout: timeout,
+                         return_variable: return_variable
       end
 
       private

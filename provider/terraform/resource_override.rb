@@ -15,7 +15,6 @@ require 'provider/abstract_core'
 require 'provider/resource_override'
 require 'provider/terraform/custom_code'
 require 'provider/terraform/example'
-require 'api/async'
 
 module Provider
   class Terraform < Provider::AbstractCore
@@ -28,8 +27,6 @@ module Provider
       attr_reader :custom_code
 
       attr_reader :examples
-
-      attr_reader :async
     end
 
     # A class to control overridden properties on terraform.yaml in lieu of
@@ -49,10 +46,6 @@ module Provider
         check_optional_property_list :examples, Provider::Terraform::Example
         check_optional_property :custom_code, Provider::Terraform::CustomCode
 
-        check_optional_property :async, Hash
-        if @async
-          @async.each {|k, v| check_property_value("async:#{k}", v, Api::Async)}
-        end
       end
 
       def apply(resource)

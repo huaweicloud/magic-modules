@@ -38,21 +38,17 @@ func resource<%= resource_name -%>() *schema.Resource {
         Importer: &schema.ResourceImporter{
             State: schema.ImportStatePassthrough,
         },
-        <% unless object.async.nil? -%>
-        <%   async_c = object.async.fetch("create", nil)
-             async_u = object.async.fetch("update", nil)
-             async_d = object.async.fetch("delete", nil)
-        -%>
-
+	<% at = async_timout(object) %>
+        <% unless at.nil? -%>
         Timeouts: &schema.ResourceTimeout {
-            <% unless async_c.nil? -%>
-            Create: schema.DefaultTimeout(<%= sprintf('%d',  async_c&.timeout / 60) -%> * time.Minute),
+            <% unless at["create"].nil? -%>
+            Create: schema.DefaultTimeout(<%= sprintf('%d',  at["create"] / 60) -%> * time.Minute),
             <% end -%>
-            <% unless async_u.nil? -%>
-            Update: schema.DefaultTimeout(<%= sprintf('%d',  async_u&.timeout / 60) -%> * time.Minute),
+            <% unless at["update"].nil? -%>
+            Update: schema.DefaultTimeout(<%= sprintf('%d',  at["update"] / 60) -%> * time.Minute),
             <% end -%>
-            <% unless async_d.nil? -%>
-            Delete: schema.DefaultTimeout(<%= sprintf('%d',  async_d&.timeout / 60) -%> * time.Minute),
+            <% unless at["delete"].nil? -%>
+            Delete: schema.DefaultTimeout(<%= sprintf('%d',  at["delete"] / 60) -%> * time.Minute),
             <% end -%>
         },
         <% end -%>
@@ -138,24 +134,23 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
         return fmt.Errorf("Error creating <%= object.name -%>: %s", r.Err)
     }
 
-<% unless (object.async && object.async.include?("create")) -%>
+<% if create_api.async.nil? -%>
     id, err := navigateValue(r.Body, []string{<%= index2navigate(create_api.resource_id_path) %>}, nil)
     if err != nil {
         return fmt.Errorf("Error constructing id: %s", err)
     }
     d.SetId(id.(string))
 <% else -%>
-    <%= lines(build_resource_async_op(object, "Create"), 1) %>
+    <%= lines(build_resource_async_op(object, create_api, "d.Timeout(schema.TimeoutCreate)", "obj"), 1) %>
     if err != nil {
         return err
     }
-    id, err := navigateValue(obj, []string{<%= path2navigate(object.async.fetch("create").result.path) %>}, nil)
+    id, err := navigateValue(obj, []string{<%= index2navigate(create_api.async.result.field) %>}, nil)
     if err != nil {
         return fmt.Errorf("Error constructing id: %s", err)
     }
     d.SetId(id.(string))
 <% end # unless object.async -%>
-<%= lines(compile(object.custom_code.post_create)) if object.custom_code.post_create -%>
 
     return resource<%= resource_name -%>Read(d, meta)
 }
@@ -328,8 +323,8 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
         return fmt.Errorf("Error updating <%= object.name -%> %q: %s", d.Id(), r.Err)
     }
 
-<%     if object.async && object.async.include?("update") -%>
-    <%= lines(build_resource_async_op(object, "Update"), 1) %>
+<%     unless update_api.async.nil? -%>
+    <%= lines(build_resource_async_op(object, update_api, "d.Timeout(schema.TimeoutUpdate)", "_"), 1) %>
     if err != nil {
         return err
     }
@@ -348,7 +343,8 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
         return fmt.Errorf("Error creating sdk client, err=%s", err)
     }
 
-    url, err := replaceVars(d, "<%= object.apis["delete"].path -%>", nil)
+<% delete_api = object.apis["delete"] -%>
+    url, err := replaceVars(d, "<%= delete_api.path -%>", nil)
     if err != nil {
         return err
     }
@@ -366,17 +362,16 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
         return fmt.Errorf("Error deleting <%= object.name -%> %q: %s", d.Id(), r.Err)
     }
 
-<% unless object.async && object.async.include?("delete")
--%>
+<% if delete_api.async.nil? -%>
     return nil
 <% else -%>
-    <%= lines(build_resource_async_op(object, "Delete"), 1) %>
-<%   async = object.async.fetch("delete") -%>
-<%   unless is_resource_standard_async(object, async) -%>
+<%   unless query_async_by_self_link(object, delete_api) -%>
+    <%= lines(build_resource_async_op(object, delete_api, "d.Timeout(schema.TimeoutDelete)", "_"), 1) %>
+<%   else -%>
     _, err = waitToFinish(
         []string{"Done"}, []string{"Pending"},
         d.Timeout(schema.TimeoutDelete),
-        <%= sprintf('%d', async.operation.wait_ms / 1000) %> * time.Second,
+        <%= sprintf('%d', delete_api.async.operation.wait_ms / 1000) %> * time.Second,
         func() (interface{}, string, error) {
             resp, err := client.Get(
                 url, nil,

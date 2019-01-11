@@ -727,16 +727,55 @@ module Provider
       Time.now.year
     end
 
-    def is_resource_standard_async(resource, async)
+    def query_async_by_self_link(resource, api)
+      async = api.async
+      if async
+        async_op_st = async.operation.service_type
+        if (async_op_st && async_op_st != resource.service_type)
+		return false
+	end
+
+        async_op_url = async.operation.path.gsub(/{.*}/, ' ')
+        return async_op_url == self_link_url(resource).gsub(/{.*}/, ' ')
+      end
+
+      false
+    end
+
+    def need_build_async_url(resource, api)
+      async = api.async
       if async
         async_op_st = async.operation.service_type
         if (async_op_st && async_op_st != resource.service_type)
 		return true
 	end
 
-        async_op_url = async.operation.base_url.gsub(/{.*}/, ' ')
-        async_op_url != self_link_url(resource).gsub(/{.*}/, ' ')
+        async_op_url = async.operation.path.gsub(/{.*}/, ' ')
+        return async_op_url != api.path.gsub(/{.*}/, ' ')
       end
+
+      false
+    end
+
+    def async_timout(resource)
+      r = Hash.new
+
+      a = resource.apis["create"].async
+      if a
+        r["create"] = a.timeout
+      end
+
+      a = resource.apis["delete"].async
+      if a
+        r["delete"] = a.timeout
+      end
+
+      a = resource.apis["update"]
+      unless a.nil?
+	r["update"] = a.async.timeout
+      end
+
+      r
     end
   end
 end
