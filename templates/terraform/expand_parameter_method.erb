@@ -27,32 +27,11 @@ func expand<%= prefix -%><%= titlelize_property(property) -%><%= postfix -%>(d i
 
     req := make([]interface{}, 0, len(l))
     for i := 0; i < len(l); i++ {
-        arrayIndex["<%= property.name %>"] = i
+        arrayIndex["<%= property.field.split(".")[-1] %>"] = i
         transformed := make(map[string]interface{})
 
-<%   nested_properties.each_index do |i|
-       prop = nested_properties[i]
-       v2 = i == 0 ? ":=" : "="
-       v1 = "#{go_variable(prop)}Prop"
--%>
-    <%= v1 %>, err := <%= convert_parameter(prop, "d, arrayIndex", prefix + titlelize_property(property)) %>
-    if err != nil {
-        return nil, err
-    }
-<%     unless prop.send_empty_value -%>
-    e, err <%= v2 %> isEmptyValue(reflect.ValueOf(<%= v1 %>))
-    if err != nil {
-        return nil, err
-    }
-    if !e {
-        transformed["<%= prop.name -%>"] = <%= v1 %>
-    }
-<%     else -%>
-        transformed["<%= prop.name -%>"] = <%= v1 %>
-<%     end -%>
-
-<%   end -%>
-    req = append(req, transformed)
+        <%= lines(build_expand_properties(nested_properties, op, "d, arrayIndex", prefix + titlelize_property(property), "transformed", true), 1) -%>
+        req = append(req, transformed)
     }
 
     return req, nil
@@ -61,34 +40,13 @@ func expand<%= prefix -%><%= titlelize_property(property) -%><%= postfix -%>(d i
 func expand<%= prefix -%><%= titlelize_property(property) -%><%= postfix -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
     req := make(map[string]interface{})
 
-<%   nested_properties.each_index do |i|
-       prop = nested_properties[i]
-       v2 = i == 0 ? ":=" : "="
-       v1 = "#{go_variable(prop)}Prop"
--%>
-    <%= v1 %>, err := <%= convert_parameter(prop, "d, arrayIndex", prefix + titlelize_property(property)) %>
-    if err != nil {
-        return nil, err
-    }
-<%     unless prop.send_empty_value -%>
-    e, err <%= v2 %> isEmptyValue(reflect.ValueOf(<%= v1 %>))
-    if err != nil {
-        return nil, err
-    }
-    if !e {
-        req["<%= prop.name -%>"] = <%= v1 %>
-    }
-<%     else -%>
-        req["<%= prop.name -%>"] = <%= v1 %>
-<%     end -%>
-
-<%   end -%>
+    <%= lines(build_expand_properties(nested_properties, op, "d, arrayIndex", prefix + titlelize_property(property), "req", true), 1) -%>
     return req, nil
 }
 <% end # if property.is_a?(Api::Type::Array) -%>
 <% unless nested_properties.nil? -%>
 <%   nested_properties.each do |prop| -%>
 
-<%= lines(build_expand_method(prefix + titlelize_property(property), prop), 1) -%>
+<%= lines(build_expand_method(op, prefix + titlelize_property(property), prop), 1) -%>
 <%   end -%>
 <% end -%>

@@ -69,7 +69,7 @@
             return r.Body, status.(string), nil
         },
     )
-<% elsif async&.custom_status_check_func -%>
+<% elsif async.custom_status_check_func -%>
     <%= return_variable %>, err <%= return_variable == "_" ? "=" : ":=" %> waitToFinish(
         []string{"Done"}, []string{"Pending"},
         <%= timeout %>,

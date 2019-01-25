@@ -145,6 +145,25 @@ func navigateValue(d interface{}, index []string, arrayIndex map[string]init) (i
 	return d, nil
 }
 
+func isUserInput(d *schema.ResourceData, index []string, arrayIndex map[string]init) bool {
+	l = len(index)
+	if arrayIndex != nil {
+		l = l + len(arrayIndex)
+	}
+	var ni = make([]string, 0, l)
+	for i := range index {
+		ni = append(ni, i)
+
+		if arrayIndex != nil {
+			if j, ok := arrayIndex[i]; ok {
+				ni = append(ni, strconv.Itoa(j))
+			}
+		}
+	}
+	_, e := d.GetOkExists(strings.Join(ni, "."))
+	return e
+}
+
 func convertToInt(v interface{}) (interface{}, error) {
 	// Handles the string fixed64 format
 	if strVal, ok := v.(string); ok {
