@@ -85,30 +85,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 <% create_api = object.apis["create"]
    create_params = create_api.parameters
 -%>
-<% create_params.each_index do |i|
-     prop = create_params[i]
-     v2 = i == 0 ? ":=" : "="
-     v1 = "#{go_variable(prop)}Prop"
--%>
-    <%= v1 -%>, err := <%= convert_parameter(prop, "opts, nil", "Create" + resource_name) %>
-    if err != nil {
-        return err
-    }
-<%   unless prop.send_empty_value -%>
-    e, err <%= v2 %> isEmptyValue(reflect.ValueOf(<%= v1 -%>))
-    if err != nil {
-        return err
-    }
-    if !e {
-        params["<%= prop.name -%>"] = <%= v1 -%>
-    }
-<%   else -%>
-    if _, ok := d.GetOkExists("<%= prop.out_name %>"); ok {
-        params["<%= prop.name -%>"] = <%= v1 -%>
-    }
-<%   end -%>
-
-<% end -%>
+<%= lines(build_expand_properties(create_params, "create", "opts, nil", "Create" + resource_name, "params", false), 1) %>
     url, err := replaceVars(d, "<%= create_api.path -%>", nil)
     if err != nil {
         return err
@@ -395,12 +372,12 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <% end -%>
 
 <% create_params.each do |prop| -%>
-<%= lines(build_expand_method("Create" + resource_name, prop), 1) -%>
+<%= lines(build_expand_method("create", "Create" + resource_name, prop), 1) -%>
 <% end -%>
 <% if updatable?(object) -%>
 
 <%   update_params.each do |prop| -%>
-<%= lines(build_expand_method("Update" + resource_name, prop), 1) -%>
+<%= lines(build_expand_method("update", "Update" + resource_name, prop), 1) -%>
 <%   end -%>
 <% end -%>
 <% if object.custom_code.encoder -%>

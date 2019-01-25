@@ -777,5 +777,16 @@ module Provider
 
       r
     end
+
+    def is_complex_type(property)
+      if property.is_a?(Api::Type::NestedObject)
+        true
+      elsif property.is_a?(Api::Type::Array) &&
+            property.item_type.is_a?(Api::Type::NestedObject)
+        true
+      elsif property.is_a?(Api::Type::NameValues)
+        true
+      end
+    end
   end
 end

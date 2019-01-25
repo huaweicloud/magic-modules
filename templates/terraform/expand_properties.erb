@@ -1,0 +1,36 @@
+<% arrayIndex = args.split(", ")[1] %>
+<% properties.each_index do |i|
+     prop = properties[i]
+     v2 = i == 0 ? ":=" : "="
+     v1 = "#{go_variable(prop)}Prop"
+     r = sprintf("%s[\"%s\"] = %s", map_obj, prop.name, v1)
+     rt = return_value ? "nil, " : ""
+-%>
+    <%= v1 -%>, err := <%= convert_parameter(prop, args, prefix) %>
+    if err != nil {
+        return <%= rt %>err
+    }
+    e, err <%= v2 %> isEmptyValue(reflect.ValueOf(<%= v1 -%>))
+    if err != nil {
+        return <%= rt %>err
+    }
+    if !e {
+        <%= r %>
+<%   if op.eql?("update") -%>
+<%     if prop.send_empty_value -%>
+    } else {
+        if _, ok := isUserInput(d, []string{<%= index2navigate(prop.field) %>}, <%= arrayIndex %>); ok {
+            <%= r %>
+        }
+<%     end -%>
+<%   else -%>
+<%     if !is_complex_type(prop) && prop.send_empty_value -%>
+    } else {
+        if _, ok := isUserInput(d, []string{<%= index2navigate(prop.field) %>}, <%= arrayIndex %>); ok {
+            <%= r %>
+        }
+<%     end -%>
+    }
+
+<%   end -%>
+<% end -%>
