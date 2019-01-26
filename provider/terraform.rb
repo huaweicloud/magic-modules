@@ -114,14 +114,14 @@ module Provider
 
     # Capitalize the first letter of a property name.
     # E.g. "creationTimestamp" becomes "CreationTimestamp".
-    def titlelize_property(property)
-      p = go_variable(property)
+    def titlelize(name)
+      p = go_variable(name)
       p[0] = p[0].capitalize
       p
     end
 
-    def go_variable(property)
-      s = property.out_name.gsub(/_(..)_/, &:upcase).gsub(/_(..)$/, &:upcase)
+    def go_variable(name)
+      s = name.gsub(/_(..)_/, &:upcase).gsub(/_(..)$/, &:upcase)
       Google::StringUtils.camelize(s)
     end
 

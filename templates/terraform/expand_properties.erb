@@ -2,10 +2,14 @@
 <% properties.each_index do |i|
      prop = properties[i]
      v2 = i == 0 ? ":=" : "="
-     v1 = "#{go_variable(prop)}Prop"
+     v1 = "#{go_variable(prop.name)}Prop"
      r = sprintf("%s[\"%s\"] = %s", map_obj, prop.name, v1)
      rt = return_value ? "nil, " : ""
 -%>
+<%   unless prop.default.nil? -%>
+    <%= sprintf("%s[\"%s\"] = %s", map_obj, prop.name, convert_parameter(prop, args, prefix)) %>
+<%     next -%>
+<%   end -%>
     <%= v1 -%>, err := <%= convert_parameter(prop, args, prefix) %>
     if err != nil {
         return <%= rt %>err

@@ -16,7 +16,7 @@
    nested_properties = nested_properties(property)
 -%>
 <% if property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
-func expand<%= prefix -%><%= titlelize_property(property) -%><%= postfix -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
+func expand<%= prefix -%><%= titlelize(property.name) -%><%= postfix -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
     l, err := navigateValue(d, []string{<%= index2navigate(property.field) %>}, arrayIndex)
     if err != nil {
     	return nil, err
@@ -30,23 +30,23 @@ func expand<%= prefix -%><%= titlelize_property(property) -%><%= postfix -%>(d i
         arrayIndex["<%= property.field.split(".")[-1] %>"] = i
         transformed := make(map[string]interface{})
 
-        <%= lines(build_expand_properties(nested_properties, op, "d, arrayIndex", prefix + titlelize_property(property), "transformed", true), 1) -%>
+        <%= lines(build_expand_properties(nested_properties, op, "d, arrayIndex", prefix + titlelize(property.name), "transformed", true), 1) -%>
         req = append(req, transformed)
     }
 
     return req, nil
 }
 <% elsif property.is_a?(Api::Type::NestedObject) -%>
-func expand<%= prefix -%><%= titlelize_property(property) -%><%= postfix -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
+func expand<%= prefix -%><%= titlelize(property.name) -%><%= postfix -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
     req := make(map[string]interface{})
 
-    <%= lines(build_expand_properties(nested_properties, op, "d, arrayIndex", prefix + titlelize_property(property), "req", true), 1) -%>
+    <%= lines(build_expand_properties(nested_properties, op, "d, arrayIndex", prefix + titlelize(property.name), "req", true), 1) -%>
     return req, nil
 }
 <% end # if property.is_a?(Api::Type::Array) -%>
 <% unless nested_properties.nil? -%>
 <%   nested_properties.each do |prop| -%>
 
-<%= lines(build_expand_method(op, prefix + titlelize_property(property), prop), 1) -%>
+<%= lines(build_expand_method(op, prefix + titlelize(property.name), prop), 1) -%>
 <%   end -%>
 <% end -%>
