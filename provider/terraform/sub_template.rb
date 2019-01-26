@@ -85,6 +85,12 @@ module Provider
                          return_variable: return_variable
       end
 
+      def build_action_method(resource_name, api)
+        compile_template 'templates/terraform/action.erb',
+                         resource_name: resource_name,
+                         api: api
+      end
+
       private
 
       def autogen_notice_contrib

@@ -1,0 +1,42 @@
+func action<%= resource_name %><%= titlelize(api.name) %>(d *schema.ResourceData, result interface{}, client *golangsdk.ServiceClient) error {
+<% url_v = "url" -%>
+<% if api.path_parameter -%>
+    pathParameters := map[string][]string {
+<%     api.path_parameter.each do |k, v| -%>
+<%=      sprintf("\"%s\": []string{%s},", k, index2navigate(v))  %>
+<%     end -%>
+    }
+    var data = make(map[string]string)
+    for key, path := range pathParameters {
+        value, err := navigateValue(result, path, nil)
+        if err != nil {
+            return fmt.Errorf("Error retrieving path parameter: %s", err)
+        }
+	data[key] = value.(string)
+    }
+    url, err = replaceVars(d, "<%= api.path -%>", data)
+    if err != nil {
+        return err
+    }
+<% elsif api.path.include?("{") -%>
+    url, err = replaceVars(d, "<%= api.path -%>", nil)
+    if err != nil {
+        return err
+    }
+<% else -%>
+<%   url_v = sprintf("\"%s\"", api.path) -%>
+<% end -%>
+    url = client.ServiceURL(<%= url_v %>)
+
+    params := make(map[string]interface{})
+<%= lines(build_expand_properties(api.parameters, "api", "nil, nil", "Action" + resource_name, "params", false), 1) %>
+
+    r := golangsdk.Result{}
+    _, r.Err = client.<%= api.verb.capitalize %>(url, &params, &r.Body, &golangsdk.RequestOpts{
+        OkCodes: successHTTPCodes,
+    })
+    if r.Err != nil {
+        return fmt.Errorf("Error run action of <%= api.name %>: %s", r.Err)
+    }
+    return nil
+}

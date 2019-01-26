@@ -93,31 +93,31 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     url = client.ServiceURL(url)
 
     log.Printf("[DEBUG] Creating new <%= object.name -%>: %#v", params)
-<%
-   verb = create_api.verb
-   if verb.nil? || verb == :POST
-     create_verb = 'Post'
-   elsif verb == :PUT
-     create_verb = 'Put'
-   else
-     raise "Ansible does not support create_verb #{verb}"
-   end
--%>
+
     r := golangsdk.Result{}
-    _, r.Err = client.<%= create_verb %>(url, &params, &r.Body, &golangsdk.RequestOpts{
+    _, r.Err = client.<%= create_api.verb.capitalize %>(url, &params, &r.Body, &golangsdk.RequestOpts{
         OkCodes: successHTTPCodes,
     })
     if r.Err != nil {
         return fmt.Errorf("Error creating <%= object.name -%>: %s", r.Err)
     }
+<% action = action_after_send_create_request(object) -%>
+<% unless action.nil? -%>
 
+    err = action<%= resource_name %><%= titlelize(action.name) %>(d, r.Body, client)
+    if err != nil {
+        return err
+    }
+<% end -%>
 <% if create_api.async.nil? -%>
+
     id, err := navigateValue(r.Body, []string{<%= index2navigate(create_api.resource_id_path) %>}, nil)
     if err != nil {
         return fmt.Errorf("Error constructing id: %s", err)
     }
     d.SetId(id.(string))
 <% else -%>
+
     <%= lines(build_resource_async_op(object, create_api, "d.Timeout(schema.TimeoutCreate)", "obj"), 1) %>
     if err != nil {
         return err
@@ -158,7 +158,7 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
     }
 
 <% properties_to_show(object).each do |prop|
-     v1 = "#{go_variable(prop)}Prop"
+     v1 = "#{go_variable(prop.name)}Prop"
 -%>
     <%= v1 %>, err := <%= convert_parameter(prop, 'res, nil', resource_name, "Read") %>
     if err != nil {
@@ -192,7 +192,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
     if <%= props.map { |prop| "d.HasChange(\"#{Google::StringUtils.underscore(prop.name)}\")" }.join ' || ' -%> {
         <% props.each do |prop| -%>
             <% if settable_properties.include? prop -%>
-                <%= prop.api_name -%>Prop, err := expand<%= resource_name -%><%= titlelize_property(prop) -%>(d.Get("<%= Google::StringUtils.underscore(prop.name) -%>"), d, config)
+                <%= prop.api_name -%>Prop, err := expand<%= resource_name -%><%= titlelize(prop.name) -%>(d.Get("<%= Google::StringUtils.underscore(prop.name) -%>"), d, config)
             if err != nil {
                 return err
             }
@@ -254,7 +254,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 <%     update_params.each_index do |i|
          prop = update_params[i]
          v2 = i == 0 ? ":=" : "="
-         v1 = "#{go_variable(prop)}Prop"
+         v1 = "#{go_variable(prop.name)}Prop"
 -%>
     <%= v1 -%>, err := <%= convert_parameter(prop, "opts, nil", "Update" + resource_name) %>
     if err != nil {
@@ -282,18 +282,9 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
     url = client.ServiceURL(url)
 
     log.Printf("[DEBUG] Updating <%= object.name -%> %q: %#v", d.Id(), params)
-<%
-       verb = update_api.verb
-       if verb.nil? || verb == :PUT
-         update_verb = 'Put'
-       elsif verb == :POST
-         update_verb = 'Post'
-       else
-         raise "Ansible does not support update_verb #{verb}"
-       end
--%>
+
     r := golangsdk.Result{}
-    _, r.Err = client.<%= update_verb %>(url, &params, &r.Body, &golangsdk.RequestOpts{
+    _, r.Err = client.<%= update_api.verb.capitalize %>(url, &params, &r.Body, &golangsdk.RequestOpts{
         OkCodes: successHTTPCodes,
     })
     if r.Err != nil {
@@ -379,6 +370,11 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <%   update_params.each do |prop| -%>
 <%= lines(build_expand_method("update", "Update" + resource_name, prop), 1) -%>
 <%   end -%>
+<% end -%>
+<% action = action_after_send_create_request(object) -%>
+<% if action -%>
+
+<%= lines(build_action_method(resource_name, action), 1) -%>
 <% end -%>
 <% if object.custom_code.encoder -%>
 

@@ -14,7 +14,7 @@ module Api
 
       check_property :name, String
       check_property :path, String
-      check_optional_property :verb, Symbol
+      check_optional_property :verb, String
 
       check_optional_property :parameters, Array
       unless @parameters.nil?
@@ -31,7 +31,7 @@ module Api
     def validate
       super
 
-      check_property :resource_id_path, String
+      check_optional_property :resource_id_path, String
     end
   end
 
@@ -55,6 +55,24 @@ module Api
       @identity.each do |i|
         raise "Missing property for identity(#{i}) in list operation of resource (#{@__resource.name})" \
           if @__resource.properties.index { |p| p.name == i }.nil?
+      end
+    end
+  end
+
+  class ApiAction < Api::ApiBasic
+    AFTER_SEND_CREATE_REQUEST = "after_send_create_request"
+
+    attr_reader :when
+    attr_reader :path_parameter
+
+    def validate
+      super
+
+      check_property_oneof :when, [AFTER_SEND_CREATE_REQUEST], String
+
+      check_optional_property :path_parameter, Hash
+      if @path_parameter
+        @path_parameter.each {|k, v| check_property_value("apiaction.path_parameter:#{k}", v, String)}
       end
     end
   end

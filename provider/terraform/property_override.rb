@@ -140,10 +140,10 @@ module Provider
         # Ensures boolean values are set to false if nil
         @sensitive ||= false
 
-        @default ||= Provider::Terraform::Default.new
+        # @default ||= Provider::Terraform::Default.new
 
         check_property :sensitive, :boolean
-        check_property :default, Provider::Terraform::Default
+        # check_property :default, Provider::Terraform::Default
 
         check_optional_property :diff_suppress_func, String
         check_optional_property :state_func, String
@@ -158,7 +158,7 @@ module Provider
                                        api_property.description)
         end
 
-        @default.apply(api_property)
+        # @default.apply(api_property)
 
         super
       end

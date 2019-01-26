@@ -112,14 +112,14 @@ module Provider
         fn = prop.field
 
         if prop.from_response
-          return fn, "flatten#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
+          return fn, "flatten#{prefix}#{titlelize(prop.name)}(#{hash_name})", true
 
         elsif prop.is_a? Api::Type::NestedObject
-          return fn, "flatten#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
+          return fn, "flatten#{prefix}#{titlelize(prop.name)}(#{hash_name})", true
 
         elsif prop.is_a?(Api::Type::Array) && \
               prop.item_type.is_a?(Api::Type::NestedObject)
-          return fn, "flatten#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
+          return fn, "flatten#{prefix}#{titlelize(prop.name)}(#{hash_name})", true
 
         # elsif prop.is_a?(Api::Type::Integer)
         #   return fn, "convertToInt(#{hash_name})", true
@@ -136,17 +136,17 @@ module Provider
       # rubocop:disable Metrics/PerceivedComplexity
       def request_output(prop, hash_name, prefix, invoker='')
         if prop.to_request
-          return "expand#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
+          return "expand#{prefix}#{titlelize(prop.name)}(#{hash_name})", true
 
         elsif prop.is_a? Api::Type::NestedObject
-          return "expand#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
+          return "expand#{prefix}#{titlelize(prop.name)}(#{hash_name})", true
 
         elsif prop.is_a?(Api::Type::Array) && \
               prop.item_type.is_a?(Api::Type::NestedObject)
-          return "expand#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
+          return "expand#{prefix}#{titlelize(prop.name)}(#{hash_name})", true
 
         elsif prop.is_a?(Api::Type::NameValues)
-          return "expand#{prefix}#{titlelize_property(prop)}(#{hash_name})", true
+          return "expand#{prefix}#{titlelize(prop.name)}(#{hash_name})", true
 
         else
           return hash_name, false
@@ -177,8 +177,8 @@ module Provider
       end
 
       def convert_parameter(prop, arguments, prefix, invoker="")
-	n = invoker == "Read" ? "flatten" : "expand"
-        f = "#{n}#{prefix}#{titlelize_property(prop)}(#{arguments})"
+        n = invoker == "Read" ? "flatten" : "expand"
+        f = "#{n}#{prefix}#{titlelize(prop.name)}(#{arguments})"
 
         #if prop.custom_convert_method
         #  return f
@@ -192,6 +192,18 @@ module Provider
 
         elsif prop.is_a?(Api::Type::NameValues)
           return f
+
+        elsif !prop.default.nil?
+
+          if prop.is_a?(Api::Type::String)
+            return sprintf("\"%s\"", prop.default)
+
+          elsif prop.is_a?(Api::Type::Boolean)
+            return prop.default ? "true" : "false"
+
+          else
+            return prop.default.to_i
+	  end
 
         else
           d, ai = arguments.split(", ")

@@ -732,8 +732,8 @@ module Provider
       if async
         async_op_st = async.operation.service_type
         if (async_op_st && async_op_st != resource.service_type)
-		return false
-	end
+          return false
+        end
 
         async_op_url = async.operation.path.gsub(/{.*}/, ' ')
         return async_op_url == self_link_url(resource).gsub(/{.*}/, ' ')
@@ -747,8 +747,8 @@ module Provider
       if async
         async_op_st = async.operation.service_type
         if (async_op_st && async_op_st != resource.service_type)
-		return true
-	end
+          return true
+        end
 
         async_op_url = async.operation.path.gsub(/{.*}/, ' ')
         return async_op_url != api.path.gsub(/{.*}/, ' ')
@@ -772,7 +772,7 @@ module Provider
 
       a = resource.apis["update"]
       unless a.nil?
-	r["update"] = a.async.timeout
+        r["update"] = a.async.timeout
       end
 
       r
@@ -786,6 +786,14 @@ module Provider
         true
       elsif property.is_a?(Api::Type::NameValues)
         true
+      end
+    end
+
+    def action_after_send_create_request(resource)
+      resource.apis.each do |k, v|
+        if v.is_a?(Api::ApiAction) && v.when == Api::ApiAction::AFTER_SEND_CREATE_REQUEST
+          return v
+        end
       end
     end
   end
