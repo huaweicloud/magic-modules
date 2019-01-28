@@ -21,7 +21,7 @@ module Api
     attr_reader :timeout
     attr_reader :result
     # override on each platform
-    attr_reader :custom_status_check_func
+    # attr_reader :custom_status_check_func
 
     # override on each platform
     # custom define the whole async wait completely

@@ -76,14 +76,14 @@
         <%= sprintf('%d', async.operation.wait_ms / 1000) %> * time.Second,
         func() (interface{}, string, error) {
             r := golangsdk.Result{}
-            _, r.Err = <%= client %>.Get(
+            _, r.Err = client.Get(
                 url, &r.Body,
                 &golangsdk.RequestOpts{MoreHeaders: map[string]string{"Content-Type": "application/json"}})
             if r.Err != nil {
                 return nil, "", nil
             }
 
-            if <%= status_check_func %>(r.Body) {
+            if <%= async.custom_status_check_func %>(r.Body) {
                 return r.Body, "Done", nil
             }
             return r.Body, "Pending", nil
