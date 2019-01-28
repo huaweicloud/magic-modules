@@ -12,6 +12,7 @@
 # limitations under the License.
 
 require 'api/object'
+require 'provider/async_override'
 require 'provider/property_override'
 require 'provider/resource_override'
 
@@ -103,6 +104,30 @@ module Provider
         override.apply api_object
         populate_nonoverridden_properties api_object, override
         override_properties api_object, override
+        populate_nonoverridden_aysnc api_object, override
+        override_api_async api_object, override
+      end
+    end
+
+    def populate_nonoverridden_aysnc(api_object, override)
+      api_object.apis.each do |k, api|
+        override.api_asyncs[k] = Provider::AsyncOverride.new \
+          unless api.async.nil? || override.api_asyncs.include?(k)
+      end
+    end
+
+    def override_api_async(api_object, override)
+      override.api_asyncs.each do |path, async_override|
+        check_property_value "apis['#{path}']",
+                             async_override, Provider::AsyncOverride
+
+        raise "The api(#{path}) to override must exist" \
+          unless api_object.apis.include? path
+
+        obj = api_object.apis[path].async
+        raise "Can't override async for a none-async api(#{path})" if obj.nil?
+
+        async_override.apply obj
       end
     end
 

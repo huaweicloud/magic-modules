@@ -26,6 +26,8 @@ module Provider
     # - 'foo.bar': Property 'bar' nested under property 'foo'
     attr_reader :properties
 
+    attr_reader :api_asyncs
+
     # Apply this override to the given instance of Api::Resource
     def apply(api_resource)
       ensure_resource_properties
@@ -42,6 +44,9 @@ module Provider
       @properties ||= {}
 
       check_property :properties, Hash
+
+      @api_asyncs ||= {}
+      check_property :api_asyncs, Hash
     end
 
     private
