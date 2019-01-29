@@ -20,10 +20,6 @@ package <%= package %>
 
 <%
   resource_name = product_ns + object.name
-  properties = object.all_user_properties
-  settable_properties = properties.reject(&:output)
-  api_name_lower = String.new(product_ns)
-  api_name_lower[0] = api_name_lower[0].downcase
 -%>
 
 func resource<%= resource_name -%>() *schema.Resource {
@@ -60,7 +56,7 @@ func resource<%= resource_name -%>() *schema.Resource {
                     Optional: true,
                     Computed: true,
             },
-<% order_properties(properties).each do |prop| -%>
+<% order_properties(object.all_user_properties).each do |prop| -%>
 
     <%= lines(build_schema_property(prop, object)) -%>
 <% end -%>
@@ -184,117 +180,32 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
 <% end -%>
     return nil
 }
-
 <% if updatable?(object) -%>
+
 func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{}) error {
     config := meta.(*Config)
     client, err := config.sdkClient(GetRegion(d, config), "<%= object.service_type %>")
     if err != nil {
         return fmt.Errorf("Error creating sdk client, err=%s", err)
     }
+<%   update_api = object.apis.fetch("update", nil) -%>
+<%   unless update_api.nil? -%>
 
-    <% if object.input -%>
-    var obj map[string]interface{}
-    var url string
-    var res map[string]interface{}
-    op := &<%= api_name_lower -%>.Operation{}
-
-    d.Partial(true)
-
-    <% properties_by_custom_update(properties).each do |key, props| -%>
-    if <%= props.map { |prop| "d.HasChange(\"#{Google::StringUtils.underscore(prop.name)}\")" }.join ' || ' -%> {
-        <% props.each do |prop| -%>
-            <% if settable_properties.include? prop -%>
-                <%= prop.api_name -%>Prop, err := expand<%= resource_name -%><%= titlelize(prop.name) -%>(d.Get("<%= Google::StringUtils.underscore(prop.name) -%>"), d, config)
-            if err != nil {
-                return err
-            }
-            <% else -%>
-            <%= prop.api_name -%>Prop := d.Get("<%= Google::StringUtils.underscore(prop.name) -%>")
-            <% end -%>
-        <% end -%>
-
-        obj = map[string]interface{}{
-        <% props.each do |prop| -%>
-      <% if prop.update_statement -%>
-        <%= prop.api_name -%>": <%= compile_template(prop.update_statement,
-                                                     prefix: resource_name,
-                                                     property: prop) -%>
-      <% else -%>
-            "<%= prop.api_name -%>": <%= prop.api_name -%>Prop,
-      <% end -%>
-        <% end -%>
-        }
-        url, err = replaceVars(d, "<%= update_url(object, key[:update_url]) -%>", nil)
-        if err != nil {
-            return err
-        }
-        res, err = sendRequest(config, "<%= key[:update_verb] -%>", url, obj)
-        if err != nil {
-            return fmt.Errorf("Error updating <%= object.name -%> %q: %s", d.Id(), err)
-        }
-
-        err = Convert(res, op)
-        if err != nil {
-            return err
-        }
-
-        err = <%= api_name_lower -%>OperationWaitTime(
-            config.client<%= product_ns -%>, op, project, "Updating <%= object.name -%>",
-            int(d.Timeout(schema.TimeoutUpdate).Minutes()))
-
-        if err != nil {
-            return err
-        }
-
-        <% props.each do |prop|    -%>
-        d.SetPartial("<%= Google::StringUtils.underscore(prop.name) -%>")
-        <% end -%>
-    }
-    <% end -%>
-
-    d.Partial(false)
-<%   else # if object.input -%>
     opts := make(map[string]interface{})
 <%     object.update_opts.each do |prop| -%>
     opts["<%= prop.name %>"] = d.Get("<%= prop.name %>")
 <%     end -%>
 
     params := make(map[string]interface{})
-<%     update_api = object.apis["update"]
-       update_params = update_api.parameters
--%>
-<%     update_params.each_index do |i|
-         prop = update_params[i]
-         v2 = i == 0 ? ":=" : "="
-         v1 = "#{go_variable(prop.name)}Prop"
--%>
-    <%= v1 -%>, err := <%= convert_parameter(prop, "opts, nil", "Update" + resource_name) %>
-    if err != nil {
-        return err
-    }
-<%       unless prop.send_empty_value -%>
-    e, err <%= v2 %> isEmptyValue(reflect.ValueOf(<%= v1 -%>))
-    if err != nil {
-        return err
-    }
-    if !e {
-        params["<%= prop.name -%>"] = <%= v1 -%>
-    }
-<%       else -%>
-    if _, ok := d.GetOkExists("<%= prop.out_name %>"); ok {
-        params["<%= prop.name -%>"] = <%= v1 -%>
-    }
-<%       end -%>
+<%= lines(build_expand_properties(update_api.parameters, "update", "opts, nil", resource_name + titlelize(update_api.name), "params", false), 1) %>
 
-<%     end -%>
+    log.Printf("[DEBUG] Updating <%= object.name -%> %q: %#v", d.Id(), params)
+
     url, err := replaceVars(d, "<%= update_api.path -%>", nil)
     if err != nil {
         return err
     }
     url = client.ServiceURL(url)
-
-    log.Printf("[DEBUG] Updating <%= object.name -%> %q: %#v", d.Id(), params)
 
     r := golangsdk.Result{}
     _, r.Err = client.<%= update_api.verb.capitalize %>(url, &params, &r.Body, &golangsdk.RequestOpts{
@@ -303,23 +214,22 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
     if r.Err != nil {
         return fmt.Errorf("Error updating <%= object.name -%> %q: %s", d.Id(), r.Err)
     }
-
 <%     unless update_api.async.nil? -%>
+
     _, err = asyncWait<%= resource_name %><%= titlelize(update_api.name) %>(d, config, r.Body, client)
     if err != nil {
         return err
     }
 <%     end # unless object.async -%>
-<%   end -%>
-<% other_api(object, "u").each do | item | -%>
+<%   end # update_api.nil -%>
+<%   other_api(object, "u").each do | item | -%>
 
     err = <%= item.crud.include?("c") ? "set" : "update" %><%= resource_name %><%= titlelize(item.name) %>(d, &opts, client)
     if err != nil {
         return err
     }
-<% end -%>
+<%   end -%>
 
-<%= lines(compile(object.custom_code.post_update)) if object.custom_code.post_update -%>
     return resource<%= resource_name -%>Read(d, meta)
 }
 <% end -%>
@@ -389,7 +299,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 
     <%= lines(build_resource_async_op(object, delete_api, "d.Timeout(schema.TimeoutDelete)", resource_name), 1) %>
 <% end -%>
-<% if updatable?(object) -%>
+<% if updatable?(object) && update_api -%>
 <%   unless update_api.async.nil? -%>
 
     <%= lines(build_resource_async_op(object, update_api, "d.Timeout(schema.TimeoutUpdate)", resource_name), 1) %>
