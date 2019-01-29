@@ -790,11 +790,21 @@ module Provider
     end
 
     def action_after_send_create_request(resource)
-      resource.apis.each do |k, v|
+      resource.apis.each_value do |v|
         if v.is_a?(Api::ApiAction) && v.when == Api::ApiAction::AFTER_SEND_CREATE_REQUEST
           return v
         end
       end
+    end
+
+    def other_api(resource, crud)
+      r = []
+      resource.apis.each_value do |v|
+        if v.is_a?(Api::ApiOther) && v.crud.include?(crud)
+          r << v
+        end
+      end
+      r
     end
   end
 end

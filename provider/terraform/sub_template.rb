@@ -91,6 +91,19 @@ module Provider
                          api: api
       end
 
+      def build_other_r_method(resource_name, api)
+        compile_template 'templates/terraform/other_r.erb',
+                         resource_name: resource_name,
+                         api: api
+      end
+
+      def build_other_cu_method(prefix, resource_name, api)
+        compile_template 'templates/terraform/other_cu.erb',
+                         prefix: prefix,
+                         resource_name: resource_name,
+                         api: api
+      end
+
       private
 
       def autogen_notice_contrib

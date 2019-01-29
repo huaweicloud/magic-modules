@@ -76,4 +76,14 @@ module Api
       end
     end
   end
+
+  class ApiOther < Api::ApiBasic
+    attr_reader :crud
+
+    def validate
+      super
+
+      check_property :crud, String
+    end
+  end
 end
