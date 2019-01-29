@@ -84,13 +84,14 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     params := make(map[string]interface{})
 <% create_api = object.apis["create"] -%>
 <%= lines(build_expand_properties(create_api.parameters, "create", "opts, nil", resource_name + titlelize(create_api.name), "params", false), 1) %>
+
+    log.Printf("[DEBUG] Creating new <%= object.name -%>: %#v", params)
+
     url, err := replaceVars(d, "<%= create_api.path -%>", nil)
     if err != nil {
         return err
     }
     url = client.ServiceURL(url)
-
-    log.Printf("[DEBUG] Creating new <%= object.name -%>: %#v", params)
 
     r := golangsdk.Result{}
     _, r.Err = client.<%= create_api.verb.capitalize %>(url, &params, &r.Body, &golangsdk.RequestOpts{
@@ -116,7 +117,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     d.SetId(id.(string))
 <% else -%>
 
-    <%= lines(build_resource_async_op(object, create_api, "d.Timeout(schema.TimeoutCreate)", "obj"), 1) %>
+    obj, err := asyncWait<%= resource_name %><%= titlelize(create_api.name) %>(d, config, r.Body, client)
     if err != nil {
         return err
     }
@@ -304,7 +305,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
     }
 
 <%     unless update_api.async.nil? -%>
-    <%= lines(build_resource_async_op(object, update_api, "d.Timeout(schema.TimeoutUpdate)", "_"), 1) %>
+    _, err = asyncWait<%= resource_name %><%= titlelize(update_api.name) %>(d, config, r.Body, client)
     if err != nil {
         return err
     }
@@ -353,7 +354,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
     return nil
 <% else -%>
 <%   unless query_async_by_self_link(object, delete_api) -%>
-    <%= lines(build_resource_async_op(object, delete_api, "d.Timeout(schema.TimeoutDelete)", "_"), 1) %>
+    _, err = asyncWait<%= resource_name %><%= titlelize(delete_api.name) %>(d, config, r.Body, client)
 <%   else -%>
     _, err = waitToFinish(
         []string{"Done"}, []string{"Pending"},
@@ -376,19 +377,31 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
     return err
 <% end # unless object.async -%>
 }
+<% unless create_api.async.nil? -%>
 
-<% properties_to_show(object).each do |prop| -%>
-<%= lines(build_flatten_method(resource_name, prop), 1) -%>
+    <%= lines(build_resource_async_op(object, create_api, "d.Timeout(schema.TimeoutCreate)", resource_name), 1) %>
 <% end -%>
 
 <% create_api.parameters.each do |prop| -%>
 <%= lines(build_expand_method("create", resource_name + titlelize(create_api.name), prop), 1) -%>
 <% end -%>
+<% unless delete_api.async.nil? || query_async_by_self_link(object, delete_api) -%>
+
+    <%= lines(build_resource_async_op(object, delete_api, "d.Timeout(schema.TimeoutDelete)", resource_name), 1) %>
+<% end -%>
 <% if updatable?(object) -%>
+<%   unless update_api.async.nil? -%>
+
+    <%= lines(build_resource_async_op(object, update_api, "d.Timeout(schema.TimeoutUpdate)", resource_name), 1) %>
+<%   end -%>
 
 <%   update_api.parameters.each do |prop| -%>
 <%= lines(build_expand_method("update", resource_name + titlelize(update_api.name), prop), 1) -%>
 <%   end -%>
+<% end -%>
+
+<% properties_to_show(object).each do |prop| -%>
+<%= lines(build_flatten_method(resource_name, prop), 1) -%>
 <% end -%>
 <% action = action_after_send_create_request(object) -%>
 <% if action -%>
@@ -401,26 +414,9 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <%= lines(build_other_r_method(resource_name, item), 1) -%>
 <%   else -%>
 <%= lines(build_other_cu_method(item.crud.include?("c") ? "set" : "update", resource_name, item), 1) -%>
+
 <%     item.parameters.each do |prop| -%>
 <%= lines(build_expand_method(item.crud.include?("c") ? "create" : "update", resource_name + titlelize(item.name), prop), 1) -%>
 <%     end -%>
 <%   end -%>
-<% end -%>
-<% if object.custom_code.encoder -%>
-
-func resource<%= resource_name -%>Encoder(d *schema.ResourceData, meta interface{}, obj map[string]interface{}) (map[string]interface{}, error) {
-  <%= lines(compile(object.custom_code.encoder)) -%>
-}
-<% end -%>
-<% if object.custom_code.update_encoder-%>
-
-func resource<%= resource_name -%>UpdateEncoder(d *schema.ResourceData, meta interface{}, obj map[string]interface{}) (map[string]interface{}, error) {
-  <%= lines(compile(object.custom_code.update_encoder)) -%>
-}
-<% end -%>
-<% if object.custom_code.decoder -%>
-
-func resource<%= resource_name -%>Decoder(d *schema.ResourceData, meta interface{}, res map[string]interface{}) (map[string]interface{}, error) {
-  <%= lines(compile(object.custom_code.decoder)) -%>
-}
 <% end -%>

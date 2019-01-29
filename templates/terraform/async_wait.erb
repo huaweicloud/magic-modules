@@ -1,3 +1,4 @@
+func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schema.ResourceData, config *Config, result interface{}, client *golangsdk.ServiceClient) (interface{}, error) {
 <%
    async = api.async
    async_op = async.operation
@@ -5,7 +6,6 @@
 -%>
 <% if need_build_async_url(object, api) %>
 <%   if async_op.path_parameter -%>
-
     pathParameters := map[string][]string {
 <%     async_op.path_parameter.each do |k, v| -%>
 <%=      sprintf("\"%s\": []string{%s},", k, index2navigate(v))  %>
@@ -13,7 +13,7 @@
     }
     var data = make(map[string]string)
     for key, path := range pathParameters {
-        value, err := navigateValue(r.Body, path, nil)
+        value, err := navigateValue(result, path, nil)
         if err != nil {
             return fmt.Errorf("Error retrieving async operation path parameter: %s", err)
         }
@@ -24,7 +24,6 @@
         return err
     }
 <%   elsif async_op.path.include?("{") -%>
-
     url, err = replaceVars(d, "<%= async_op.path -%>", nil)
     if err != nil {
         return err
@@ -48,7 +47,7 @@
     url = <%= cl %>.ServiceURL(<%= url_v %>)
 <% status_check = async.status_check -%>
 <% if status_check -%>
-    <%= return_variable %>, err <%= return_variable == "_" ? "=" : ":=" %> waitToFinish(
+    return waitToFinish(
         []string{<%= status_check.complete.compact.map { |x| "\"#{x}\"" }.join(", ") %>},
         []string{<%= status_check.pending.compact.map { |x| "\"#{x}\"" }.join(", ") %>, "Pending"},
         <%= timeout %>,
@@ -70,13 +69,13 @@
         },
     )
 <% elsif async.custom_status_check_func -%>
-    <%= return_variable %>, err <%= return_variable == "_" ? "=" : ":=" %> waitToFinish(
+    return waitToFinish(
         []string{"Done"}, []string{"Pending"},
         <%= timeout %>,
         <%= sprintf('%d', async.operation.wait_ms / 1000) %> * time.Second,
         func() (interface{}, string, error) {
             r := golangsdk.Result{}
-            _, r.Err = client.Get(
+            _, r.Err = <%= cl %>.Get(
                 url, &r.Body,
                 &golangsdk.RequestOpts{MoreHeaders: map[string]string{"Content-Type": "application/json"}})
             if r.Err != nil {
@@ -92,3 +91,4 @@
 <% else -%>
 <%   raise "Must sepecify status check for api: #{api.name}" -%>
 <% end -%>
+}
