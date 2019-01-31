@@ -35,7 +35,7 @@ func resource<%= resource_name -%>() *schema.Resource {
             State: schema.ImportStatePassthrough,
         },
 	<% at = async_timout(object) %>
-        <% unless at.nil? -%>
+        <% unless at.empty? -%>
         Timeouts: &schema.ResourceTimeout {
             <% unless at["create"].nil? -%>
             Create: schema.DefaultTimeout(<%= sprintf('%d',  at["create"] / 60) -%> * time.Minute),

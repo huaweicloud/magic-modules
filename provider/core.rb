@@ -772,7 +772,9 @@ module Provider
 
       a = resource.apis["update"]
       unless a.nil?
-        r["update"] = a.async.timeout
+        if a.async
+          r["update"] = a.async.timeout
+        end
       end
 
       r
@@ -787,6 +789,7 @@ module Provider
       elsif property.is_a?(Api::Type::NameValues)
         true
       end
+      false
     end
 
     def action_after_send_create_request(resource)
@@ -795,6 +798,7 @@ module Provider
           return v
         end
       end
+      nil # if not return nil, it will return resource.apis
     end
 
     def other_api(resource, crud)

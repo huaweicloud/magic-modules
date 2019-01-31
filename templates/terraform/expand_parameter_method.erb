@@ -17,7 +17,7 @@
 -%>
 <% if property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
 func expand<%= prefix -%><%= titlelize(property.name) -%><%= postfix -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
-    l, err := navigateValue(d, []string{<%= index2navigate(property.field) %>}, arrayIndex)
+    v, err := navigateValue(d, []string{<%= index2navigate(property.field, true) %>}, arrayIndex)
     if err != nil {
     	return nil, err
     }
@@ -25,8 +25,9 @@ func expand<%= prefix -%><%= titlelize(property.name) -%><%= postfix -%>(d inter
     	arrayIndex = make(map[string]int)
     }
 
-    req := make([]interface{}, 0, len(l))
-    for i := 0; i < len(l); i++ {
+    n := len(v.([]interface{}))
+    req := make([]interface{}, 0, n)
+    for i := 0; i < n; i++ {
         arrayIndex["<%= property.field.split(".")[-1] %>"] = i
         transformed := make(map[string]interface{})
 
