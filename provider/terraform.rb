@@ -200,8 +200,8 @@ module Provider
       path.split('/').map { |x| "\"#{x}\"" }.join(', ')
     end
 
-    def index2navigate(index)
-      index.split('.').map { |x| "\"#{x}\"" }.join(', ')
+    def index2navigate(index, to_schema_name=false)
+      index.split('.').map { |x| sprintf("\"%s\"", to_schema_name ? Google::StringUtils.underscore(x) : x) }.join(', ')
     end
 
     def generate_resource_tests(data)

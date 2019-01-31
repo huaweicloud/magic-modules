@@ -116,7 +116,7 @@ func navigateMap(d interface{}, index []string) (interface{}, error) {
 	return d, nil
 }
 
-func navigateValue(d interface{}, index []string, arrayIndex map[string]init) (interface{}, error) {
+func navigateValue(d interface{}, index []string, arrayIndex map[string]int) (interface{}, error) {
 	for _, i := range index {
 		if d1, ok := d.(map[string]interface{}); ok {
 			d, ok = d1[i]
@@ -145,13 +145,13 @@ func navigateValue(d interface{}, index []string, arrayIndex map[string]init) (i
 	return d, nil
 }
 
-func isUserInput(d *schema.ResourceData, index []string, arrayIndex map[string]init) bool {
-	l = len(index)
+func isUserInput(d *schema.ResourceData, index []string, arrayIndex map[string]int) bool {
+	n := len(index)
 	if arrayIndex != nil {
-		l = l + len(arrayIndex)
+		n = n + len(arrayIndex)
 	}
-	var ni = make([]string, 0, l)
-	for i := range index {
+	var ni = make([]string, 0, n)
+	for _, i := range index {
 		ni = append(ni, i)
 
 		if arrayIndex != nil {

@@ -207,7 +207,7 @@ module Provider
 
         else
           d, ai = arguments.split(", ")
-          i = "[]string{#{index2navigate(prop.field)}}"
+          i = "[]string{#{index2navigate(prop.field, invoker != "Read")}}"
           return "navigateValue(#{d}, #{i}, #{ai})"
         end
       end
