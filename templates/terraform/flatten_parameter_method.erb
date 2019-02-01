@@ -17,29 +17,37 @@
 -%>
 <% if property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
 func flatten<%= prefix -%><%= titlelize(property.name) -%><%= postfix -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
-    v, err := navigateValue(d, []string{<%= index2navigate(property.field) %>}, arrayIndex)
+    newArrayIndex := make(map[string]int)
+    if arrayIndex != nil {
+        for k, v := range arrayIndex {
+            newArrayIndex[k] = v
+	}
+    }
+
+    v, err := navigateValue(d, []string{<%= index2navigate(property.field) %>}, newArrayIndex)
     if err != nil {
     	return nil, err
-    }
-    if arrayIndex == nil {
-    	arrayIndex = make(map[string]int)
     }
 
     n := len(v.([]interface{}))
     resp := make([]interface{}, 0, n)
     for i := 0; i < n; i++ {
-        arrayIndex["<%= property.field.split(".")[-1] %>"] = i
+        newArrayIndex["<%= property.field.split(".")[-1] %>"] = i
         transformed := make(map[string]interface{})
 
 <%   nested_properties.each_index do |i|
        prop = nested_properties[i]
        v1 = "#{go_variable(prop.name)}Prop"
 -%>
-    <%= v1 -%>, err := <%= convert_parameter(prop, "d, arrayIndex", prefix + titlelize(property.name), "Read") %>
+    <%= v1 -%>, err := <%= convert_parameter(prop, "d, newArrayIndex", prefix + titlelize(property.name), "Read") %>
     if err != nil {
         return nil, fmt.Errorf("Error reading <%= property.out_name -%>:<%= prop.out_name %>, err: %s", err)
     }
+<%     if prop.is_a?(Api::Type::NestedObject) -%>
+    transformed["<%= prop.name -%>"] = []interface{}{<%= v1 %>}
+<%     else -%>
     transformed["<%= prop.name -%>"] = <%= v1 %>
+<%     end -%>
 
 <%   end -%>
     resp = append(resp, transformed)
@@ -59,7 +67,11 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%><%= postfix -%>(d inte
     if err != nil {
         return nil, fmt.Errorf("Error reading <%= property.out_name -%>:<%= prop.out_name %>, err: %s", err)
     }
+<%     if prop.is_a?(Api::Type::NestedObject) -%>
+    resp["<%= prop.name -%>"] = []interface{}{<%= v1 %>}
+<%     else -%>
     resp["<%= prop.name -%>"] = <%= v1 %>
+<%     end -%>
 
 <%   end -%>
     return resp, nil
