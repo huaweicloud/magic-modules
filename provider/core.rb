@@ -810,5 +810,32 @@ module Provider
       end
       r
     end
+
+    def find_property(api_entity, property_path)
+      property_name = property_path[0]
+      properties = get_properties api_entity
+      return nil if properties.nil?
+
+      api_property = properties.find { |p| p.name == property_name }
+      return nil if api_property.nil?
+
+      property_path.shift
+      if property_path.empty?
+        api_property
+      else
+        find_property api_property, property_path
+      end
+    end
+
+    def get_properties(api_entity)
+      if api_entity.is_a?(Api::Resource)
+        api_entity.all_properties
+      elsif api_entity.is_a?(Api::Type::NestedObject)
+        api_entity.all_properties
+      elsif api_entity.is_a?(Api::Type::Array) &&
+            api_entity.item_type.is_a?(Api::Type::NestedObject)
+        api_entity.item_type.all_properties
+      end
+    end
   end
 end

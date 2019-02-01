@@ -200,8 +200,28 @@ module Provider
       path.split('/').map { |x| "\"#{x}\"" }.join(', ')
     end
 
-    def index2navigate(index, to_schema_name=false)
-      index.split('.').map { |x| sprintf("\"%s\"", to_schema_name ? Google::StringUtils.underscore(x) : x) }.join(', ')
+    def index2navigate(index, to_schema=false)
+      index.split('.').map { |x| sprintf("\"%s\"", to_schema ? to_schema_name(x) : x) }.join(', ')
+    end
+
+    def to_schema_name(name)
+      Google::StringUtils.underscore(name)
+    end
+
+    def nestedobject_index(resource, index)
+      r = Hash.new
+      a = index.split(".")
+      while !a.empty? do
+        p = find_property(resource, a)
+        unless p.nil?
+          if p.is_a?(Api::Type::NestedObject)
+            r[to_schema_name(p.name)] = 0
+          end
+        end
+	a.pop
+      end
+
+      r
     end
 
     def generate_resource_tests(data)

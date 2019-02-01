@@ -79,7 +79,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 
     params := make(map[string]interface{})
 <% create_api = object.apis["create"] -%>
-<%= lines(build_expand_properties(create_api.parameters, "create", "opts, nil", resource_name + titlelize(create_api.name), "params", false), 1) %>
+<%= lines(build_expand_properties(object, create_api.parameters, "create", "opts, nil", resource_name + titlelize(create_api.name), "params", false), 1) %>
 
     log.Printf("[DEBUG] Creating new <%= object.name -%>: %#v", params)
 
@@ -173,7 +173,11 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
     if err != nil {
         return fmt.Errorf("Error reading <%= object.name -%>:<%= prop.out_name %>, err: %s", err)
     }
+<%   if prop.is_a?(Api::Type::NestedObject) -%>
+    if err := d.Set("<%= prop.out_name %>", []interface{}{<%= v1 %>}); err != nil {
+<%   else -%>
     if err := d.Set("<%= prop.out_name %>", <%= v1 %>); err != nil {
+<%   end -%>
         return fmt.Errorf("Error setting <%= object.name -%>:<%= prop.out_name %>, err: %s", err)
     }
 
@@ -197,7 +201,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 <%     end -%>
 
     params := make(map[string]interface{})
-<%= lines(build_expand_properties(update_api.parameters, "update", "opts, nil", resource_name + titlelize(update_api.name), "params", false), 1) %>
+<%= lines(build_expand_properties(object, update_api.parameters, "update", "opts, nil", resource_name + titlelize(update_api.name), "params", false), 1) %>
 
     log.Printf("[DEBUG] Updating <%= object.name -%> %q: %#v", d.Id(), params)
 
@@ -293,7 +297,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <% end -%>
 
 <% create_api.parameters.each do |prop| -%>
-<%= lines(build_expand_method("create", resource_name + titlelize(create_api.name), prop), 1) -%>
+<%= lines(build_expand_method(object, "create", resource_name + titlelize(create_api.name), prop), 1) -%>
 <% end -%>
 <% unless delete_api.async.nil? || query_async_by_self_link(object, delete_api) -%>
 
@@ -306,7 +310,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <%   end -%>
 
 <%   update_api.parameters.each do |prop| -%>
-<%= lines(build_expand_method("update", resource_name + titlelize(update_api.name), prop), 1) -%>
+<%= lines(build_expand_method(object, "update", resource_name + titlelize(update_api.name), prop), 1) -%>
 <%   end -%>
 <% end -%>
 
@@ -316,17 +320,17 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <% action = action_after_send_create_request(object) -%>
 <% if action -%>
 
-<%= lines(build_action_method(resource_name, action), 1) -%>
+<%= lines(build_action_method(object, resource_name, action), 1) -%>
 <% end -%>
 <% object.apis.values.select { |item| item.is_a? Api::ApiOther }.each do |item| -%>
 
 <%   if item.crud.include? "r" -%>
 <%= lines(build_other_r_method(resource_name, item), 1) -%>
 <%   else -%>
-<%= lines(build_other_cu_method(item.crud.include?("c") ? "set" : "update", resource_name, item), 1) -%>
+<%= lines(build_other_cu_method(object, item.crud.include?("c") ? "set" : "update", resource_name, item), 1) -%>
 
 <%     item.parameters.each do |prop| -%>
-<%= lines(build_expand_method(item.crud.include?("c") ? "create" : "update", resource_name + titlelize(item.name), prop), 1) -%>
+<%= lines(build_expand_method(object, item.crud.include?("c") ? "create" : "update", resource_name + titlelize(item.name), prop), 1) -%>
 <%     end -%>
 <%   end -%>
 <% end -%>

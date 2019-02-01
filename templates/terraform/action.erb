@@ -29,7 +29,7 @@ func action<%= resource_name %><%= titlelize(api.name) %>(d *schema.ResourceData
     url = client.ServiceURL(<%= url_v %>)
 
     params := make(map[string]interface{})
-<%= lines(build_expand_properties(api.parameters, "api", "nil, nil", "Action" + resource_name, "params", false), 1) %>
+<%= lines(build_expand_properties(resource, api.parameters, "api", "nil, nil", "Action" + resource_name, "params", false), 1) %>
 
     r := golangsdk.Result{}
     _, r.Err = client.<%= api.verb.capitalize %>(url, &params, &r.Body, &golangsdk.RequestOpts{

@@ -82,8 +82,7 @@ In addition to the arguments listed above, the following computed attributes are
 <%= lines(build_nested_property_documentation(prop)) -%>
 <% end -%>
 <% at = async_timout(object) %>
-<% unless at.nil? -%>
-
+<% unless at.empty? -%>
 ## Timeouts
 
 This resource provides the following timeouts configuration options:
@@ -96,8 +95,8 @@ This resource provides the following timeouts configuration options:
 <%   unless at["delete"].nil? -%>
 - `delete` - Default is <%= sprintf('%d', at["delete"] / 60) -%> minute.
 <%   end -%>
-<% end -%>
 
+<% end -%>
 ## Import
 
 <%= object.name -%> can be imported using the following format:

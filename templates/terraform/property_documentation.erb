@@ -1,5 +1,5 @@
 
-* `<%= Google::StringUtils.underscore(property.name) -%>` -
+* `<%= to_schema_name(property.name) -%>` -
 <% if property.required -%>
   (Required)
 <% elsif !property.output -%>
