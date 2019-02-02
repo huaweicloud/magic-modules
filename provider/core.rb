@@ -837,5 +837,9 @@ module Provider
         api_entity.item_type.all_properties
       end
     end
+
+    def set_property_value(property, var, value)
+      property.instance_variable_set("@#{var}".to_sym, value)
+    end
   end
 end

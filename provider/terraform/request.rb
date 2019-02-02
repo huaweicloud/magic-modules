@@ -180,10 +180,10 @@ module Provider
         n = invoker == "Read" ? "flatten" : "expand"
         f = "#{n}#{prefix}#{titlelize(prop.name)}(#{arguments})"
 
-        #if prop.custom_convert_method
-        #  return f
+        if prop.to_request || prop.from_response
+          return f
 
-        if prop.is_a? Api::Type::NestedObject
+        elsif prop.is_a? Api::Type::NestedObject
           return f
 
         elsif prop.is_a?(Api::Type::Array) && \
@@ -203,7 +203,7 @@ module Provider
 
           else
             return prop.default.to_i
-	  end
+          end
 
         else
           d, ai = arguments.split(", ")
