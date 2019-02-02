@@ -28,6 +28,8 @@ module Provider
 
     attr_reader :api_asyncs
 
+    attr_reader :api_parameters
+
     # Apply this override to the given instance of Api::Resource
     def apply(api_resource)
       ensure_resource_properties
@@ -47,6 +49,9 @@ module Provider
 
       @api_asyncs ||= {}
       check_property :api_asyncs, Hash
+
+      @api_parameters ||= {}
+      check_property :api_parameters, Hash
     end
 
     private

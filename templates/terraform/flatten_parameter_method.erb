@@ -12,11 +12,22 @@
   # See the License for the specific language governing permissions and
   # limitations under the License.
 <% end -%>
-<% postfix = ""
-   nested_properties = nested_properties(property)
+<%   unless property.from_response.nil? -%>
+func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
+<%   f = property.from_response
+     set_property_value(property, "from_response", nil)
+     prefix = prefix + "Custom"
 -%>
+    v, err := <%= convert_parameter(property, "d, arrayIndex", prefix, "Read") %>
+    if err != nil {
+        return nil, err
+    }
+    <%= lines(f) -%>
+}
+<%   end -%>
+<% nested_properties = nested_properties(property) -%>
 <% if property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
-func flatten<%= prefix -%><%= titlelize(property.name) -%><%= postfix -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
+func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
     newArrayIndex := make(map[string]int)
     if arrayIndex != nil {
         for k, v := range arrayIndex {
@@ -56,7 +67,7 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%><%= postfix -%>(d inte
     return resp, nil
 }
 <% elsif property.is_a?(Api::Type::NestedObject) -%>
-func flatten<%= prefix -%><%= titlelize(property.name) -%><%= postfix -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
+func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
     resp := make(map[string]interface{})
 
 <%   nested_properties.each_index do |i|

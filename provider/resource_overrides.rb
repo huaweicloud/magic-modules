@@ -106,6 +106,8 @@ module Provider
         override_properties api_object, override
         populate_nonoverridden_aysnc api_object, override
         override_api_async api_object, override
+        populate_nonoverridden_parameters(api_object, override)
+        override_api_parameters(api_object, override)
       end
     end
 
@@ -128,6 +130,36 @@ module Provider
         raise "Can't override async for a none-async api(#{path})" if obj.nil?
 
         async_override.apply obj
+      end
+    end
+
+    def populate_nonoverridden_parameters(api_object, override)
+      api_object.apis.values.reject{ |item| item.parameters.nil? }.each do |api|
+        api.parameters.each do |prop|
+          override.properties[prop.name] = @__config.property_override.new \
+            unless override.properties.include?(prop.name)
+          populate_nonoverriden_nested_properties api.name + '.' + prop.name, prop, override
+        end
+      end
+    end
+
+    def override_api_parameters(api_object, override)
+      override.api_parameters.each do |path, parameter_override|
+        check_property_value "parameters['#{path}']",
+                             parameter_override, Provider::PropertyOverride
+
+        name = path.split(".")[0]
+        raise "The api(#{name}) to override must exist" \
+          unless api_object.apis.include? name
+
+        raise "no parameter(#{path}) to override" if path.index(".").nil?
+
+        parameter = find_property api_object.apis[name], path.split(".")[1..-1]
+        if parameter.nil?
+          raise "The parameter to override '#{path}' must exist in " \
+                "api #{name}"
+        end
+        parameter_override.apply parameter
       end
     end
 
@@ -161,13 +193,15 @@ module Provider
     end
 
     def get_properties(api_entity)
-      if api_entity.is_a?(Api::Resource)
-        api_entity.all_properties
-      elsif api_entity.is_a?(Api::Type::NestedObject)
+      if api_entity.is_a?(Api::Type::NestedObject)
         api_entity.all_properties
       elsif api_entity.is_a?(Api::Type::Array) &&
             api_entity.item_type.is_a?(Api::Type::NestedObject)
         api_entity.item_type.all_properties
+      elsif api_entity.is_a?(Api::Resource)
+        api_entity.all_properties
+      elsif api_entity.is_a?(Api::ApiBasic)
+        api_entity.parameters
       end
     end
 
