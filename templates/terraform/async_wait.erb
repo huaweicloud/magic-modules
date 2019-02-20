@@ -1,5 +1,7 @@
 func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schema.ResourceData, config *Config, result interface{}, client *golangsdk.ServiceClient) (interface{}, error) {
 <%
+   region = object.region_diff ? "GetRegion(d, config)" : "\"\""
+   service_level = object.service_level == "project" ? "serviceProjectLevel" : "serviceDomainLevel"
    async = api.async
    async_op = async.operation
    url_v = "url"
@@ -37,7 +39,7 @@ func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schem
 -%>
 <% if !async_st.nil? && async_st != object.service_type -%>
 
-    asyncClient, err := config.sdkClient(GetRegion(d, config), "<%= async_st %>")
+    asyncClient, err := config.sdkClient(<%= region %>, "<%= async_st %>", <%= service_level %>)
     if err != nil {
         return fmt.Errorf("Error creating sdk client(\"<%= async_st %>\"), err=%s", err)
     }
