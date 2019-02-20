@@ -54,16 +54,17 @@ func resource<%= resource_name -%>() *schema.Resource {
 <%= lines(compile(object.custom_code.resource_definition)) if object.custom_code.resource_definition -%>
 
         Schema: map[string]*schema.Schema{
+<% if object.region_diff -%>
             "region": &schema.Schema{
                     Type:     schema.TypeString,
                     Optional: true,
                     Computed: true,
             },
-<% order_properties(object.all_user_properties).each do |prop| -%>
-
-    <%= lines(build_schema_property(prop, object)) -%>
 <% end -%>
-<%= lines(compile(object.custom_code.extra_schema_entry)) if object.custom_code.extra_schema_entry -%>
+<% order_properties(object.all_user_properties).each do |prop| -%>
+    <%= lines(build_schema_property(prop, object)) -%>
+
+<% end -%>
         },
     }
 }
