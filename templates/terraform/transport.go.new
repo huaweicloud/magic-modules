@@ -124,7 +124,7 @@ func navigateValue(d interface{}, index []string, arrayIndex map[string]int) (in
 				return nil, fmt.Errorf("navigate:: '%s' may not exist", i)
 			}
 		} else {
-			return nil, fmt.Errorf("navigate:: Can not convert (%s) to map", reflect.TypeOf(d))
+			return nil, fmt.Errorf("navigateValue:: Can not convert (%s) to map, index=%s", reflect.TypeOf(d), strings.Join(index, "."))
 		}
 
 		if arrayIndex != nil {
@@ -136,7 +136,7 @@ func navigateValue(d interface{}, index []string, arrayIndex map[string]int) (in
 
 					d = d2[j]
 				} else {
-					return nil, fmt.Errorf("navigate:: Can not convert (%s) to array", reflect.TypeOf(d))
+					return nil, fmt.Errorf("navigateValue:: Can not convert (%s) to array, index=%s.%v", reflect.TypeOf(d), i, j)
 				}
 			}
 		}
