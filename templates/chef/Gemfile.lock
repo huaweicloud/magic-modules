@@ -73,7 +73,7 @@ GEM
       cucumber-core (>= 1.3)
       erubis
       ffi-yajl (~> 2.0)
-      nokogiri (>= 1.5, < 2.0)
+      nokogiri (>= 1.8.5, < 2.0)
       rake
       rufus-lru (~> 1.0)
       treetop (~> 1.4)
@@ -136,7 +136,7 @@ GEM
       net-ssh (>= 2.6.5)
       net-ssh-gateway (>= 1.2.0)
     net-telnet (0.1.1)
-    nokogiri (1.8.2)
+    nokogiri (1.8.5)
       mini_portile2 (~> 2.3.0)
     ohai (14.0.29)
       chef-config (>= 12.8, < 15)
