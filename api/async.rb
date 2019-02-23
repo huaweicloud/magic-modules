@@ -41,25 +41,22 @@ module Api
     end
 
     # Represents the operations (requests) issues to watch for completion
-    class Operation < Api::Object
-      attr_reader :path
+    class Operation < Api::ApiBasic
       attr_reader :path_parameter
       attr_reader :wait_ms
-      attr_reader :service_type
 
       def validate
-        super
-        check_property :path, String
-
         check_optional_property :path_parameter, Hash
-	if @path_parameter
+        if @path_parameter
           @path_parameter.each {|k, v| check_property_value("async.operation.path_parameter:#{k}", v, String)}
-	end
+        end
 
-	@wait_ms ||= 1000
+        @wait_ms ||= 1000
         check_optional_property :wait_ms, Integer
 
-	check_optional_property :service_type, String
+        @name ||= "async_query_api"
+
+        super
       end
     end
 

@@ -45,11 +45,8 @@ module Api
       attr_reader :update_codes # the successful codes of Update
       attr_reader :get_codes    # the successful codes of Get
       attr_reader :delete_codes # the successful codes of Delete
-      attr_reader :service_type # the endpoint service type of this resource
       attr_reader :apis
       attr_reader :version
-      attr_reader :region_diff
-      attr_reader :service_level
     end
 
     include Properties
@@ -243,16 +240,14 @@ module Api
       check_optional_property_list :update_codes, Integer
       check_optional_property_list :delete_codes, Integer
       check_optional_property_list :get_codes, Integer
-      check_property :service_type, String
       check_optional_property :version, String
       @version ||= ""
       @version = @version.strip
       unless @version.empty?
         raise "version(#{@version}) must be in format of 'v[0-9]+'" if /^v[0-9]+$/.match(@version).nil?
       end
-      check_property :region_diff, :boolean
-      check_property_oneof :service_level, ["project", "domain"], String
       check_property :apis, Hash
+
 
       @apis.each do |k, v|
 	check_property_value "apis::#{k}", v, Api::ApiBasic

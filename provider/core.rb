@@ -727,11 +727,13 @@ module Provider
       Time.now.year
     end
 
+    # api: delete api
+    # this function should be deprecated
     def query_async_by_self_link(resource, api)
       async = api.async
       if async
         async_op_st = async.operation.service_type
-        if (async_op_st && async_op_st != resource.service_type)
+        if (async_op_st && async_op_st != api.service_type)
           return false
         end
 
@@ -742,16 +744,24 @@ module Provider
       false
     end
 
-    def need_build_async_url(resource, api)
+    def need_build_async_url(api)
       async = api.async
       if async
-        async_op_st = async.operation.service_type
-        if (async_op_st && async_op_st != resource.service_type)
-          return true
-        end
-
         async_op_url = async.operation.path.gsub(/{.*}/, ' ')
         return async_op_url != api.path.gsub(/{.*}/, ' ')
+      end
+
+      false
+    end
+
+    def need_build_async_client(api)
+      async = api.async
+      if async
+        v1 = async.operation.service_type != api.service_type
+
+        v2 = async.operation.service_level != api.service_level
+
+        return v1 || v2
       end
 
       false
