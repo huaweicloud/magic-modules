@@ -220,7 +220,7 @@ module Provider
             r[to_schema_name(p.name)] = 0
           end
         end
-	a.pop
+        a.pop
       end
 
       r
@@ -266,6 +266,19 @@ module Provider
       r = object.properties.reject(&:required)
       r1 = object.properties.select(&:required).select {|p| has_output_property(p)}
       [r, r1].flatten
+    end
+
+    def argu_for_sdkclient(api, is_test=false)
+      region = "\"\""
+      service_level = "serviceDomainLevel"
+
+      if api.service_level == "project"
+        region = is_test ? "OS_REGION_NAME" : "GetRegion(d, config)"
+
+        service_level = "serviceProjectLevel"
+      end
+
+      sprintf("%s, \"%s\", %s", region, api.service_type, service_level)
     end
   end
 end

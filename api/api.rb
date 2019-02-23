@@ -8,12 +8,16 @@ module Api
     attr_reader :verb
     attr_reader :parameters
     attr_reader :async
+    attr_reader :service_level
+    attr_reader :service_type
 
     def validate
       super
 
       check_property :name, String
       check_property :path, String
+      check_property :service_type, String
+      check_property_oneof :service_level, ["project", "domain"], String
       check_optional_property :verb, String
 
       check_optional_property :parameters, Array

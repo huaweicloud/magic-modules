@@ -20,9 +20,6 @@ package <%= package %>
 
 <%
   resource_name = product_ns + object.name + object.version.upcase
-  region = object.region_diff ? "GetRegion(d, config)" : "\"\""
-  service_level = object.service_level == "project" ? "serviceProjectLevel" : "serviceDomainLevel"
-  sdkcp = sprintf("%s, \"%s\", %s", region, object.service_type, service_level)
 -%>
 
 func resource<%= resource_name -%>() *schema.Resource {
@@ -54,13 +51,6 @@ func resource<%= resource_name -%>() *schema.Resource {
 <%= lines(compile(object.custom_code.resource_definition)) if object.custom_code.resource_definition -%>
 
         Schema: map[string]*schema.Schema{
-<% if object.region_diff -%>
-            "region": &schema.Schema{
-                    Type:     schema.TypeString,
-                    Optional: true,
-                    Computed: true,
-            },
-<% end -%>
 <% order_properties(object.all_user_properties).each do |prop| -%>
     <%= lines(build_schema_property(prop, object)) -%>
 
@@ -69,9 +59,10 @@ func resource<%= resource_name -%>() *schema.Resource {
     }
 }
 
+<% create_api = object.apis["create"] -%>
 func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{}) error {
     config := meta.(*Config)
-    client, err := config.sdkClient(<%= sdkcp %>)
+    client, err := config.sdkClient(<%= argu_for_sdkclient(create_api) %>)
     if err != nil {
         return fmt.Errorf("Error creating sdk client, err=%s", err)
     }
@@ -82,7 +73,6 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 <% end -%>
 
     params := make(map[string]interface{})
-<% create_api = object.apis["create"] -%>
 <%= lines(build_expand_properties(object, create_api.parameters, "create", "opts, nil", resource_name + titlelize(create_api.name), "params", false), 1) %>
 
     log.Printf("[DEBUG] Creating new <%= object.name -%>: %#v", params)
@@ -138,9 +128,10 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     return resource<%= resource_name -%>Read(d, meta)
 }
 
+<%- read_api = object.apis["read"] %>
 func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{}) error {
     config := meta.(*Config)
-    client, err := config.sdkClient(<%= sdkcp %>)
+    client, err := config.sdkClient(<%= argu_for_sdkclient(read_api) %>)
     if err != nil {
         return fmt.Errorf("Error creating sdk client, err=%s", err)
     }
@@ -190,13 +181,13 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
 }
 <% if updatable?(object) -%>
 
+<%   update_api = object.apis.fetch("update", nil) -%>
 func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{}) error {
     config := meta.(*Config)
-    client, err := config.sdkClient(<%= sdkcp %>)
+    client, err := config.sdkClient(<%= argu_for_sdkclient(update_api) %>)
     if err != nil {
         return fmt.Errorf("Error creating sdk client, err=%s", err)
     }
-<%   update_api = object.apis.fetch("update", nil) -%>
 <%   unless update_api.nil? -%>
 
     opts := make(map[string]interface{})
@@ -242,14 +233,14 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 }
 <% end -%>
 
+<% delete_api = object.apis["delete"] -%>
 func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{}) error {
     config := meta.(*Config)
-    client, err := config.sdkClient(<%= sdkcp %>)
+    client, err := config.sdkClient(<%= argu_for_sdkclient(delete_api) %>)
     if err != nil {
         return fmt.Errorf("Error creating sdk client, err=%s", err)
     }
 
-<% delete_api = object.apis["delete"] -%>
     url, err := replaceVars(d, "<%= delete_api.path -%>", nil)
     if err != nil {
         return err
@@ -269,15 +260,19 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
     }
 
 <% if delete_api.async.nil? -%>
+<%   if create_api.async.nil? -%>
     return nil
-<% else -%>
-<%   unless query_async_by_self_link(object, delete_api) -%>
-    _, err = asyncWait<%= resource_name %><%= titlelize(delete_api.name) %>(d, config, r.Body, client)
-<%   else -%>
+<%   else # if create api is async, then it is best to make sure the resource is delete successfully -%>
+    url, err := replaceVars(d, "<%= read_api.path -%>", nil)
+    if err != nil {
+        return err
+    }
+    url = client.ServiceURL(url)
+
     _, err = waitToFinish(
         []string{"Done"}, []string{"Pending"},
         d.Timeout(schema.TimeoutDelete),
-        <%= sprintf('%d', delete_api.async.operation.wait_ms / 1000) %> * time.Second,
+        <%= sprintf('%d', create_api.async.operation.wait_ms / 1000) %> * time.Second,
         func() (interface{}, string, error) {
             resp, err := client.Get(
                 url, nil,
@@ -291,26 +286,29 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
             return resp, "Pending", nil
         },
     )
-<%   end # unless is_resource_standard_async -%>
     return err
-<% end # unless object.async -%>
+<%   end # unless is_resource_standard_async -%>
+<% else -%>
+    _, err = asyncWait<%= resource_name %><%= titlelize(delete_api.name) %>(d, config, r.Body, client)
+    return err
+<% end -%>
 }
 <% unless create_api.async.nil? -%>
 
-    <%= lines(build_resource_async_op(object, create_api, "d.Timeout(schema.TimeoutCreate)", resource_name), 1) %>
+    <%= lines(build_resource_async_op(create_api, "d.Timeout(schema.TimeoutCreate)", resource_name), 1) %>
 <% end -%>
 
 <% create_api.parameters.each do |prop| -%>
 <%= lines(build_expand_method(object, "create", resource_name + titlelize(create_api.name), prop), 1) -%>
 <% end -%>
-<% unless delete_api.async.nil? || query_async_by_self_link(object, delete_api) -%>
+<% unless delete_api.async.nil? -%>
 
-    <%= lines(build_resource_async_op(object, delete_api, "d.Timeout(schema.TimeoutDelete)", resource_name), 1) %>
+    <%= lines(build_resource_async_op(delete_api, "d.Timeout(schema.TimeoutDelete)", resource_name), 1) %>
 <% end -%>
 <% if updatable?(object) && update_api -%>
 <%   unless update_api.async.nil? -%>
 
-    <%= lines(build_resource_async_op(object, update_api, "d.Timeout(schema.TimeoutUpdate)", resource_name), 1) %>
+    <%= lines(build_resource_async_op(update_api, "d.Timeout(schema.TimeoutUpdate)", resource_name), 1) %>
 <%   end -%>
 
 <%   update_api.parameters.each do |prop| -%>

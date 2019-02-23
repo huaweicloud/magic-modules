@@ -16,9 +16,7 @@ import (
    terraform_name = "#{package}_" + Google::StringUtils.underscore(resource_name)
    terraform_resource_name = "#{terraform_name}.#{example.primary_resource_id}"
 
-   region = object.region_diff ? "OS_REGION_NAME" : "\"\""
-   service_level = object.service_level == "project" ? "serviceProjectLevel" : "serviceDomainLevel"
-   sdkcp = sprintf("%s, \"%s\", %s", region, object.service_type, service_level)
+   sdkcp = argu_for_sdkclient(object.apis["read"])
 %>
 
 func TestAcc<%= test_case_name -%>(t *testing.T) {
