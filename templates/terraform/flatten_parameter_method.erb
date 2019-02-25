@@ -43,7 +43,7 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
     n := len(v.([]interface{}))
     resp := make([]interface{}, 0, n)
     for i := 0; i < n; i++ {
-        newArrayIndex["<%= property.field.split(".")[-1] %>"] = i
+        newArrayIndex["<%= property.field %>"] = i
         transformed := make(map[string]interface{})
 
 <%   nested_properties.each_index do |i|

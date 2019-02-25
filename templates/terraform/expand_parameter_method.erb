@@ -34,11 +34,11 @@ func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIn
             newArrayIndex[k] = v
 	}
     }
-<%   ra = nestedobject_index(resource, property.field) -%>
-<%   ra.each do |k, v| -%>
-    newArrayIndex[<%= k %>] = <%= v %>
-<%   end -%>
 
+<%   rp = find_property(resource, property.field.split(".")) -%>
+<%   unless rp.is_a?(Api::Type::Array) -%>
+<%     raise "parameter(#{property.name}) is an array, but the matched property(#{ra.name}) is not array"-%>
+<%   end -%>
     v, err := navigateValue(d, []string{<%= index2navigate(property.field, true) %>}, newArrayIndex)
     if err != nil {
         return nil, err
@@ -47,7 +47,7 @@ func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIn
     n := len(v.([]interface{}))
     req := make([]interface{}, 0, n)
     for i := 0; i < n; i++ {
-        newArrayIndex["<%= to_schema_name(property.field.split(".")[-1]) %>"] = i
+        newArrayIndex["<%= to_schema_index(property.field) %>"] = i
         transformed := make(map[string]interface{})
 
         <%= lines(build_expand_properties(resource, nested_properties, op, "d, newArrayIndex", prefix + titlelize(property.name), "transformed", true), 1) -%>

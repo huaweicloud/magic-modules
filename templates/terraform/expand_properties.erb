@@ -1,7 +1,4 @@
 <%
-   localIndex = "nil"
-   localIndexName = "localArrayIndex"
-   localArgs = args.split(", ")[0] + ", " + localIndexName
    globalIndex = args.split(", ")[1]
 %>
 <% properties.each_index do |i|
@@ -10,31 +7,12 @@
      v1 = "#{go_variable(prop.name)}Prop"
      r = sprintf("%s[\"%s\"] = %s", map_obj, prop.name, v1)
      rt = return_value ? "nil, " : ""
-     ra = nestedobject_index(resource, prop.field || "")
 -%>
-<%   unless ra.empty? -%>
-<%     if localIndex == "nil" -%>
-<%       localIndex = localIndexName -%>
-    var <%= localIndexName %> = make(map[string]int)
-
-<%     end -%>
-<%     if globalIndex != "nil" -%>
-    if <%= globalIndex %> != nil {
-        for k, v := range <%= globalIndex %> {
-            <%= sprintf("%s[k] = v", localIndex) %>
-        }
-    }
-<%     end -%>
-<%     ra.each do |k, v| -%>
-    <%= sprintf("%s[\"%s\"] = %d", localIndex, k, v) %>
-<%     end -%>
-
-<%   end -%>
 <%   unless prop.default.nil? -%>
-    <%= sprintf("%s[\"%s\"] = %s", map_obj, prop.name, convert_parameter(prop, ra.empty? ? args : localArgs, prefix)) %>
+    <%= sprintf("%s[\"%s\"] = %s", map_obj, prop.name, convert_parameter(prop, args, prefix)) %>
 <%     next -%>
 <%   end -%>
-    <%= v1 -%>, err := <%= convert_parameter(prop, ra.empty? ? args : localArgs, prefix) %>
+    <%= v1 -%>, err := <%= convert_parameter(prop, args, prefix) %>
     if err != nil {
         return <%= rt %>err
     }
@@ -47,14 +25,14 @@
 <%   if op.eql?("update") -%>
 <%     if prop.send_empty_value -%>
     } else {
-        if _, ok := isUserInput(d, []string{<%= index2navigate(prop.field, true) %>}, <%= ra.empty? ? globalIndex : localIndex %>); ok {
+        if _, ok := isUserInput(d, []string{<%= index2navigate(prop.field, true) %>}, <%= globalIndex %>); ok {
             <%= r %>
         }
 <%     end -%>
 <%   else -%>
 <%     if !is_complex_type(prop) && prop.send_empty_value -%>
     } else {
-        if _, ok := isUserInput(d, []string{<%= index2navigate(prop.field, true) %>}, <%= ra.empty? ? globalIndex : localIndex %>); ok {
+        if _, ok := isUserInput(d, []string{<%= index2navigate(prop.field, true) %>}, <%= globalIndex %>); ok {
             <%= r %>
         }
 <%     end -%>
