@@ -20,6 +20,8 @@ package <%= package %>
 
 <%
   resource_name = product_ns + object.name + object.version.upcase
+  resource_nestedobj_properties = nestedobject_properties(object)
+  ai_name = resource_nestedobj_properties.nil? ? "nil" : "arrayIndex"
 -%>
 
 func resource<%= resource_name -%>() *schema.Resource {
@@ -71,9 +73,17 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 <% object.create_opts.each do |prop| -%>
     opts["<%= prop.name %>"] = d.Get("<%= prop.name %>")
 <% end -%>
+<% unless resource_nestedobj_properties.nil? -%>
+
+    arrayIndex := map[string]int{
+<%   resource_nestedobj_properties.each do |i| -%>
+	"<%= to_schema_index(i) %>": 0,
+<%   end -%>
+    }
+<% end -%>
 
     params := make(map[string]interface{})
-<%= lines(build_expand_properties(object, create_api.parameters, "create", "opts, nil", resource_name + titlelize(create_api.name), "params", false), 1) %>
+<%= lines(build_expand_properties(object, create_api.parameters, "create", "opts, " + ai_name, resource_name + titlelize(create_api.name), "params", false), 1) %>
 
     log.Printf("[DEBUG] Creating new <%= object.name -%>: %#v", params)
 
@@ -119,7 +129,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 <% end # unless object.async -%>
 <% other_api(object, "c").each do | item | -%>
 
-    err = set<%= resource_name %><%= titlelize(item.name) %>(d, &opts, client)
+    err = set<%= resource_name %><%= titlelize(item.name) %>(d, opts, <%= ai_name%>, client)
     if err != nil {
         return err
     }
@@ -194,9 +204,17 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 <%     object.update_opts.each do |prop| -%>
     opts["<%= prop.name %>"] = d.Get("<%= prop.name %>")
 <%     end -%>
+<% unless resource_nestedobj_properties.nil? -%>
+
+    arrayIndex := map[string]int{
+<%   resource_nestedobj_properties.each do |i| -%>
+	"<%= to_schema_index(i) %>": 0,
+<%   end -%>
+    }
+<% end -%>
 
     params := make(map[string]interface{})
-<%= lines(build_expand_properties(object, update_api.parameters, "update", "opts, nil", resource_name + titlelize(update_api.name), "params", false), 1) %>
+<%= lines(build_expand_properties(object, update_api.parameters, "update", "opts, " + ai_name, resource_name + titlelize(update_api.name), "params", false), 1) %>
 
     log.Printf("[DEBUG] Updating <%= object.name -%> %q: %#v", d.Id(), params)
 
@@ -223,7 +241,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 <%   end # update_api.nil -%>
 <%   other_api(object, "u").each do | item | -%>
 
-    err = <%= item.crud.include?("c") ? "set" : "update" %><%= resource_name %><%= titlelize(item.name) %>(d, &opts, client)
+    err = <%= item.crud.include?("c") ? "set" : "update" %><%= resource_name %><%= titlelize(item.name) %>(d, opts, <%= ai_name%>, client)
     if err != nil {
         return err
     }

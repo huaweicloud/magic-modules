@@ -206,24 +206,38 @@ module Provider
       index.split('.').map { |x| sprintf("\"%s\"", to_schema ? to_schema_name(x) : x) }.join(', ')
     end
 
+    def to_schema_index(index)
+      index.split('.').map { |x| to_schema_name(x) }.join('.')
+    end
+
     def to_schema_name(name)
       Google::StringUtils.underscore(name)
     end
 
-    def nestedobject_index(resource, index)
-      r = Hash.new
-      a = index.split(".")
-      while !a.empty? do
-        p = find_property(resource, a)
-        unless p.nil?
-          if p.is_a?(Api::Type::NestedObject)
-            r[to_schema_name(p.name)] = 0
-          end
-        end
-        a.pop
+    def nestedobject_properties(obj)
+      ps = get_properties(obj)
+      if ps.nil?
+        return nil
       end
 
-      r
+      prefix = obj.is_a?(Api::Type) ? obj.name + "." : ""
+      r = Array.new
+      ps.each do |item|
+        rc = nestedobject_properties(item)
+        if rc.nil?
+          next
+        end
+
+        rc.each do |i|
+          r << sprintf("%s%s", prefix, i)
+        end
+      end
+
+      if obj.is_a?(Api::Type::NestedObject)
+        r << obj.name
+      end
+
+      r.empty? ? nil : r
     end
 
     def generate_resource_tests(data)
