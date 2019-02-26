@@ -55,9 +55,9 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
         return nil, fmt.Errorf("Error reading <%= property.out_name -%>:<%= prop.out_name %>, err: %s", err)
     }
 <%     if prop.is_a?(Api::Type::NestedObject) -%>
-    transformed["<%= prop.name -%>"] = []interface{}{<%= v1 %>}
+    transformed["<%= prop.out_name -%>"] = []interface{}{<%= v1 %>}
 <%     else -%>
-    transformed["<%= prop.name -%>"] = <%= v1 %>
+    transformed["<%= prop.out_name -%>"] = <%= v1 %>
 <%     end -%>
 
 <%   end -%>
@@ -79,9 +79,9 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
         return nil, fmt.Errorf("Error reading <%= property.out_name -%>:<%= prop.out_name %>, err: %s", err)
     }
 <%     if prop.is_a?(Api::Type::NestedObject) -%>
-    resp["<%= prop.name -%>"] = []interface{}{<%= v1 %>}
+    resp["<%= prop.out_name -%>"] = []interface{}{<%= v1 %>}
 <%     else -%>
-    resp["<%= prop.name -%>"] = <%= v1 %>
+    resp["<%= prop.out_name -%>"] = <%= v1 %>
 <%     end -%>
 
 <%   end -%>
