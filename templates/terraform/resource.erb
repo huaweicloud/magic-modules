@@ -71,7 +71,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 
     opts := make(map[string]interface{})
 <% object.create_opts.each do |prop| -%>
-    opts["<%= prop.name %>"] = d.Get("<%= prop.name %>")
+    opts["<%= prop.out_name %>"] = d.Get("<%= prop.out_name %>")
 <% end -%>
 <% unless resource_nestedobj_properties.nil? -%>
 
@@ -202,7 +202,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 
     opts := make(map[string]interface{})
 <%     object.update_opts.each do |prop| -%>
-    opts["<%= prop.name %>"] = d.Get("<%= prop.name %>")
+    opts["<%= prop.out_name %>"] = d.Get("<%= prop.out_name %>")
 <%     end -%>
 <% unless resource_nestedobj_properties.nil? -%>
 
