@@ -216,6 +216,42 @@ module Provider
           indent(code_if_error.empty? ? module_name + ".fail_json(msg=str(ex))" : code_if_error, 4),
         ].compact
       end
+
+      def convert_parameter(prop, arguments, prefix, invoker="")
+        n = invoker == "Read" ? "flatten" : "expand"
+        f = "#{n}_#{prefix}_#{prop.out_name}(#{arguments})"
+
+        if prop.to_request || prop.from_response
+          return f
+
+        elsif prop.is_a? Api::Type::NestedObject
+          return f
+
+        elsif prop.is_a?(Api::Type::Array) && \
+              prop.item_type.is_a?(Api::Type::NestedObject)
+          return f
+
+        elsif prop.is_a?(Api::Type::NameValues)
+          return f
+
+        elsif !prop.default.nil?
+
+          if prop.is_a?(Api::Type::String)
+            return sprintf("\"%s\"", prop.default)
+
+          elsif prop.is_a?(Api::Type::Boolean)
+            return prop.default ? "true" : "false"
+
+          else
+            return prop.default.to_i
+          end
+
+        else
+          d, ai = arguments.split(", ")
+          i = "[#{index2navigate(prop.field, invoker != "Read")}]"
+          return "navigate_value(#{d}, #{i}, #{ai})"
+        end
+      end
     end
     # rubocop:enable Metrics/ModuleLength
   end
