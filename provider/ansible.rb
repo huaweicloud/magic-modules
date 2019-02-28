@@ -24,6 +24,7 @@ require 'provider/ansible/resourceref'
 require 'provider/ansible/resource_override'
 require 'provider/ansible/property_override'
 require 'provider/ansible/selflink'
+require 'provider/ansible/sub_template'
 
 module Provider
   module Ansible
@@ -66,6 +67,7 @@ module Provider
       include Provider::Ansible::Module
       include Provider::Ansible::Request
       include Provider::Ansible::SelfLink
+      include Provider::Ansible::SubTemplate
 
       def initialize(config, api, product_folder)
         super(config, api, product_folder)

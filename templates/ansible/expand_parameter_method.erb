@@ -1,0 +1,13 @@
+<% unless property.to_request.nil? -%>
+<%   f = property.to_request
+     set_property_value(property, "to_request", nil)
+-%>
+def <%= sprintf("expand_%s_%s(d, array_index):", prefix, property.out_name) -%>
+    v, err := <%= convert_parameter(property, "d, array_index", prefix) %>
+    if err != nil {
+        return nil, err
+    }
+    <%= lines(f) -%>
+<%   prefix = prefix + "_custom" -%>
+<% end -%>
+<%= lines(build_expand_method_normal(resource, op, prefix, property), 1) -%>
