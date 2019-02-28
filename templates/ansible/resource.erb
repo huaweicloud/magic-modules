@@ -316,55 +316,33 @@ def user_input_parameters(module):
 <% end # updatable? -%>
 
 
+<% delete_api = object.apis["delete"] -%>
 <%=
-  lines(method_decl('delete', ['session', ('kind' if object.kind?),
+  lines(method_decl('delete', ['config', ('kind' if object.kind?),
                                ('fetch' if object.save_api_results?),
                               ]))
 -%>
-<% if object.delete.nil? -%>
-    link = <%= obj_delete_url %>
-<%   unless object.async && (object.async.async_methods.nil? || object.async.async_methods.include?("delete")) -%>
-<%=
-  indent(send_request(
-    method_call("session.delete", ['link']), "", "session.module"
-  ), 4)
-%>
-<%   else -%>
-<%     unless is_standard_async -%>
-<%=
-  indent(send_request(
-    method_call("session.delete", ['link']), "", "session.module"
-  ), 4)
-%>
+    client = config.client(<%= argu_for_sdkclient(delete_api) %>)
+    link = build_path(module, "<%= delete.path %>")
 
-<%       if object.delete_url -%>
-    link = self_link(session)
-<%       end -%>
-<%       if  object.async.operation.timeouts -%>
-    wait_for_delete(session, link, <%= object.async.operation.timeouts.delete_sec -%>)
-<%       else -%>
-    timeout = 60 * int(session.module.params['timeouts']['delete'].rstrip('m'))
-    wait_for_delete(session, link, timeout)
-<%       end -%>
-<%     else -%>
+<% if delete_api.async.nil? -%>
+<%   if create_api.async.nil? -%>
 <%=
   indent(send_request(
-    "r = " + method_call("session.delete", ['link']), "", "session.module"
+    method_call("client.delete", ['link']), "", "config.module"
   ), 4)
 %>
-
-<%       if  object.async.operation.timeouts -%>
-    wait_for_operation(session, r, <%= object.async.operation.timeouts.delete_sec -%>)
-<%       else -%>
-    timeout = 60 * int(session.module.params['timeouts']['delete'].rstrip('m'))
-    wait_for_operation(session, r, timeout)
-<%       end -%>
-<%     end -%>
-<%   end -%>
-<% else # if object.delete.nil? -%>
-<%= lines(indent(object.delete, 4)) -%>
-<% end # if object.delete.nil? -%>
-<% end # unless object.virtual -%>
+<%   else # if create api is async, then it is best to make sure the resource is delete successfully -%>
+<%   end # unless is_resource_standard_async -%>
+<% else -%>
+<%=
+  indent(send_request(
+    "r = " + method_call("client.delete", ['link']), "", "config.module"
+  ), 4)
+%>
+    timeout = 60 * int(module.params['timeouts']['delete'].rstrip('m'))
+    async_wait(module, config, r, client, timeout)
+<% end -%>
 <% # lines(compile('templates/ansible/transport.erb'), 2) -%>
 
 
