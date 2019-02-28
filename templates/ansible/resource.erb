@@ -275,73 +275,45 @@ def user_input_parameters(module):
 
     return get_resource(config)
 <% end # create method -%>
-<% unless resource_editable_ps.empty? -%>
+<% if updatable?(object) -%>
 
 
 <%=
-  lines(method_decl('update', ['session', ('kind' if object.kind?),
+  lines(method_decl('update', ['config', ('kind' if object.kind?),
                                ('fetch' if object.save_api_results?),
                               ]))
 -%>
-<% if object.update.nil? -%>
-    link = <%= obj_update_url %>
-    module = session.module
-<%   unless object.async && (object.async.async_methods.nil? || object.async.async_methods.include?("update"))-%>
+    module = config.module
+    opts = user_input_parameters(module)
+<%   update_api = object.apis.fetch("update", nil) -%>
+<%   unless update_api.nil? -%>
+
+    params = dict()
+<%= lines(build_expand_properties(object, update_api.parameters, "upate", "opts, None", update_api.out_name, "params", false), 1) %>
+
+    client = config.client(<%= argu_for_sdkclient(update_api) %>)
+    link = build_path(module, "<%= update_api.path %>")
+
+<%     if update_api.async.nil? -%>
 <%=
   indent(send_request(
-    method_call("session.put", ['link', 'update_resource_opts(module)'])
+    method_call("client.#{update_api.verb.downcase}", ['link', 'params'])
+  ), 4)
+%>
+<%     else -%>
+<%=
+  indent(send_request(
+    "r = " + method_call("client.#{update_api.verb.downcase}", ['link', 'params'])
   ), 4)
 %>
 
-    return get_resource(session)
-<%   else -%>
-<%=
-  indent(send_request(
-    "r = " + method_call("session.put", ['link', 'update_resource_opts(module)'])
-  ), 4)
-%>
+    timeout = 60 * int(module.params['timeouts']['update'].rstrip('m'))
+    async_wait(module, config, r, client, timeout)
+<%     end -%>
 
-<%     if is_standard_async -%>
-<%       if  object.async.operation.timeouts -%>
-    wait_for_operation(session, r, <%= object.async.operation.timeouts.update_sec -%>)
-<%       else -%>
-    timeout = 60 * int(module.params['timeouts']['update'].rstrip('m'))
-    wait_for_operation(session, r, timeout)
-<%       end -%>
-
-    return get_resource(session)
-<%     else # if is_standard_async -%>
-<%       if  object.async.update_status.allowed -%>
-    complete_states = [<%= u_complete_states.join(', ') -%>]
-    allowed_states = [<%= u_allowed_states.join(', ') -%>]
-<%         if  object.async.operation.timeouts -%>
-    r = wait_for_operation(session, r, <%= object.async.operation.timeouts.update_sec -%>, complete_states, allowed_states)
-<%         else -%>
-    timeout = 60 * int(module.params['timeouts']['update'].rstrip('m'))
-    r = wait_for_operation(session, r, timeout, complete_states, allowed_states)
-<%         end -%>
-<%       else -%>
-    is_complete = lambda v: (
-<%= indent(u_complete_states, 8) %>
-    )
-<%         if  object.async.operation.timeouts -%>
-    r = wait_for_operation(session, r, <%= object.async.operation.timeouts.update_sec -%>, is_complete)
-<%         else -%>
-    timeout = 60 * int(module.params['timeouts']['update'].rstrip('m'))
-    r = wait_for_operation(session, r, timeout, is_complete)
-<%         end -%>
-<%       end -%>
-<%       if object.msg_prefix('get') -%>
-    return r.get(<%= quote_string(object.msg_prefix('get')) -%>)
-<%       else -%>
-    return r
-<%       end  # object.msg_prefix -%>
-<%     end # if is_standard_async -%>
-<%   end # not object.async -%>
-<% else # object.update.nil? -%>
-<%= lines(indent(object.update, 4)) -%>
-<% end # object.update.nil? -%>
-<% end # resource_editable_ps.empty? -%>
+    return get_resource(config)
+<%   end # update_api.nil? -%>
+<% end # updatable? -%>
 
 
 <%=
