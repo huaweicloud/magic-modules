@@ -240,93 +240,41 @@ def main():
 <% unless object.virtual -%>
 
 
-<%# TODO: kind param not always needed.
-  # https://github.com/GoogleCloudPlatform/magic-modules/issues/45
--%>
-<%= method_decl('create', ['session', ('kind' if object.kind?)]) %>
-<% if object.create.nil? -%>
-<%
-  if object.create_verb.nil? || object.create_verb == :POST
-    create_verb = '.post'
-    create_link = 'collection(session)'
-  elsif object.create_verb == :PUT
-    create_verb = '.put'
-    create_link = 'self_link(session)'
-  else
-    raise "Ansible does not support create_verb #{object.create_verb}"
-  end
--%>
-    link = <%= create_link %>
-    module = session.module
-<%
-  method = indent(send_request(
-     "r = " + method_call("session#{create_verb}", ['link', 'create_resource_opts(module)'])
-  ), 4)
--%>
-<%   unless object.async && (object.async.async_methods.nil? || object.async.async_methods.include?("create")) -%>
-<%= method %>
-<%     if object.msg_prefix('create') -%>
-    r = r.get(<%= quote_string(object.msg_prefix('create')) -%>)
-<%     end  # object.msg_prefix -%>
-    module.params['id'] = r.get(<%= quote_string(object.resource_id) -%>, None)
-
-    v = get_resource(session)
-    if v:
-        r.update(v)
-    return r
-<%   else -%>
-<%= method %>
-
-<%     if is_standard_async -%>
-<%       if  object.async.operation.timeouts -%>
-    wait_done = wait_for_operation(session, r, <%= object.async.operation.timeouts.insert_sec -%>)
-<%       else -%>
-    timeout = 60 * int(module.params['timeouts']['create'].rstrip('m'))
-    wait_done = wait_for_operation(session, r, timeout)
-<%       end -%>
-
-    url = resource_get_url(session, wait_done)
-<%       if object.msg_prefix('get') -%>
-<%=
-  indent(send_request("r = session.get(url)"), 4)
-%>
-    return r.get(<%= quote_string(object.msg_prefix('get')) -%>)
-<%       else -%>
-<%=
-  indent(send_request("return session.get(url)"), 4)
-%>
-<%       end  # object.msg_prefix -%>
-<%     else # if is_standard_async -%>
-<%       if  object.async.status.allowed -%>
-    complete_states = [<%= c_complete_states.join(', ') -%>]
-    allowed_states = [<%= c_allowed_states.join(', ') -%>]
-<%         if  object.async.operation.timeouts -%>
-    r = wait_for_operation(session, r, <%= object.async.operation.timeouts.insert_sec -%>, complete_states, allowed_states)
-<%         else -%>
-    timeout = 60 * int(module.params['timeouts']['create'].rstrip('m'))
-    r = wait_for_operation(session, r, timeout, complete_states, allowed_states)
-<%         end -%>
-<%       else -%>
-    is_complete = lambda v: (
-<%= indent(c_complete_states, 8) %>
-    )
-<%         if  object.async.operation.timeouts -%>
-    r = wait_for_operation(session, r, <%= object.async.operation.timeouts.insert_sec -%>, is_complete)
-<%         else -%>
-    timeout = 60 * int(module.params['timeouts']['create'].rstrip('m'))
-    r = wait_for_operation(session, r, timeout, is_complete)
-<%         end -%>
-<%       end -%>
-<%       if object.msg_prefix('get') -%>
-    return r.get(<%= quote_string(object.msg_prefix('get')) -%>)
-<%       else -%>
-    return r
-<%       end  # object.msg_prefix -%>
-<%     end # if is_standard_async -%>
-<%   end # object.async-%>
-<% else -%>
-<%= lines(indent(object.create, 4)) -%>
+def user_input_parameters(module):
+    return {
+<% object.not_output_properties.each do |prop| -%>
+        "<%= prop.out_name %>": module.params.get("<%= prop.name %>"),
 <% end -%>
+    }
+
+
+<% create_api = object.apis["create"] -%>
+<%= method_decl('create', ['config', ('kind' if object.kind?)]) %>
+    module = config.module
+    opts = user_input_parameters(module)
+
+    params = dict()
+<%= lines(build_expand_properties(object, create_api.parameters, "create", "opts, None", create_api.out_name, "params", false), 1) %>
+
+    client = config.client(<%= argu_for_sdkclient(create_api) %>)
+    link = build_path(module, "<%= create_api.path %>")
+<%=
+  indent(send_request(
+     "r = " + method_call("client.#{create_api.verb.downcase}", ['link', 'params'])
+  ), 4)
+%>
+
+<%   if create_api.async.nil? -%>
+    module.params['id'] = navigate_value(r, [<%= index2navigate(create_api.resource_id_path ) %>])
+<%   else -%>
+    timeout = 60 * int(module.params['timeouts']['create'].rstrip('m'))
+    obj = async_wait(module, config, r, client, timeout)
+    rid = navigate_value(obj, [<%= index2navigate(create_api.async.result.field) %>])
+    module.params['id'] = rid
+<%   end # object.async-%>
+
+    return get_resource(config)
+<% end # create method -%>
 <% unless resource_editable_ps.empty? -%>
 
 
