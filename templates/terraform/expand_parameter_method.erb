@@ -37,7 +37,7 @@ func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIn
 
 <%   rp = find_property(resource, property.field.split(".")) -%>
 <%   unless rp.is_a?(Api::Type::Array) -%>
-<%     raise "parameter(#{property.name}) is an array, but the matched property(#{ra.name}) is not array"-%>
+<%     raise "parameter(#{property.name}) is an array, but the matched property is not"-%>
 <%   end -%>
     v, err := navigateValue(d, []string{<%= index2navigate(property.field, true) %>}, newArrayIndex)
     if err != nil {

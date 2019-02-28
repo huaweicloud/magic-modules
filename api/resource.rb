@@ -305,6 +305,10 @@ module Api
       all_user_properties.select(&:required)
     end
 
+    def not_output_properties
+      all_user_properties.reject(&:output)
+    end
+
     def ex_properties
       properties.select(&:update_url)
     end

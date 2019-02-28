@@ -61,6 +61,14 @@ func resource<%= resource_name -%>() *schema.Resource {
     }
 }
 
+func resource<%= resource_name -%>UserInputParams(d *schema.ResourceData) map[string]interface{} {
+    return map[string]interface{}{
+<% object.not_output_properties.each do |prop| -%>
+        "<%= prop.out_name %>": d.Get("<%= prop.out_name %>"),
+<% end -%>
+    }
+}
+
 <% create_api = object.apis["create"] -%>
 func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{}) error {
     config := meta.(*Config)
@@ -69,10 +77,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
         return fmt.Errorf("Error creating sdk client, err=%s", err)
     }
 
-    opts := make(map[string]interface{})
-<% object.create_opts.each do |prop| -%>
-    opts["<%= prop.out_name %>"] = d.Get("<%= prop.out_name %>")
-<% end -%>
+    opts := resource<%= resource_name -%>UserInputParams(d)
 <% unless resource_nestedobj_properties.nil? -%>
 
     arrayIndex := map[string]int{
@@ -117,7 +122,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     d.SetId(id.(string))
 <% else -%>
 
-    obj, err := asyncWait<%= resource_name %><%= titlelize(create_api.name) %>(d, config, r.Body, client)
+    obj, err := asyncWait<%= resource_name %><%= titlelize(create_api.name) %>(d, config, r.Body, client, d.Timeout(schema.TimeoutCreate))
     if err != nil {
         return err
     }
@@ -200,10 +205,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
     }
 <%   unless update_api.nil? -%>
 
-    opts := make(map[string]interface{})
-<%     object.update_opts.each do |prop| -%>
-    opts["<%= prop.out_name %>"] = d.Get("<%= prop.out_name %>")
-<%     end -%>
+    opts := resource<%= resource_name -%>UserInputParams(d)
 <% unless resource_nestedobj_properties.nil? -%>
 
     arrayIndex := map[string]int{
@@ -233,7 +235,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
     }
 <%     unless update_api.async.nil? -%>
 
-    _, err = asyncWait<%= resource_name %><%= titlelize(update_api.name) %>(d, config, r.Body, client)
+    _, err = asyncWait<%= resource_name %><%= titlelize(update_api.name) %>(d, config, r.Body, client, d.Timeout(schema.TimeoutUpdate))
     if err != nil {
         return err
     }
@@ -307,7 +309,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
     return err
 <%   end # unless is_resource_standard_async -%>
 <% else -%>
-    _, err = asyncWait<%= resource_name %><%= titlelize(delete_api.name) %>(d, config, r.Body, client)
+    _, err = asyncWait<%= resource_name %><%= titlelize(delete_api.name) %>(d, config, r.Body, client, d.Timeout(schema.TimeoutDelete))
     return err
 <% end -%>
 }

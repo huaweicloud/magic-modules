@@ -202,18 +202,6 @@ module Provider
       path.split('/').map { |x| "\"#{x}\"" }.join(', ')
     end
 
-    def index2navigate(index, to_schema=false)
-      index.split('.').map { |x| sprintf("\"%s\"", to_schema ? to_schema_name(x) : x) }.join(', ')
-    end
-
-    def to_schema_index(index)
-      index.split('.').map { |x| to_schema_name(x) }.join('.')
-    end
-
-    def to_schema_name(name)
-      Google::StringUtils.underscore(name)
-    end
-
     def nestedobject_properties(obj)
       ps = get_properties(obj)
       if ps.nil?
