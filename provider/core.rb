@@ -851,5 +851,17 @@ module Provider
     def set_property_value(property, var, value)
       property.instance_variable_set("@#{var}".to_sym, value)
     end
+
+    def to_schema_name(name)
+      Google::StringUtils.underscore(name)
+    end
+
+    def index2navigate(index, to_schema=false)
+      index.split('.').map { |x| sprintf("\"%s\"", to_schema ? to_schema_name(x) : x) }.join(', ')
+    end
+
+    def to_schema_index(index)
+      index.split('.').map { |x| to_schema_name(x) }.join('.')
+    end
   end
 end
