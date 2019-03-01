@@ -58,14 +58,6 @@ module Provider
       }
     end
 
-    def updatable?(resource)
-      !([
-        resource.update_opts,
-        resource.update_alone_opts,
-        resource.ex_properties
-      ].flatten.compact.empty?)
-    end
-
     def optional_compute_forcenew?(property, resource)
       optional = !property.required
       m = {
@@ -247,8 +239,12 @@ module Provider
       %x(goimports -w #{filepath})
     end
 
+    def terraform_readable_property?(property)
+        property.crud.include?("r") && !property.required
+    end
+
     def has_output_property(property)
-      if !property.required && property.crud.include?("r")
+      if terraform_readable_property?(property)
         return true
       end
 
@@ -265,9 +261,7 @@ module Provider
     end
 
     def properties_to_show(object)
-      r = object.properties.reject(&:required)
-      r1 = object.properties.select(&:required).select {|p| has_output_property(p)}
-      [r, r1].flatten
+      object.all_user_properties.select {|p| has_output_property(p)}
     end
 
     def argu_for_sdkclient(api, is_test=false)

@@ -35,6 +35,14 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
 	}
     }
 
+<%   raise "property#{property.name} is unreadable" unless property.crud.include?("r") -%>
+<%   # if this property is not readable, then it can not known the number of array when import this resource
+     # because when import, all the properties are empty.
+     # on the other side, since this property is unreadable, why append a readable property on me?
+
+     # send question. it exists that if the array has two items, but the order of readback data is not matched
+     # but now, there is no good way to check whether two items from different arraya are matched.
+-%>
     v, err := navigateValue(d, []string{<%= index2navigate(property.field) %>}, newArrayIndex)
     if err != nil {
     	return nil, err
@@ -48,6 +56,7 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
 
 <%   nested_properties.each_index do |i|
        prop = nested_properties[i]
+       next unless is_complex_type(prop) || terraform_readable_property?(prop)
        v1 = "#{go_variable(prop.name)}Prop"
 -%>
     <%= v1 -%>, err := <%= convert_parameter(prop, "d, newArrayIndex", prefix + titlelize(property.name), "Read") %>
@@ -69,9 +78,9 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
 <% elsif property.is_a?(Api::Type::NestedObject) -%>
 func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
     resp := make(map[string]interface{})
-
 <%   nested_properties.each_index do |i|
        prop = nested_properties[i]
+       next unless is_complex_type(prop) || terraform_readable_property?(prop)
        v1 = "#{go_variable(prop.name)}Prop"
 -%>
     <%= v1 -%>, err := <%= convert_parameter(prop, "d, arrayIndex", prefix + titlelize(property.name), "Read") %>
