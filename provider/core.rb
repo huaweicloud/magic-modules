@@ -863,5 +863,9 @@ module Provider
     def to_schema_index(index)
       index.split('.').map { |x| to_schema_name(x) }.join('.')
     end
+
+    def updatable?(resource)
+      !(resource.not_output_properties.select{ |i| i.crud.include?("u") }.empty?)
+    end
   end
 end
