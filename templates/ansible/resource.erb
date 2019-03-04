@@ -495,45 +495,6 @@ def get_resource_id(session):
 <%
   end
 -%>
-
-
-<%= lines(emit_link('self_link', self_link_url(object), object, false, object.service_type)) -%>
-
-
-<%= lines(emit_link('collection', collection_url(object), object, false, object.service_type)) -%>
-<%
-  if object.update_url && object.delete_url && object.update_url == object.delete_url
-    tmp_url = object.update_url.gsub('{{', '{').gsub('}}', '}')
--%>
-
-
-<%=
-    lines(emit_link('update_delete_url', tmp_url, object, false, object.service_type))
--%>
-<%
-  else
-    if object.update_url
-      tmp_url = object.update_url.gsub('{{', '{').gsub('}}', '}')
--%>
-
-
-<%=
-      lines(emit_link('update_url', tmp_url, object, false, object.service_type))
--%>
-<%
-    end
-    if object.delete_url
-      tmp_url = object.delete_url.gsub('{{', '{').gsub('}}', '}')
--%>
-
-
-<%=
-      lines(emit_link('delete_url', tmp_url, object, false, object.service_type))
--%>
-<%
-    end
-  end
--%>
 <% unless no_ex_properties && resource_editable_ps.empty? -%>
 
 
