@@ -234,6 +234,44 @@ module Provider
       # rubocop:enable Metrics/MethodLength
       # rubocop:enable Metrics/AbcSize
 
+      def argu_for_sdkclient(api, is_test=false)
+        region = "\"\""
+        service_level = "serviceDomainLevel"
+
+        if api.service_level == "project"
+          region = is_test ? "OS_REGION_NAME" : "GetRegion(d, config)"
+
+          service_level = "serviceProjectLevel"
+        end
+
+        sprintf("%s, \"%s\", %s", region, api.service_type, service_level)
+      end
+
+      def ansible_readable_property?(property)
+          property.crud.include?("r")
+      end
+
+      def has_output_property(property)
+        if ansible_readable_property?(property)
+          return true
+        end
+
+        v = nested_properties(property)
+        unless v.nil?
+          v.each do |i|
+            if has_output_property(i)
+              return true
+            end
+          end
+        end
+
+        return false
+      end
+
+      def properties_to_show(object)
+        object.all_user_properties.select {|p| has_output_property(p)}
+      end
+
       def rrefs_in_link(link, object)
         props_in_link = link.scan(/{([a-z_]*)}/).flatten
         (object.parameters || []).select do |p|

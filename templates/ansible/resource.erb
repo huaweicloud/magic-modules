@@ -59,7 +59,7 @@ EXAMPLES = '''
 
 <% end -%>
 RETURN = '''
-<% object.all_user_properties.each do |prop| -%>
+<% properties_to_show(object).each do |prop| -%>
 <%= lines(indent(return_property_yaml(prop, 4), 4)) -%>
 <% end -%>
 '''
@@ -346,40 +346,28 @@ def user_input_parameters(module):
 <% # lines(compile('templates/ansible/transport.erb'), 2) -%>
 
 
-def get_resource(session):
-    link = self_link(session)
-    # the link will include Nones if required format parameters are missed
-    if re.search('/None/|/None$', link):
-        return None
-
-<% unless object.msg_prefix('get') || (not externals.empty?) -%>
+<%- read_api = object.apis["read"] %>
+def read_resource(config):
+    module = config.module
+    link = build_path(module, "<%= read_api.path %>")
+    client = config.client(<%= argu_for_sdkclient(read_api) %>)
 <%=
   indent(send_request(
-    "return session.get(link)", "", "session.module", "return None"
+    "res = client.get(link)", "", "session.module", "return None"
   ), 4)
 %>
-<% else -%>
-<%=
-  indent(send_request(
-    "r = session.get(link)", "", "session.module", "return None"
-  ), 4)
-%>
-<%  unless externals.empty? -%>
-<%   if object.msg_prefix('get') -%>
-    r = r.get(<%= quote_string(object.msg_prefix('get')) %>)
-<%   end -%>
 
-<%   externals.each do |p| -%>
-    fetch = <%= p.property_class[-1] -%>ExProperty(session).fetch()
-    if isinstance(fetch, dict):
-        r.update(fetch)
+    r = {}
+<% properties_to_show(object).each do |prop|
+     v1 = "#{prop.out_name}_prop"
+-%>
+    <%= v1 %> = <%= convert_parameter(prop, 'res, nil', "read", "Read") %>
+    r["<%= prop.out_name %>"] = <%= v1 %>
 
-<%   end -%>
-    return r
-<%  else -%>
-    return r.get(<%= quote_string(object.msg_prefix('get')) %>)
-<%  end -%>
 <% end -%>
+    return r
+
+
 <% unless no_ex_properties -%>
 <%
    internals = object.ex_properties.reject{|p1| p1.ex_property_opts&.get_url}
