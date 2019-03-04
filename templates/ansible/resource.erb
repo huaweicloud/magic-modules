@@ -512,77 +512,7 @@ def is_different(expect, actual):
 
     return DictComparison(expect_vals) != DictComparison(actual_vals)
 <% end -%>
-
-
-def create_resource_opts(module):
-<%
-  properties_in_request = object.create_opts
--%>
-    request = remove_empty_from_dict({
-<% if object.kind? -%>
-        u'kind': <%= quote_string(object.kind) -%>,
-<% end # if object.kind? -%>
-<%= lines(indent(request_properties(properties_in_request), 4)) -%>
-    })
-<%
-  alone = object.create_alone_opts
--%>
-<% if not alone.empty? -%>
-    alone_param = remove_empty_from_dict({
- <%= lines(indent(request_properties(alone), 4)) -%>
-    })
-<% end -%>
-<% if object.msg_prefix('create') -%>
-<%   if alone.empty? -%>
-    return {'<%= object.msg_prefix('create') %>': request}
-<%   else -%>
-    v = {'<%= object.msg_prefix('create') %>': request}
-    v.update(alone_param)
-    return v
-<%   end -%>
-<% else -%>
-<%   if alone.empty? -%>
-    return request
-<%   else -%>
-    return request.update(alone_param)
-<%   end -%>
-<% end -%>
 <% unless resource_editable_ps.empty? -%>
-
-
-def update_resource_opts(module):
-<%
-  properties_in_request = object.update_opts
--%>
-    request = remove_nones_from_dict({
-<% if object.kind? -%>
-        u'kind': <%= quote_string(object.kind) -%>,
-<% end # if object.kind? -%>
-<%= lines(indent(request_properties(properties_in_request), 4)) -%>
-    })
-<%
-  alone = object.update_alone_opts
--%>
-<% if not alone.empty? -%>
-    alone_param = remove_nones_from_dict({
- <%= lines(indent(request_properties(alone), 4)) -%>
-    })
-<% end -%>
-<% if object.msg_prefix('update') -%>
-<%   if alone.empty? -%>
-    return {'<%= object.msg_prefix('update') %>': request}
-<%   else -%>
-    v = {'<%= object.msg_prefix('update') %>': request}
-    v.update(alone_param)
-    return v
-<%   end -%>
-<% else -%>
-<%   if alone.empty? -%>
-    return request
-<%   else -%>
-    return request.update(alone_param)
-<%   end -%>
-<% end -%>
 
 
 def _get_resource_editable_properties(module):
