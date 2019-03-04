@@ -3,10 +3,7 @@
      set_property_value(property, "to_request", nil)
 -%>
 def <%= sprintf("expand_%s_%s(d, array_index):", prefix, property.out_name) -%>
-    v, err := <%= convert_parameter(property, "d, array_index", prefix) %>
-    if err != nil {
-        return nil, err
-    }
+    v = <%= convert_parameter(property, "d, array_index", prefix) %>
     <%= lines(f) -%>
 <%   prefix = prefix + "_custom" -%>
 <% end -%>

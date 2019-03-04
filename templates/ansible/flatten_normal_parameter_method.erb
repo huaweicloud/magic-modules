@@ -1,0 +1,50 @@
+<%
+   new_prefix = sprintf("%s_%s", prefix, property.out_name)
+   func_def = sprintf("flatten_%s(d, array_index):", new_prefix)
+   nested_properties = nested_properties(property)
+-%>
+<% if property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
+<%   raise "property#{property.name} is unreadable" unless property.crud.include?("r") -%>
+func <%= func_def -%>
+    new_array_index = copy.deepcopy(array_index) if array_index else dict()
+
+    v = navigate_value(d, [<%= index2navigate(property.field) %>],
+        new_array_index)
+
+    resp = []
+    for i in range(len(v)):
+        new_array_index["<%= property.field %>"] = i
+	transformed = {}
+
+<%   nested_properties.each_index do |i|
+       prop = nested_properties[i]
+       next unless is_complex_type(prop) || ansible_readable_property?(prop)
+       v1 = "#{prop.out_name}_prop"
+-%>
+        <%= v1 -%> = <%= convert_parameter(prop, "d, new_array_index", new_prefix, "Read") %>
+        transformed["<%= prop.out_name -%>"] = <%= v1 %>
+
+<%   end -%>
+        resp = append(resp, transformed)
+
+    return resp
+<% elsif property.is_a?(Api::Type::NestedObject) -%>
+func <%= func_def -%>
+    resp = {}
+<%   nested_properties.each_index do |i|
+       prop = nested_properties[i]
+       next unless is_complex_type(prop) || ansible_readable_property?(prop)
+       v1 = "#{prop.out_name}_prop"
+-%>
+    <%= v1 -%> = <%= convert_parameter(prop, "d, arrayIndex", new_prefix, "Read") %>
+    resp["<%= prop.out_name -%>"] = <%= v1 %>
+
+<%   end -%>
+    return resp
+<% end # if property.is_a?(Api::Type::Array) -%>
+<% unless nested_properties.nil? -%>
+<%   nested_properties.each do |prop| -%>
+
+<%= lines(build_flatten_method_normal(new_prefix, prop), 1) -%>
+<%   end -%>
+<% end -%>
