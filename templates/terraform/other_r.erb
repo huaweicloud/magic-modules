@@ -1,4 +1,4 @@
-func read<%= resource_name %><%= titlelize(api.name) %>(d *schema.ResourceData, client *golangsdk.ServiceClient, result *map[string]interface{}) error {
+func read<%= resource_name %><%= titlelize(api.name) %>(d *schema.ResourceData, client *golangsdk.ServiceClient, result map[string]interface{}) error {
 <% url_v = "url" -%>
 <% if api.path.include?("{") -%>
     url, err = replaceVars(d, "<%= api.path -%>", nil)

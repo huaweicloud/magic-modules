@@ -170,7 +170,7 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
     }
 <% other_api(object, "r").each do | item | -%>
 
-    err = read<%= resource_name %><%= titlelize(item.name) %>(d, client, &res)
+    err = read<%= resource_name %><%= titlelize(item.name) %>(d, client, res)
     if err != nil {
         return err
     }
