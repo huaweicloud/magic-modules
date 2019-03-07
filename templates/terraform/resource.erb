@@ -164,10 +164,12 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
     if r.Err != nil {
         return fmt.Errorf("Error reading %s: %s", fmt.Sprintf("<%= resource_name -%> %q", d.Id()), r.Err)
     }
-    res, ok := r.Body.(map[string]interface{})
+    v, ok := r.Body.(map[string]interface{})
     if !ok {
         return fmt.Errorf("Error reading %s: the result is not map", fmt.Sprintf("<%= resource_name -%> %q", d.Id()))
     }
+
+    res := map[string]interface{} {"<%= read_api.out_name%>": v}
 <% other_api(object, "r").each do | item | -%>
 
     err = read<%= resource_name %><%= titlelize(item.name) %>(d, client, res)
