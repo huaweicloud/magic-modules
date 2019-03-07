@@ -19,6 +19,7 @@ module Provider
       # Returns the Python dictionary representing a simple property for
       # validation.
       def python_dict_for_property(prop, object, spaces = 0)
+        return if prop.crud.eql?("r")
         if prop.is_a?(Api::Type::Array) && \
            prop.item_type.is_a?(Api::Type::NestedObject)
           nested_obj_dict(prop, object, prop.item_type.properties, spaces)
@@ -70,7 +71,7 @@ module Provider
         type = "type=#{quote_string(t)}"
         # + 6 for =dict(
         choices_indent = spaces + name.length + type.length + 6
-	if t == 'str'
+        if t == 'str'
           format([
                    [
                      "choices=[#{prop.values.map do |x|
@@ -87,7 +88,7 @@ module Provider
                             choices_indent + 11)
                    ]
                  ], 0, choices_indent)
-	else
+        else
           format([
                    [
                      "choices=[#{prop.values.map do |x|
@@ -104,7 +105,7 @@ module Provider
                             choices_indent + 11)
                    ]
                  ], 0, choices_indent)
-	end
+        end
       end
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/MethodLength

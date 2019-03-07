@@ -122,6 +122,7 @@ module Provider
       # Builds out a full YAML block for DOCUMENTATION
       # This includes the YAML for the property as well as any nested props
       def doc_property_yaml(prop, object, spaces)
+        return if prop.crud.eql?("r")
         block = minimal_doc_block(prop, object, spaces)
         # Ansible linter does not support nesting options this deep.
         if prop.is_a?(Api::Type::NestedObject)
