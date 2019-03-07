@@ -253,7 +253,8 @@ module Provider
       end
 
       def convert_resp_parameter(prop, arguments, prefix, spaces)
-        f = indent(sprintf("flatten_%s_%s(%s)", prefix, prop.out_name, arguments), spaces)
+        p = prefix.empty? ? "" : "_"
+        f = indent(sprintf("flatten%s%s_%s(%s)", p, prefix, prop.out_name, arguments), spaces)
 
         if prop.to_request || prop.from_response
           return f

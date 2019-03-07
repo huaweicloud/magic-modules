@@ -3,7 +3,7 @@
      set_property_value(property, "from_response", nil)
 -%>
 def <%= sprintf("flatten_%s_%s(res, array_index, parent_prop, include_computed):", prefix, property.out_name) -%>
-<%   prefix = prefix + "_custom" -%>
+<%   prefix = sprintf("%s%scustom", prefix, prefix.empty? ? "" : "_") -%>
     r = {}
 <%= convert_resp_parameter(property, "res, array_index, r, include_computed", prefix, 4) %>
     v = r["<%= property.out_name %>"]
