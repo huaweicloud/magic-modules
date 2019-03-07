@@ -217,9 +217,8 @@ module Provider
         ].compact
       end
 
-      def convert_parameter(prop, arguments, prefix, invoker="")
-        n = invoker == "Read" ? "flatten" : "expand"
-        f = "#{n}_#{prefix}_#{prop.out_name}(#{arguments})"
+      def convert_parameter(prop, arguments, prefix)
+        f = sprintf("expand_%s_%s(%s)", prefix, prop.out_name, arguments)
 
         if prop.to_request || prop.from_response
           return f
@@ -248,7 +247,7 @@ module Provider
 
         else
           d, ai = arguments.split(", ")
-          i = "[#{index2navigate(prop.field, invoker != "Read")}]"
+          i = "[#{index2navigate(prop.field, true)}]"
           return "navigate_value(#{d}, #{i}, #{ai})"
         end
       end

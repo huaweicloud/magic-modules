@@ -11,25 +11,19 @@
 <%     next -%>
 <%   end -%>
     <%= v1 -%> = <%= convert_parameter(prop, args, prefix) %>
-
-    e = isEmptyValue(reflect.ValueOf(<%= v1 -%>))
-    if not e {
+    e = is_empty_value(reflect.ValueOf(<%= v1 -%>))
+    if not e:
         <%= r %>
 <%   if op.eql?("update") -%>
 <%     if prop.send_empty_value -%>
-    } else {
-        if _, ok := isUserInput(d, [<%= index2navigate(prop.field, true) %>], <%= globalIndex %>); ok {
+    elif is_user_input(d, [<%= index2navigate(prop.field, true) %>], <%= globalIndex %>):
             <%= r %>
-        }
 <%     end -%>
 <%   else -%>
 <%     if !is_complex_type(prop) && prop.send_empty_value -%>
-    } else {
-        if _, ok := isUserInput(d, [<%= index2navigate(prop.field, true) %>], <%= globalIndex %>); ok {
+    elif is_user_input(d, [<%= index2navigate(prop.field, true) %>], <%= globalIndex %>):
             <%= r %>
-        }
 <%     end -%>
 <%   end -%>
-    }
 
 <% end -%>
