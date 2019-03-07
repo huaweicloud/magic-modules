@@ -117,17 +117,6 @@ module Provider
       Google::StringUtils.camelize(s)
     end
 
-    # Returns the nested properties. An empty list is returned if the property
-    # is not a NestedObject or an Array of NestedObjects.
-    def nested_properties(property)
-      if property.is_a?(Api::Type::NestedObject)
-        property.properties
-      elsif property.is_a?(Api::Type::Array) &&
-            property.item_type.is_a?(Api::Type::NestedObject)
-        property.item_type.properties
-      end
-    end
-
     # Filter the properties to keep only the ones requiring custom update
     # method and group them by update url & verb.
     def properties_by_custom_update(properties)
