@@ -867,5 +867,16 @@ module Provider
     def updatable?(resource)
       !(resource.not_output_properties.select{ |i| i.crud.include?("u") }.empty?)
     end
+
+    # Returns the nested properties. An empty list is returned if the property
+    # is not a NestedObject or an Array of NestedObjects.
+    def nested_properties(property)
+      if property.is_a?(Api::Type::NestedObject)
+        property.properties
+      elsif property.is_a?(Api::Type::Array) &&
+            property.item_type.is_a?(Api::Type::NestedObject)
+        property.item_type.properties
+      end
+    end
   end
 end
