@@ -22,9 +22,7 @@ func read<%= resource_name %><%= titlelize(api.name) %>(d *schema.ResourceData, 
     if !ok {
         return fmt.Errorf("Error run <%= api.name %> for resource(%s): the result is not map", fmt.Sprintf("<%= resource_name -%> %q", d.Id()))
     }
+    result["<%= api.out_name %>"] = res
 
-    for k, v := range res {
-        result[k] = v
-    }
     return nil
 }
