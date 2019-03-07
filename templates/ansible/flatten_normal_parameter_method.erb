@@ -1,46 +1,58 @@
 <%
    new_prefix = sprintf("%s_%s", prefix, property.out_name)
-   func_def = sprintf("flatten_%s(d, array_index):", new_prefix)
+   func_def = sprintf("flatten_%s(res, array_index, parent_prop, include_computed):", new_prefix)
    nested_properties = nested_properties(property)
 -%>
 <% if property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
 <%   raise "property#{property.name} is unreadable" unless property.crud.include?("r") -%>
-func <%= func_def -%>
+def <%= func_def %>
+    result = parent_prop.setdefault("<%= property.out_name %>", [])
     new_array_index = copy.deepcopy(array_index) if array_index else dict()
 
-    v = navigate_value(d, [<%= index2navigate(property.field) %>],
-        new_array_index)
+    v = result
+    if not result:
+<%   if property.crud.include?("r") -%>
+        v = navigate_value(res, [<%= index2navigate(property.field) %>],
+                           new_array_index)
+<%   else -%>
+        result.append({})
+<%   end -%>
 
-    resp = []
     for i in range(len(v)):
         new_array_index["<%= property.field %>"] = i
-	transformed = {}
+
+        if len(result) < (i + 1):
+            result.append({})
+        p = result[i]
 
 <%   nested_properties.each_index do |i|
        prop = nested_properties[i]
-       next unless is_complex_type(prop) || ansible_readable_property?(prop)
-       v1 = "#{prop.out_name}_prop"
+       next unless ansible_readable_property?(prop) || is_complex_type(prop)
 -%>
-        <%= v1 -%> = <%= convert_parameter(prop, "d, new_array_index", new_prefix, "Read") %>
-        transformed["<%= prop.out_name -%>"] = <%= v1 %>
+<%     if prop.crud.eql?("r") -%>
+        if include_computed:
+<%= convert_resp_parameter(prop, "res, new_array_index, p, include_computed", new_prefix, 12) %>
+<%     else -%>
+<%= convert_resp_parameter(prop, "res, new_array_index, p, include_computed", new_prefix, 8) %>
+<%     end -%>
 
 <%   end -%>
-        resp = append(resp, transformed)
-
-    return resp
 <% elsif property.is_a?(Api::Type::NestedObject) -%>
-func <%= func_def -%>
-    resp = {}
+def <%= func_def %>
+    result = parent_prop.setdefault("<%= property.out_name %>", {})
+
 <%   nested_properties.each_index do |i|
        prop = nested_properties[i]
-       next unless is_complex_type(prop) || ansible_readable_property?(prop)
-       v1 = "#{prop.out_name}_prop"
+       next unless ansible_readable_property?(prop) || is_complex_type(prop)
 -%>
-    <%= v1 -%> = <%= convert_parameter(prop, "d, arrayIndex", new_prefix, "Read") %>
-    resp["<%= prop.out_name -%>"] = <%= v1 %>
+<%     if prop.crud.eql?("r") -%>
+    if include_computed:
+<%= convert_resp_parameter(prop, "res, array_index, p, include_computed", new_prefix, 8) %>
+<%     else -%>
+<%= convert_resp_parameter(prop, "res, array_index, p, include_computed", new_prefix, 4) %>
+<%     end -%>
 
 <%   end -%>
-    return resp
 <% end # if property.is_a?(Api::Type::Array) -%>
 <% unless nested_properties.nil? -%>
 <%   nested_properties.each do |prop| -%>

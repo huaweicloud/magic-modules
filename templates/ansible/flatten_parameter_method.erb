@@ -2,10 +2,13 @@
 <%   f = property.from_response
      set_property_value(property, "from_response", nil)
 -%>
-func <%= sprintf("flatten_%s_%s(d, array_index):", prefix, property.out_name) -%>
-    v = <%= convert_parameter(property, "d, array_index", prefix, "Read") %>
-    <%= lines(f) -%>
+def <%= sprintf("flatten_%s_%s(res, array_index, parent_prop, include_computed):", prefix, property.out_name) -%>
 <%   prefix = prefix + "_custom" -%>
+    r = {}
+<%= convert_resp_parameter(property, "res, array_index, r, include_computed", prefix, 4) %>
+    v = r["<%= property.out_name %>"]
+    <%= lines(f) -%>
+    parent_prop["<%= property.out_name %>"] = v
 }
 <% end -%>
 <%= lines(build_flatten_method_normal(prefix, property), 1) -%>

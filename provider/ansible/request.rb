@@ -252,6 +252,42 @@ module Provider
           return "navigate_value(#{d}, #{i}, #{ai})"
         end
       end
+
+      def convert_resp_parameter(prop, arguments, prefix, spaces)
+        f = indent(sprintf("flatten_%s_%s(%s)", prefix, prop.out_name, arguments), spaces)
+
+        if prop.to_request || prop.from_response
+          return f
+
+        elsif prop.is_a? Api::Type::NestedObject
+          return f
+
+        elsif prop.is_a?(Api::Type::Array) && \
+              prop.item_type.is_a?(Api::Type::NestedObject)
+          return f
+
+        elsif prop.is_a?(Api::Type::NameValues)
+          return f
+
+        else
+          i = "[#{index2navigate(prop.field, false)}]"
+          v = arguments.split(", ")
+          parent = v[2]
+          v1 = "#{prop.out_name}_prop"
+          if prop.crud.eql?("r")
+            indent([
+              sprintf("%s = navigate_value(%s, %s, %s)", v1, v[0], i, v[1]),
+              sprintf("%s[\"%s\"] = %s", parent, prop.out_name, v1),
+            ], spaces)
+          else
+            indent([
+              sprintf("if \"%s\" not in %s:", prop.out_name, parent),
+              sprintf("    %s = navigate_value(%s, %s, %s)", v1, v[0], i, v[1]),
+              sprintf("    %s[\"%s\"] = %s", parent, prop.out_name, v1),
+            ], spaces)
+          end
+        end
+      end
     end
     # rubocop:enable Metrics/ModuleLength
   end
