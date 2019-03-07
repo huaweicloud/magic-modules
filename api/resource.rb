@@ -255,7 +255,7 @@ module Api
       if @apis.include?("list")
 	list_op = @apis["list"]
 	list_op.set_variable(self, :__resource)
-        list_op.check_identity
+        # list_op.check_identity
       end
 
       check_property :properties, Array unless @exclude

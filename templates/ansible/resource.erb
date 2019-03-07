@@ -40,7 +40,7 @@ options:
             - Whether the given object should exist in <%= cloud_name %>.
         choices: ['present', 'absent']
         default: 'present'
-<% object.all_user_properties.reject(&:output).each do |prop| -%>
+<% object.not_output_properties.each do |prop| -%>
 <%= lines(indent(doc_property_yaml(prop, object, 4), 4)) -%>
 <% end -%>
 extends_documentation_fragment: hwc
@@ -59,7 +59,7 @@ EXAMPLES = '''
 
 <% end -%>
 RETURN = '''
-<% properties_to_show(object).each do |prop| -%>
+<% object.all_user_properties.each do |prop| -%>
 <%= lines(indent(return_property_yaml(prop, 4), 4)) -%>
 <% end -%>
 '''
@@ -76,7 +76,6 @@ from ansible.module_utils.hwc_utils import (HwcSession, HwcModule,
                                             HwcClientException404)
 <%
   imports = ['json']
-  imports << 'time' if object.async
   imports << 're'
 -%>
 <%= lines(imports.sort.uniq.map { |i| "import #{i}" }) -%>
@@ -87,59 +86,14 @@ from ansible.module_utils.hwc_utils import (HwcSession, HwcModule,
 
 
 <%
-  prod_name = object.__product.prefix[1..-1]
-  resource_editable_ps = object.resource_editable_properties
-  internals_create = []
-  externals = []
-  no_ex_properties = object.ex_properties.empty?
-  unless no_ex_properties
-    internals_create = object.create_internal_opts
-    externals = object.ex_properties_of("external")
-  end
-  if object.async
-    async_op_st = object.async.operation.service_type
-    async_op_url = object.async.operation.base_url.gsub(/{.*}/, ' ')
-    object_self_link = self_link_url(object).gsub(/{.*}/, ' ')
-    is_standard_async = (async_op_st && async_op_st != object.service_type) || async_op_url != object_self_link
-
-    unless is_standard_async
-      if object.async.status.allowed
-        c_complete_states = object.async.status.complete.compact.map { |x| quote_string(x) }
-        c_allowed_states = object.async.status.allowed.compact.map { |x| quote_string(x) }
-        c_allowed_states = [c_allowed_states, c_complete_states].flatten
-      else
-        c_complete_states = object.async.status.complete[0]
-      end
-
-      if object.async.update_status.allowed
-        u_complete_states = object.async.update_status.complete.compact.map { |x| quote_string(x) }
-        u_allowed_states = object.async.update_status.allowed.compact.map { |x| quote_string(x) }
-        u_allowed_states = [u_allowed_states, u_complete_states].flatten
-      else
-        u_complete_states = object.async.update_status.complete[0]
-      end
-    end
-  end
+  # prod_name = object.__product.prefix[1..-1]
 -%>
 def main():
     """Main function"""
 
 <%
-  mod_props = object.all_user_properties.reject(&:output).map do |prop|
+  mod_props = object.not_output_properties.map do |prop|
     python_dict_for_property(prop, object)
-  end
-  obj_update_url = 'self_link(session)'
-  obj_delete_url = 'self_link(session)'
-  if object.update_url && object.delete_url && object.update_url == object.delete_url
-    obj_update_url = 'update_delete_url(session)'
-    obj_delete_url = 'update_delete_url(session)'
-  else
-    if object.update_url
-      obj_update_url = 'update_url(session)'
-    end
-    if object.delete_url
-      obj_delete_url = 'delete_url(session)'
-    end
   end
 -%>
     module = HwcModule(
@@ -149,115 +103,61 @@ def main():
 <%= lines(indent_list(mod_props, 12)) -%>
         )
     )
-<%=
-  indent(send_request("session = HwcSession(module, \"#{prod_name}\")"), 4)
-%>
 
-    state = module.params['state']
-<% if object.kind? -%>
-    kind = <%= lines(quote_string(object.kind)) -%>
+<% list_api = object.apis.fetch("list", nil)
+   raise "no list api" if list_api.nil?
+-%>
+    resource = fetch_resource(config)
+<% if object.apis["read"].path.match('/{id}') -%>
+    module.params['id'] = navigate_value(resource, [<%= index2navigate(list_api.resource_id_path) %>])
 <% end -%>
 
-<% if object.self_link_query.nil? -%>
-<%   if self_link_url(object).match('/{id}') -%>
-    if not module.params.get("id"):
-        module.params['id'] = get_resource_id(session)
-
-<%   end -%>
-    fetch = get_resource(session)
-<% else # object.self_link_query.nil? -%>
-    fetch = fetch_wrapped_resource(module, '<%= object.kind -%>',
-                                   '<%= object.self_link_query.kind -%>',
-                                   '<%= object.self_link_query.items -%>')
-<% end # object.self_link_query.nil? -%>
+    result = {}
     changed = False
-<% if object.virtual -%>
-    if not fetch:
-        module.fail_json(msg="<%= object.name -%> is not valid")
-<% else # object.virtual -%>
+    if module.params['state'] == 'present':
+        if resource is None:
+            result = create(config)
+            changed = True
 
-    if fetch:
-        if state == 'present':
-<%   if no_ex_properties && resource_editable_ps.empty? -%>
-            # <%= object.name -%> cannot be edited, just return the current state
-            fetch = response_to_hash(module, fetch)
-<%   else -%>
-<%     unless no_ex_properties -%>
-            expect = _get_editable_properties(module)
-<%     else -%>
-            expect = _get_resource_editable_properties(module)
-<%     end -%>
-            current_state = response_to_hash(module, fetch)
-            if is_different(expect, current_state):
-<%
-  method_update = method_call('update', ['session',
-                                         ('kind' if object.kind?),
-                                         ('fetch' if object.save_api_results?)
-                                        ])
--%>
-<%     if no_ex_properties -%>
-<%= lines(indent("fetch = #{method_update}", 16)) -%>
-<%     else -%>
-                fetch = update_resource(session, current_state, fetch)
-<%     end # no_ex_properties -%>
-                fetch = response_to_hash(module, fetch)
+        else:
+<% unless updatable?(object) -%>
+            result = read_resource(config)
+<% else -%>
+            current = read_resource(config, include_computed=False)
+            expect = _expect_state(module)
+            if not is_different(expect, current):
+                result = update(config)
                 changed = True
             else:
-                fetch = current_state
-<%   end # no_ex_properties && resource_editable_ps.empty? -%>
-        else:
-<%
-  method = method_call('delete', [
-                                   'session',
-                                   ('kind' if object.kind?),
-                                   ('fetch' if object.save_api_results?)
-                                 ])
--%>
-<%= lines(indent(method, 12)) -%>
-            fetch = {}
-            changed = True
+                result = read_resource(config)
+<% end # updateable(object)? -%>
     else:
-        if state == 'present':
-<%
-  method_create = method_call('create', ['session',
-                                         ('kind' if object.kind?)
-                                        ])
--%>
-<% if no_ex_properties || (internals_create.empty? && externals.empty?)-%>
-            fetch = <%= method_create %>
-<% else -%>
-            fetch = create_resource(session)
-<% end -%>
-            fetch = response_to_hash(module, fetch)
+        if resource:
+            delete(config)
             changed = True
-        else:
-            fetch = {}
 
-    fetch.update({'changed': changed})
-<% end # object.virtual -%>
-
-    module.exit_json(**fetch)
-<% unless object.virtual -%>
+    result['changed'] = changed
+    module.exit_json(**result)
 
 
 def user_input_parameters(module):
     return {
 <% object.not_output_properties.each do |prop| -%>
-        "<%= prop.out_name %>": module.params.get("<%= prop.name %>"),
+        "<%= prop.out_name %>": module.params.get("<%= prop.out_name %>"),
 <% end -%>
     }
 
 
 <% create_api = object.apis["create"] -%>
-<%= method_decl('create', ['config', ('kind' if object.kind?)]) %>
+def create(config):
     module = config.module
     opts = user_input_parameters(module)
-
     params = dict()
-<%= lines(build_expand_properties(object, create_api.parameters, "create", "opts, None", create_api.out_name, "params", false), 1) %>
-
+<%= lines(build_expand_properties(object, create_api.parameters, "create", "opts, None", create_api.out_name, "params", false), 1) -%>
     client = config.client(<%= argu_for_sdkclient(create_api) %>)
     link = build_path(module, "<%= create_api.path %>")
+
+    r = None
 <%=
   indent(send_request(
      "r = " + method_call("client.#{create_api.verb.downcase}", ['link', 'params'])
@@ -269,61 +169,17 @@ def user_input_parameters(module):
 <%   else -%>
     timeout = 60 * int(module.params['timeouts']['create'].rstrip('m'))
     obj = async_wait(module, config, r, client, timeout)
-    rid = navigate_value(obj, [<%= index2navigate(create_api.async.result.field) %>])
-    module.params['id'] = rid
+    module.params['id'] = navigate_value(obj, [<%= index2navigate(create_api.async.result.field) %>])
 <%   end # object.async-%>
 
-    return get_resource(config)
-<% end # create method -%>
-<% if updatable?(object) -%>
-
-
-<%=
-  lines(method_decl('update', ['config', ('kind' if object.kind?),
-                               ('fetch' if object.save_api_results?),
-                              ]))
--%>
-    module = config.module
-    opts = user_input_parameters(module)
-<%   update_api = object.apis.fetch("update", nil) -%>
-<%   unless update_api.nil? -%>
-
-    params = dict()
-<%= lines(build_expand_properties(object, update_api.parameters, "upate", "opts, None", update_api.out_name, "params", false), 1) %>
-
-    client = config.client(<%= argu_for_sdkclient(update_api) %>)
-    link = build_path(module, "<%= update_api.path %>")
-
-<%     if update_api.async.nil? -%>
-<%=
-  indent(send_request(
-    method_call("client.#{update_api.verb.downcase}", ['link', 'params'])
-  ), 4)
-%>
-<%     else -%>
-<%=
-  indent(send_request(
-    "r = " + method_call("client.#{update_api.verb.downcase}", ['link', 'params'])
-  ), 4)
-%>
-
-    timeout = 60 * int(module.params['timeouts']['update'].rstrip('m'))
-    async_wait(module, config, r, client, timeout)
-<%     end -%>
-
-    return get_resource(config)
-<%   end # update_api.nil? -%>
-<% end # updatable? -%>
+    return read_resource(config)
 
 
 <% delete_api = object.apis["delete"] -%>
-<%=
-  lines(method_decl('delete', ['config', ('kind' if object.kind?),
-                               ('fetch' if object.save_api_results?),
-                              ]))
--%>
+def delete(config):
+    module = config.module
     client = config.client(<%= argu_for_sdkclient(delete_api) %>)
-    link = build_path(module, "<%= delete.path %>")
+    link = build_path(module, "<%= delete_api.path %>")
 
 <% if delete_api.async.nil? -%>
 <%   if create_api.async.nil? -%>
@@ -333,7 +189,7 @@ def user_input_parameters(module):
   ), 4)
 %>
 <%   else # if create api is async, then it is best to make sure the resource is delete successfully -%>
-<%   end # unless is_resource_standard_async -%>
+<%   end -%>
 <% else -%>
 <%=
   indent(send_request(
@@ -343,213 +199,37 @@ def user_input_parameters(module):
     timeout = 60 * int(module.params['timeouts']['delete'].rstrip('m'))
     async_wait(module, config, r, client, timeout)
 <% end -%>
-<% # lines(compile('templates/ansible/transport.erb'), 2) -%>
 
 
 <%- read_api = object.apis["read"] %>
-def read_resource(config):
+def read_resource(config, include_computed=True):
     module = config.module
     link = build_path(module, "<%= read_api.path %>")
     client = config.client(<%= argu_for_sdkclient(read_api) %>)
+
+    v = None
 <%=
   indent(send_request(
-    "res = client.get(link)", "", "session.module", "return None"
+    "v = client.get(link)", "", "session.module"
   ), 4)
 %>
 
-    r = {}
-<% properties_to_show(object).each do |prop|
-     v1 = "#{prop.out_name}_prop"
--%>
-    <%= v1 %> = <%= convert_parameter(prop, 'res, nil', "read", "Read") %>
-    r["<%= prop.out_name %>"] = <%= v1 %>
+    res = {"<%= read_api.out_name%>": v}
+
+    r = user_input_parameters(module)
+
+<% properties_to_show(object).each do |prop| -%>
+<%  if prop.crud.eql?("r") -%>
+    if include_computed:
+<%= convert_resp_parameter(prop, "res, None, r, include_computed", "", 8) %>
+<%  else -%>
+<%= convert_resp_parameter(prop, "res, None, r, include_computed", "", 4) %>
+<%  end -%>
 
 <% end -%>
     return r
 
 
-def link_wrapper(f):
-    def _wrapper(session, *args, **kwargs):
-        try:
-            return f(session, *args, **kwargs)
-        except KeyError as ex:
-            session.module.fail_json(
-                msg="Mapping keys(%s) are not found in generating link" % ex)
-
-    return _wrapper
-<%
-  unless object.virtual || self_link_url(object).match('/{id}').nil?
-    list_url_format_keys = list_url(object).scan(/{[^}]+}/)
-    extra_map = {'{limit}' => "'limit': 10", '{offset}' => "'offset': '{offset}'", '{marker}' => "'marker': '{marker}'"}
-    extra_param = (extra_map.keys & list_url_format_keys).collect { |i| extra_map[i] }
-    check_code = ""
-    check_code1 = ""
-    list_op = object.list_op
-    identity = list_op.identity
-    unless identity.nil?
-      if identity.length == 1
-        p1 = object.parameter(identity[0])
-        check_code1 = "v = module.params.get(\'#{p1.name}\')"
-        cp = "i.get(\'#{p1.field_name}\') == v"
-        check_code = [
-                       "for i in r:",
-                       indent("if #{cp}:", 4),
-                       indent("ids.add(i.get(\'#{object.resource_id}\'))", 8)
-                     ].join("\n")
-      elsif identity.length > 1
-        cp = []
-        cp1 = []
-        for i in identity
-          p1 = object.parameter(i)
-          cp << "i.get(\'#{p1.field_name}\')"
-          cp1 << "module.params.get(\'#{p1.name}\')"
-        end
-        check_code1 = [
-                        "v = [",
-                        indent(cp1.join(",\n"), 4),
-                        "]"
-                      ].join("\n")
-        check_code = [
-                       "for i in r:",
-                       indent([
-                                "v1 = [",
-                                indent(cp.join(",\n"), 4),
-                                "]",
-                                "if v == v1:",
-                                indent("ids.add(i.get(\'#{object.resource_id}\'))", 4)
-                              ].join("\n"), 4),
-                     ].join("\n")
-      end
-    else
-      check_code = [
-                     "for i in r:",
-                     indent("ids.add(i.get(\'#{object.resource_id}\'))", 4)
-                   ].join("\n")
-    end
--%>
-
-
-def get_resource_id(session):
-    module = session.module
-<%  unless extra_param.empty? -%>
-    link = list_link(session, {<%= extra_param.join(', ') -%>})
-<%  else -%>
-    link = list_link(session)
-<%  end -%>
-<%  if (['{marker}', '{offset}'] - list_url_format_keys).length == 2 # no need page -%>
-<%=
-  indent(send_request("r = session.get(link)", "", "module", "return None"), 4)
-%>
-    if r is None:
-        return None
-<%    if list_op.msg_prefix -%>
-    r = r.get(<%= quote_string(list_op.msg_prefix) %>, [])
-<%    end  # object.msg_prefix -%>
-<%    unless check_code1.empty? -%>
-<%= indent(check_code1, 4) %>
-<%    end -%>
-    ids = set()
-<%= indent(check_code, 4) %>
-    if not ids:
-        return None
-    elif len(ids) == 1:
-        return ids.pop()
-    else:
-        module.fail_json(msg="Multiple resources are found")
-<%  else -%>
-<%    if list_url_format_keys.include?('{marker}') -%>
-    p = {'marker': ''}
-<%    else -%>
-    p = {'offset': 0}
-<%    end -%>
-<%    unless check_code1.empty? -%>
-<%= indent(check_code1, 4) %>
-<%    end -%>
-    ids = set()
-    while True:
-<%=
-  indent(send_request("r = session.get(link.format(**p))", "", "module", "break"), 8)
-%>
-        if r is None:
-            break
-<%    if list_op.msg_prefix -%>
-        r = r.get(<%= quote_string(list_op.msg_prefix) %>, [])
-<%    end  # object.msg_prefix -%>
-        if r == []:
-            break
-<%= indent(check_code, 8) %>
-        if len(ids) >= 2:
-            module.fail_json(msg="Multiple resources are found")
-
-<%    if list_url_format_keys.include?('{marker}') -%>
-        p['marker'] = r[-1].get(<%= quote_string(object.resource_id) -%>)
-<%    else -%>
-        p['offset'] += 1
-<%    end -%>
-
-    return ids.pop() if ids else None
-<%  end -%>
-
-
-<%= lines(emit_link('list_link', list_url(object), object, extra_param.length > 0, object.service_type)) -%>
-<%
-  end
--%>
-<% unless no_ex_properties && resource_editable_ps.empty? -%>
-
-
-def is_different(expect, actual):
-    # Remove all output-only from actual.
-    actual_vals = {}
-    for k, v in actual.items():
-        if k in expect:
-            actual_vals[k] = v
-
-    expect_vals = {}
-    for k, v in expect.items():
-        if k in actual:
-            expect_vals[k] = v
-
-    return DictComparison(expect_vals) != DictComparison(actual_vals)
+<% properties_to_show(object).each do |prop| -%>
+<%= lines(build_flatten_method("", prop), 1) -%>
 <% end -%>
-<% unless resource_editable_ps.empty? -%>
-
-
-def _get_resource_editable_properties(module):
-    return remove_nones_from_dict({
-<% resource_editable_ps.map do |p| -%>
-<%= indent("\"#{p.out_name}\": module.params.get(\"#{p.out_name}\"),", 8)-%>
-<%= "\n" -%>
-<% end -%>
-    })
-<% end # resource_editable_ps.empty? -%>
-<% unless no_ex_properties -%>
-
-
-def _get_editable_properties(module):
-<%
-  ps = object.properties.reject(&:output).select { |p| p.crud.include?('u') }
--%>
-    return remove_nones_from_dict({
-<% ps.map do |p| -%>
-<%= indent("\"#{p.out_name}\": module.params.get(\"#{p.out_name}\"),", 8)-%>
-<%= "\n" -%>
-<% end -%>
-    })
-<% end # no_ex_properties && resource_editable_ps.empty? -%>
-
-
-# Remove unnecessary properties from the response.
-# This is for doing comparisons with Ansible's current parameters.
-def response_to_hash(module, response):
-    return {
-<%= lines(response_properties(object.properties)) -%>
-    }
-<%= lines_before(selflink_functions(object), 1) -%>
-<%= lines_before(compile('templates/ansible/async.erb'), 1) -%>
-<%= lines_before(compile('templates/ansible/provider_helpers.erb'), 1) -%>
-<%= lines_before(compile('templates/ansible/properties.erb'), 1) -%>
-
-
-if __name__ == '__main__':
-    main()
