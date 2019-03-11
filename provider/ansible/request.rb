@@ -220,7 +220,7 @@ module Provider
       def convert_parameter(prop, arguments, prefix)
         f = sprintf("expand_%s_%s(%s)", prefix, prop.out_name, arguments)
 
-        if prop.to_request || prop.from_response
+        if prop.to_request
           return f
 
         elsif prop.is_a? Api::Type::NestedObject
@@ -256,7 +256,7 @@ module Provider
         p = prefix.empty? ? "" : "_"
         f = indent(sprintf("flatten%s%s_%s(%s)", p, prefix, prop.out_name, arguments), spaces)
 
-        if prop.to_request || prop.from_response
+        if prop.from_response
           return f
 
         elsif prop.is_a? Api::Type::NestedObject
@@ -270,6 +270,8 @@ module Provider
           return f
 
         else
+          return "" unless prop.crud.include?("r")
+
           i = "[#{index2navigate(prop.field, false)}]"
           v = arguments.split(", ")
           parent = v[2]
@@ -281,7 +283,7 @@ module Provider
             ], spaces)
           else
             indent([
-              sprintf("if \"%s\" not in %s:", prop.out_name, parent),
+              sprintf("if %s.get(\"%s\") is None:", parent, prop.out_name),
               sprintf("    %s = navigate_value(%s, %s, %s)", v1, v[0], i, v[1]),
               sprintf("    %s[\"%s\"] = %s", parent, prop.out_name, v1),
             ], spaces)
