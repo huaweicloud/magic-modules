@@ -41,14 +41,6 @@ module Provider
                          property: property
       end
 
-      def build_expand_method_normal(resource, op, prefix, property)
-        compile_template 'templates/ansible/expand_normal_parameter_method.erb',
-                         resource: resource,
-                         op: op,
-                         prefix: prefix,
-                         property: property
-      end
-
       def build_expand_properties(resource, properties, op, args, prefix, map_obj, return_value)
         compile_template 'templates/ansible/expand_properties.erb',
                          resource: resource,
