@@ -228,12 +228,8 @@ module Provider
       %x(goimports -w #{filepath})
     end
 
-    def terraform_readable_property?(property)
-        property.crud.include?("r") && !property.required
-    end
-
     def has_output_property(property)
-      if terraform_readable_property?(property)
+      if property.crud.include?("r")
         return true
       end
 

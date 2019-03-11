@@ -211,6 +211,54 @@ module Provider
           return "navigateValue(#{d}, #{i}, #{ai})"
         end
       end
+
+      def convert_resp_parameter(prop, arguments, prefix, first_assign)
+        err = sprintf("return fmt.Errorf(\"Error reading %s, err: %%s\", err)", prop.out_name)
+        f = indent([
+                sprintf("err %s flatten%s%s(%s)", first_assign ? ":=" : "=", prefix, titlelize(prop.name), arguments),
+                "if err != nil {\n#{err}\n}",
+        ], 4)
+
+
+        if prop.to_request || prop.from_response
+          return false, f
+
+        elsif prop.is_a? Api::Type::NestedObject
+          return false,  f
+
+        elsif prop.is_a?(Api::Type::Array) && \
+              prop.item_type.is_a?(Api::Type::NestedObject)
+          return false,  f
+
+        elsif prop.is_a?(Api::Type::NameValues)
+          return false,  f
+
+        else
+          return first_assign, "" unless prop.crud.include?("r")
+
+          i = "[]string{#{index2navigate(prop.field, false)}}"
+          v = arguments.split(", ")
+          parent = v[2]
+          v1 = "#{go_variable(prop.name)}Prop"
+
+          if prop.crud.eql?("r")
+            return first_assign, indent([
+              sprintf("%s, err := navigateValue(%s, %s, %s)", v1, v[0], i, v[1]),
+              "if err != nil {\n#{err}\n}",
+              sprintf("%s[\"%s\"] = %s", parent, prop.out_name, v1),
+            ], 4)
+          else
+            return first_assign, indent([
+              sprintf("%s, ok := %s[\"%s\"]", v1, parent, prop.out_name),
+              "if ok {\nok, _ = isEmptyValue(reflect.ValueOf(#{v1}))\nok = !ok}",
+              "if !ok {",
+              sprintf("%s, err := navigateValue(%s, %s, %s)", v1, v[0], i, v[1]),
+              "if err != nil {\n#{err}\n}",
+              sprintf("%s[\"%s\"] = %s\n}", parent, prop.out_name, v1),
+            ], 4)
+          end
+        end
+      end
     end
     # rubocop:enable Metrics/ModuleLength
   end

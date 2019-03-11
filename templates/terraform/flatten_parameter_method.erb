@@ -1,41 +1,22 @@
-<% if false # the license inside this if block pertains to this file -%>
-  # Copyright 2017 Google Inc.
-  # Licensed under the Apache License, Version 2.0 (the "License");
-  # you may not use this file except in compliance with the License.
-  # You may obtain a copy of the License at
-  #
-  #     http://www.apache.org/licenses/LICENSE-2.0
-  #
-  # Unless required by applicable law or agreed to in writing, software
-  # distributed under the License is distributed on an "AS IS" BASIS,
-  # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  # See the License for the specific language governing permissions and
-  # limitations under the License.
-<% end -%>
-<%   unless property.from_response.nil? -%>
-func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
-<%   f = property.from_response
-     set_property_value(property, "from_response", nil)
-     prefix = prefix + "Custom"
--%>
-    v, err := <%= convert_parameter(property, "d, arrayIndex", prefix, "Read") %>
+<% if !property.from_response.nil? -%>
+func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int, parentProp map[string]interface{}) error {
+<%   raise "parameter(#{property.name}) is not readable" unless property.crud.include?("r") -%>
+    v, err := navigateValue(d, []string{<%= index2navigate(property.field) %>}, arrayIndex)
     if err != nil {
-        return nil, err
+            return err
     }
-    <%= lines(f) -%>
-}
-<%   end -%>
-<% nested_properties = nested_properties(property) -%>
-<% if property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
-func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
-    newArrayIndex := make(map[string]int)
-    if arrayIndex != nil {
-        for k, v := range arrayIndex {
-            newArrayIndex[k] = v
-	}
+    v1, err := func () (interface{}, error) {
+    <%= lines(property.from_response) -%>
+    }()
+    if err != nil {
+            return err
     }
 
-<%   raise "property#{property.name} is unreadable" unless property.crud.include?("r") -%>
+    parentProp["<%= property.out_name %>"] = v1
+    return nil
+}
+<% elsif property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
+func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int, parentProp map[string]interface{}) error {
 <%   # if this property is not readable, then it can not known the number of array when import this resource
      # because when import, all the properties are empty.
      # on the other side, since this property is unreadable, why append a readable property on me?
@@ -43,61 +24,80 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
      # send question. it exists that if the array has two items, but the order of readback data is not matched
      # but now, there is no good way to check whether two items from different arraya are matched.
 -%>
-    v, err := navigateValue(d, []string{<%= index2navigate(property.field) %>}, newArrayIndex)
-    if err != nil {
-    	return nil, err
+    v, ok := parentProp["<%= property.out_name %>"]
+    if !ok || v == nil || len(v.([]interface{})) == 0 {
+<%   if property.crud.include?("r") -%>
+        v1, err := navigateValue(d, []string{<%= index2navigate(property.field) %>}, arrayIndex)
+        if err != nil {
+            return err
+        }
+        n := len(v1.([]interface{}))
+        v = make([]interface{}, n, n)
+<%   else -%>
+        v = make([]interface{}, 1, 1)
+<%   end -%>
+    }
+    result := v.([]interface{})
+
+    newArrayIndex := make(map[string]int)
+    if arrayIndex != nil {
+        for k, v := range arrayIndex {
+            newArrayIndex[k] = v
+        }
     }
 
-    n := len(v.([]interface{}))
-    resp := make([]interface{}, 0, n)
-    for i := 0; i < n; i++ {
+    for i := 0; i < len(result); i++ {
         newArrayIndex["<%= property.field %>"] = i
-        transformed := make(map[string]interface{})
-
-<%   nested_properties.each_index do |i|
-       prop = nested_properties[i]
-       next unless is_complex_type(prop) || terraform_readable_property?(prop)
-       v1 = "#{go_variable(prop.name)}Prop"
+        if result[i] == nil {
+            result[i] = make(map[string]interface{})
+        }
+        r := result[i].(map[string]interface{})
+<%   nested_properties = nested_properties(property)
+     first_assign = true
 -%>
-    <%= v1 -%>, err := <%= convert_parameter(prop, "d, newArrayIndex", prefix + titlelize(property.name), "Read") %>
-    if err != nil {
-        return nil, fmt.Errorf("Error reading <%= property.out_name -%>:<%= prop.out_name %>, err: %s", err)
-    }
-<%     if prop.is_a?(Api::Type::NestedObject) -%>
-    transformed["<%= prop.out_name -%>"] = []interface{}{<%= v1 %>}
-<%     else -%>
-    transformed["<%= prop.out_name -%>"] = <%= v1 %>
+<%   nested_properties.each do |prop|
+       first_assign, c = convert_resp_parameter(prop, "d, newArrayIndex, r", prefix + titlelize(property.name), first_assign)
+-%>
+<%     unless c.empty? -%>
+
+    <%= c %>
 <%     end -%>
-
 <%   end -%>
-    resp = append(resp, transformed)
     }
 
-    return resp, nil
+    parentProp["<%= property.out_name %>"] = result
+    return nil
 }
+<%   nested_properties.each do |prop| -%>
+
+<%= lines(build_flatten_method(prefix + titlelize(property.name), prop), 1) -%>
+<%   end -%>
 <% elsif property.is_a?(Api::Type::NestedObject) -%>
-func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
-    resp := make(map[string]interface{})
-<%   nested_properties.each_index do |i|
-       prop = nested_properties[i]
-       next unless is_complex_type(prop) || terraform_readable_property?(prop)
-       v1 = "#{go_variable(prop.name)}Prop"
--%>
-    <%= v1 -%>, err := <%= convert_parameter(prop, "d, arrayIndex", prefix + titlelize(property.name), "Read") %>
-    if err != nil {
-        return nil, fmt.Errorf("Error reading <%= property.out_name -%>:<%= prop.out_name %>, err: %s", err)
+func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int, parentProp map[string]interface{}) error {
+    v, ok := parentProp["<%= property.out_name %>"]
+    if !ok || v == nil || len(v.([]interface{})) == 0 {
+        v = make([]interface{}, 1, 1)
     }
-<%     if prop.is_a?(Api::Type::NestedObject) -%>
-    resp["<%= prop.out_name -%>"] = []interface{}{<%= v1 %>}
-<%     else -%>
-    resp["<%= prop.out_name -%>"] = <%= v1 %>
-<%     end -%>
+    result := v.([]interface{})
+    if result[0] == nil {
+         result[0] = make(map[string]interface{})
+    }
+    r := result[0].(map[string]interface{})
+<%   nested_properties = nested_properties(property)
+     first_assign = true
+-%>
+<%   nested_properties.each do |prop|
+       first_assign, c = convert_resp_parameter(prop, "d, arrayIndex, r", prefix + titlelize(property.name), first_assign)
+-%>
+<%     unless c.empty? -%>
 
+    <%= c %>
+<%     end -%>
 <%   end -%>
-    return resp, nil
+
+    parentProp["<%= property.out_name %>"] = result
+    return nil
 }
-<% end # if property.is_a?(Api::Type::Array) -%>
-<% unless nested_properties.nil? -%>
 <%   nested_properties.each do |prop| -%>
 
 <%= lines(build_flatten_method(prefix + titlelize(property.name), prop), 1) -%>
