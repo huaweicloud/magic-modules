@@ -178,18 +178,11 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
     }
 <% end -%>
 
-<% properties_to_show(object).each do |prop|
-     v1 = "#{go_variable(prop.name)}Prop"
--%>
-    <%= v1 %>, err := <%= convert_parameter(prop, 'res, nil', resource_name, "Read") %>
-    if err != nil {
-        return fmt.Errorf("Error reading <%= object.name -%>:<%= prop.out_name %>, err: %s", err)
-    }
-<%   if prop.is_a?(Api::Type::NestedObject) -%>
-    if err := d.Set("<%= prop.out_name %>", []interface{}{<%= v1 %>}); err != nil {
-<%   else -%>
-    if err := d.Set("<%= prop.out_name %>", <%= v1 %>); err != nil {
-<%   end -%>
+    opts := resource<%= resource_name -%>UserInputParams(d)
+
+<% properties_to_show(object).each do |prop| -%>
+    <%= convert_resp_parameter(prop, 'res, nil, opts', resource_name, false)[1] %>
+    if err = d.Set("<%= prop.out_name %>", opts["<%= prop.out_name %>"]); err != nil {
         return fmt.Errorf("Error setting <%= object.name -%>:<%= prop.out_name %>, err: %s", err)
     }
 
@@ -198,6 +191,7 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
 }
 <% if updatable?(object) -%>
 
+<%   update_api = object.apis.fetch("update", nil) -%>
 func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{}) error {
     config := meta.(*Config)
     client, err := config.sdkClient(<%= argu_for_sdkclient(update_api) %>)
@@ -214,7 +208,6 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 <%   end -%>
     }
 <% end -%>
-<%   update_api = object.apis.fetch("update", nil) -%>
 <%   unless update_api.nil? -%>
 
     params := make(map[string]interface{})
