@@ -176,11 +176,10 @@ module Provider
         ].compact
       end
 
-      def convert_parameter(prop, arguments, prefix, invoker="")
-        n = invoker == "Read" ? "flatten" : "expand"
-        f = "#{n}#{prefix}#{titlelize(prop.name)}(#{arguments})"
+      def convert_parameter(prop, arguments, prefix)
+        f = "expand#{prefix}#{titlelize(prop.name)}(#{arguments})"
 
-        if prop.to_request || prop.from_response
+        if prop.to_request
           return f
 
         elsif prop.is_a? Api::Type::NestedObject
@@ -207,7 +206,7 @@ module Provider
 
         else
           d, ai = arguments.split(", ")
-          i = "[]string{#{index2navigate(prop.field, invoker != "Read")}}"
+          i = "[]string{#{index2navigate(prop.field, true)}}"
           return "navigateValue(#{d}, #{i}, #{ai})"
         end
       end
@@ -220,7 +219,7 @@ module Provider
         ], 4)
 
 
-        if prop.to_request || prop.from_response
+        if prop.from_response
           return false, f
 
         elsif prop.is_a? Api::Type::NestedObject
