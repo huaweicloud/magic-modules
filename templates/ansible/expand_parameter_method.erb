@@ -1,10 +1,43 @@
-<% unless property.to_request.nil? -%>
-<%   f = property.to_request
-     set_property_value(property, "to_request", nil)
+<%
+   new_prefix = sprintf("%s_%s", prefix, property.out_name)
+   func_def = sprintf("expand_%s(d, array_index):", new_prefix)
 -%>
-def <%= sprintf("expand_%s_%s(d, array_index):", prefix, property.out_name) -%>
-<%   prefix = prefix + "_custom" -%>
-    v = <%= convert_parameter(property, "d, array_index", prefix) %>
-    <%= lines(f) -%>
-<% end -%>
-<%= lines(build_expand_method_normal(resource, op, prefix, property), 1) -%>
+<% if !property.to_request.nil? -%>
+def <%= func_def -%>
+    v = navigate_value(d, [<%= index2navigate(property.field, true) %>],
+                       array_index)
+    <%= lines(property.to_request) -%>
+<% elsif property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
+<%   rp = find_property(resource, property.field.split("."))
+     unless rp.is_a?(Api::Type::Array)
+       raise "parameter(#{property.name}) is an array, but the matched property is not"
+     end
+-%>
+def <%= func_def -%>
+    new_array_index = copy.deepcopy(array_index) if array_index else dict()
+
+    v = navigate_value(d, [<%= index2navigate(property.field, true) %>],
+                       new_array_index)
+
+<%   nested_properties = nested_properties(property) -%>
+    req = []
+    for i in range(len(v)):
+        new_array_index["<%= to_schema_index(property.field) %>"] = i
+        <%= lines(build_expand_properties(resource, nested_properties, op, "d, new_array_index", new_prefix, "transformed", true), 1) -%>
+        req.append(transformed)
+
+    return req
+<%   nested_properties.each do |prop| -%>
+
+<%= lines(build_expand_method(resource, op, new_prefix, prop), 1) -%>
+<%   end -%>
+<% elsif property.is_a?(Api::Type::NestedObject) -%>
+def <%= func_def -%>
+<%   nested_properties = nested_properties(property) -%>
+    <%= lines(build_expand_properties(resource, nested_properties, op, "d, array_index", new_prefix, "req", true), 1) -%>
+    return req
+<%   nested_properties.each do |prop| -%>
+
+<%= lines(build_expand_method(resource, op, new_prefix, prop), 1) -%>
+<%   end -%>
+<% end # if property.is_a?(Api::Type::Array) -%>
