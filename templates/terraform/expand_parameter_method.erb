@@ -12,21 +12,15 @@
   # See the License for the specific language governing permissions and
   # limitations under the License.
 <% end -%>
-<% unless property.to_request.nil? -%>
+<% if !property.to_request.nil? -%>
 func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
-<%   f = property.to_request
-     set_property_value(property, "to_request", nil)
-     prefix = prefix + "Custom"
--%>
-    v, err := <%= convert_parameter(property, "d, arrayIndex", prefix) %>
+    v, err := navigateValue(d, []string{<%= index2navigate(property.field, true) %>}, arrayIndex)
     if err != nil {
         return nil, err
     }
-    <%= lines(f) -%>
+    <%= lines(property.to_request) -%>
 }
-<% end -%>
-<% nested_properties = nested_properties(property) -%>
-<% if property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
+<% elsif property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
 func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
     newArrayIndex := make(map[string]int)
     if arrayIndex != nil {
@@ -44,6 +38,7 @@ func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIn
         return nil, err
     }
 
+<%   nested_properties = nested_properties(property) -%>
     n := len(v.([]interface{}))
     req := make([]interface{}, 0, n)
     for i := 0; i < n; i++ {
@@ -56,17 +51,20 @@ func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIn
 
     return req, nil
 }
-<% elsif property.is_a?(Api::Type::NestedObject) -%>
-func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
-    req := make(map[string]interface{})
-
-    <%= lines(build_expand_properties(resource, nested_properties, op, "d, arrayIndex", prefix + titlelize(property.name), "req", true), 1) -%>
-    return req, nil
-}
-<% end # if property.is_a?(Api::Type::Array) -%>
-<% unless nested_properties.nil? -%>
 <%   nested_properties.each do |prop| -%>
 
 <%= lines(build_expand_method(resource, op, prefix + titlelize(property.name), prop), 1) -%>
 <%   end -%>
-<% end -%>
+<% elsif property.is_a?(Api::Type::NestedObject) -%>
+func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
+    req := make(map[string]interface{})
+
+<%   nested_properties = nested_properties(property) -%>
+    <%= lines(build_expand_properties(resource, nested_properties, op, "d, arrayIndex", prefix + titlelize(property.name), "req", true), 1) -%>
+    return req, nil
+}
+<%   nested_properties.each do |prop| -%>
+
+<%= lines(build_expand_method(resource, op, prefix + titlelize(property.name), prop), 1) -%>
+<%   end -%>
+<% end # if property.is_a?(Api::Type::Array) -%>
