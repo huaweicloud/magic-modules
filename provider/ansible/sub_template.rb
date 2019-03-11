@@ -31,12 +31,6 @@ module Provider
                          property: property
       end
 
-      def build_flatten_method_normal(prefix, property)
-        compile_template 'templates/ansible/flatten_normal_parameter_method.erb',
-                         prefix: prefix,
-                         property: property
-      end
-
       # Transforms a Terraform schema representation of a property into a
       # representation used by the Cloud API.
       def build_expand_method(resource, op, prefix, property)
