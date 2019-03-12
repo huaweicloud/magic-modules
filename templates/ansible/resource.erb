@@ -221,9 +221,9 @@ def read_resource(config, include_computed=True):
 <% properties_to_show(object).each do |prop| -%>
 <%  if prop.crud.eql?("r") -%>
     if include_computed:
-<%= convert_resp_parameter(prop, "res, None, r, include_computed", "", 8) %>
+<%= convert_resp_parameter(prop, "res, None", "", "r", 8) %>
 <%  else -%>
-<%= convert_resp_parameter(prop, "res, None, r, include_computed", "", 4) %>
+<%= convert_resp_parameter(prop, "res, None", "", "r", 4) %>
 <%  end -%>
 
 <% end -%>
