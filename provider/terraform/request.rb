@@ -211,12 +211,26 @@ module Provider
         end
       end
 
-      def convert_resp_parameter(prop, arguments, prefix, first_assign)
-        err = sprintf("return fmt.Errorf(\"Error reading %s, err: %%s\", err)", prop.out_name)
-        f = indent([
-                sprintf("err %s flatten%s%s(%s)", first_assign ? ":=" : "=", prefix, titlelize(prop.name), arguments),
-                "if err != nil {\n#{err}\n}",
+      def convert_resp_parameter(prop, arguments, prefix, first_assign, parent_var, set_to, resource_name)
+        read_err = sprintf("fmt.Errorf(\"Error reading %s:%s, err: %%s\", err)", resource_name, prop.out_name)
+        prop_var = "#{go_variable(prop.name)}Prop"
+
+        set_to_schema = indent([
+          "if err != nil {\nreturn #{read_err}\n}",
+           sprintf("if err = d.Set(\"%s\", %s); err != nil {", prop.out_name, prop_var),
+           sprintf("return fmt.Errorf(\"Error setting %s:%s, err: %%s\", err)\n}", resource_name, prop.out_name),
         ], 4)
+
+        set_to_parent = indent([
+          "if err != nil {\nreturn nil, #{read_err}\n}",
+          sprintf("%s[\"%s\"] = %s", parent_var, prop.out_name, prop_var),
+        ], 4)
+
+        f = indent([
+          sprintf("%s, _ := %s[\"%s\"]", prop_var, parent_var, prop.out_name),
+          sprintf("%s, err %s flatten%s%s(%s, %s)", prop_var, first_assign ? ":=" : "=", prefix, titlelize(prop.name), arguments, prop_var),
+          (set_to.eql?("parent") ? set_to_parent : set_to_schema),
+        ].compact.flatten, 4)
 
 
         if prop.from_response
@@ -237,24 +251,21 @@ module Provider
 
           i = "[]string{#{index2navigate(prop.field, false)}}"
           v = arguments.split(", ")
-          parent = v[2]
-          v1 = "#{go_variable(prop.name)}Prop"
 
           if prop.crud.eql?("r")
             return first_assign, indent([
-              sprintf("%s, err := navigateValue(%s, %s, %s)", v1, v[0], i, v[1]),
-              "if err != nil {\n#{err}\n}",
-              sprintf("%s[\"%s\"] = %s", parent, prop.out_name, v1),
-            ], 4)
+              sprintf("%s, err := navigateValue(%s, %s, %s)", prop_var, v[0], i, v[1]),
+              (set_to.eql?("parent") ? set_to_parent : set_to_schema),
+            ].compact.flatten, 4)
           else
             return first_assign, indent([
-              sprintf("%s, ok := %s[\"%s\"]", v1, parent, prop.out_name),
-              "if ok {\nok, _ = isEmptyValue(reflect.ValueOf(#{v1}))\nok = !ok}",
+              sprintf("%s, ok := %s[\"%s\"]", prop_var, parent_var, prop.out_name),
+              sprintf("if %s != nil {\nok, _ = isEmptyValue(reflect.ValueOf(%s))\nok = !ok}", prop_var, prop_var),
               "if !ok {",
-              sprintf("%s, err := navigateValue(%s, %s, %s)", v1, v[0], i, v[1]),
-              "if err != nil {\n#{err}\n}",
-              sprintf("%s[\"%s\"] = %s\n}", parent, prop.out_name, v1),
-            ], 4)
+              sprintf("%s, err %s navigateValue(%s, %s, %s)", prop_var, first_assign ? ":=" : "=", v[0], i, v[1]),
+              (set_to.eql?("parent") ? set_to_parent : set_to_schema),
+              "}"
+            ].compact.flatten, 4)
           end
         end
       end
