@@ -1,22 +1,14 @@
 <% if !property.from_response.nil? -%>
-func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int, parentProp map[string]interface{}) error {
+func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int, currentValue interface{}) (interface{}, error) {
 <%   raise "parameter(#{property.name}) is not readable" unless property.crud.include?("r") -%>
     v, err := navigateValue(d, []string{<%= index2navigate(property.field) %>}, arrayIndex)
     if err != nil {
-            return err
+            return nil, err
     }
-    v1, err := func () (interface{}, error) {
     <%= lines(property.from_response) -%>
-    }()
-    if err != nil {
-            return err
-    }
-
-    parentProp["<%= property.out_name %>"] = v1
-    return nil
 }
 <% elsif property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
-func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int, parentProp map[string]interface{}) error {
+func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int, currentValue interface{}) (interface{}, error) {
 <%   # if this property is not readable, then it can not known the number of array when import this resource
      # because when import, all the properties are empty.
      # on the other side, since this property is unreadable, why append a readable property on me?
@@ -24,20 +16,19 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
      # send question. it exists that if the array has two items, but the order of readback data is not matched
      # but now, there is no good way to check whether two items from different arraya are matched.
 -%>
-    v, ok := parentProp["<%= property.out_name %>"]
-    if !ok || v == nil || len(v.([]interface{})) == 0 {
+    result, ok := currentValue.([]interface{})
+    if !ok || len(result) == 0 {
 <%   if property.crud.include?("r") -%>
-        v1, err := navigateValue(d, []string{<%= index2navigate(property.field) %>}, arrayIndex)
+        v, err := navigateValue(d, []string{<%= index2navigate(property.field) %>}, arrayIndex)
         if err != nil {
-            return err
+            return nil, err
         }
-        n := len(v1.([]interface{}))
-        v = make([]interface{}, n, n)
+        n := len(v.([]interface{}))
+        result = make([]interface{}, n, n)
 <%   else -%>
-        v = make([]interface{}, 1, 1)
+        result = make([]interface{}, 1, 1)
 <%   end -%>
     }
-    result := v.([]interface{})
 
     newArrayIndex := make(map[string]int)
     if arrayIndex != nil {
@@ -56,7 +47,7 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
      first_assign = true
 -%>
 <%   nested_properties.each do |prop|
-       first_assign, c = convert_resp_parameter(prop, "d, newArrayIndex, r", prefix + titlelize(property.name), first_assign)
+       first_assign, c = convert_resp_parameter(prop, "d, newArrayIndex", prefix + titlelize(property.name), first_assign, 'r', "parent", resource_name)
 -%>
 <%     unless c.empty? -%>
 
@@ -65,20 +56,18 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
 <%   end -%>
     }
 
-    parentProp["<%= property.out_name %>"] = result
-    return nil
+    return result, nil
 }
 <%   nested_properties.each do |prop| -%>
 
-<%= lines(build_flatten_method(prefix + titlelize(property.name), prop), 1) -%>
+<%= lines(build_flatten_method(prefix + titlelize(property.name), prop, resource_name), 1) -%>
 <%   end -%>
 <% elsif property.is_a?(Api::Type::NestedObject) -%>
-func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int, parentProp map[string]interface{}) error {
-    v, ok := parentProp["<%= property.out_name %>"]
-    if !ok || v == nil || len(v.([]interface{})) == 0 {
-        v = make([]interface{}, 1, 1)
+func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int, currentValue interface{}) (interface{}, error) {
+    result, ok := currentValue.([]interface{})
+    if !ok || len(result) == 0 {
+        result = make([]interface{}, 1, 1)
     }
-    result := v.([]interface{})
     if result[0] == nil {
          result[0] = make(map[string]interface{})
     }
@@ -87,7 +76,7 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
      first_assign = true
 -%>
 <%   nested_properties.each do |prop|
-       first_assign, c = convert_resp_parameter(prop, "d, arrayIndex, r", prefix + titlelize(property.name), first_assign)
+       first_assign, c = convert_resp_parameter(prop, "d, arrayIndex", prefix + titlelize(property.name), first_assign, "r", "parent", resource_name)
 -%>
 <%     unless c.empty? -%>
 
@@ -95,11 +84,10 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
 <%     end -%>
 <%   end -%>
 
-    parentProp["<%= property.out_name %>"] = result
-    return nil
+    return result, nil
 }
 <%   nested_properties.each do |prop| -%>
 
-<%= lines(build_flatten_method(prefix + titlelize(property.name), prop), 1) -%>
+<%= lines(build_flatten_method(prefix + titlelize(property.name), prop, resource_name), 1) -%>
 <%   end -%>
 <% end -%>

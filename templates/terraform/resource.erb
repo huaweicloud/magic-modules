@@ -181,10 +181,7 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
     opts := resource<%= resource_name -%>UserInputParams(d)
 
 <% properties_to_show(object).each do |prop| -%>
-    <%= convert_resp_parameter(prop, 'res, nil, opts', resource_name, false)[1] %>
-    if err = d.Set("<%= prop.out_name %>", opts["<%= prop.out_name %>"]); err != nil {
-        return fmt.Errorf("Error setting <%= object.name -%>:<%= prop.out_name %>, err: %s", err)
-    }
+    <%= convert_resp_parameter(prop, 'res, nil', resource_name, false, 'opts', "schema", object.name)[1] %>
 
 <% end -%>
     return nil
@@ -331,7 +328,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <% end -%>
 
 <% properties_to_show(object).each do |prop| -%>
-<%= lines(build_flatten_method(resource_name, prop), 1) -%>
+<%= lines(build_flatten_method(resource_name, prop, object.name), 1) -%>
 <% end -%>
 <% action = action_after_send_create_request(object) -%>
 <% if action -%>
