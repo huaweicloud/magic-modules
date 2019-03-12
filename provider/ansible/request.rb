@@ -252,9 +252,14 @@ module Provider
         end
       end
 
-      def convert_resp_parameter(prop, arguments, prefix, spaces)
-        p = prefix.empty? ? "" : "_"
-        f = indent(sprintf("flatten%s%s_%s(%s)", p, prefix, prop.out_name, arguments), spaces)
+      def convert_resp_parameter(prop, arguments, prefix, parent_var, spaces)
+        prop_var = "#{prop.out_name}_prop"
+        set_parent = sprintf("%s[\"%s\"] = %s", parent_var, prop.out_name, prop_var)
+        f = indent([
+          sprintf("%s = %s.get(\"%s\")", prop_var, parent_var, prop.out_name),
+          sprintf("%s = flatten%s%s_%s(%s, %s, include_computed)", prop_var, prefix.empty? ? "" : "_", prefix, prop.out_name, arguments, prop_var),
+          set_parent
+        ], spaces)
 
         if prop.from_response
           return f
@@ -274,18 +279,16 @@ module Provider
 
           i = "[#{index2navigate(prop.field, false)}]"
           v = arguments.split(", ")
-          parent = v[2]
-          v1 = "#{prop.out_name}_prop"
           if prop.crud.eql?("r")
             indent([
-              sprintf("%s = navigate_value(%s, %s, %s)", v1, v[0], i, v[1]),
-              sprintf("%s[\"%s\"] = %s", parent, prop.out_name, v1),
+              sprintf("%s = navigate_value(%s, %s, %s)", prop_var, v[0], i, v[1]),
+              set_parent,
             ], spaces)
           else
             indent([
-              sprintf("if %s.get(\"%s\") is None:", parent, prop.out_name),
-              sprintf("    %s = navigate_value(%s, %s, %s)", v1, v[0], i, v[1]),
-              sprintf("    %s[\"%s\"] = %s", parent, prop.out_name, v1),
+              sprintf("if %s.get(\"%s\") is None:", parent_var, prop.out_name),
+              sprintf("    %s = navigate_value(%s, %s, %s)", prop_var, v[0], i, v[1]),
+              sprintf("    %s", set_parent),
             ], spaces)
           end
         end

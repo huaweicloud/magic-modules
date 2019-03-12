@@ -1,33 +1,32 @@
 <%
    new_prefix = sprintf("%s%s%s", prefix, prefix.empty? ? "" : "_", property.out_name)
-   func_def = sprintf("flatten_%s(res, array_index, parent_prop, include_computed):", new_prefix)
+   func_def = sprintf("flatten_%s(res, array_index, current_value, include_computed):", new_prefix)
 -%>
 <% if !property.from_response.nil? -%>
 def <%= func_def -%>
     v = navigate_value(res, [<%= index2navigate(property.field) %>], array_index)
     <%= lines(property.from_response) -%>
-    parent_prop["<%= property.out_name %>"] = v
+    return v
 }
 <% elsif property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
-<%   raise "property#{property.name} is unreadable" unless property.crud.include?("r") -%>
 def <%= func_def %>
-    result = parent_prop.setdefault("<%= property.out_name %>", [])
-    if result is None:
-        result = []
-        parent_prop["<%= property.out_name %>"] = result
-
-    new_array_index = copy.deepcopy(array_index) if array_index else dict()
-
-    v = result
-    if not result:
+    n = 0
+    result = current_value
+    if result:
+        n = len(result)
+    else:
 <%   if property.crud.include?("r") -%>
         v = navigate_value(res, [<%= index2navigate(property.field) %>],
                            new_array_index)
+        n = len(v)
 <%   else -%>
-        result.append({})
+        n = 1
 <%   end -%>
+        result = []
 
-    for i in range(len(v)):
+    new_array_index = copy.deepcopy(array_index) if array_index else dict()
+
+    for i in range(n):
         new_array_index["<%= property.field %>"] = i
 
         if len(result) < (i + 1):
@@ -37,39 +36,42 @@ def <%= func_def %>
 <%     if prop.crud.eql?("r") -%>
 
         if include_computed:
-<%= convert_resp_parameter(prop, "res, new_array_index, result[i], include_computed", new_prefix, 12) %>
+<%= convert_resp_parameter(prop, "res, new_array_index", new_prefix, "result[i]", 12) %>
 <%     else -%>
-<%       c = convert_resp_parameter(prop, "res, new_array_index, result[i], include_computed", new_prefix, 8) -%>
+<%       c = convert_resp_parameter(prop, "res, new_array_index", new_prefix, "result[i]", 8) -%>
 <%       unless c.empty? -%>
 
 <%= c %>
 <%       end -%>
 <%     end -%>
 <%   end -%>
+
+    return result
 <%   nested_properties.each do |prop| -%>
 
 <%= lines(build_flatten_method(new_prefix, prop), 1) -%>
 <%   end -%>
 <% elsif property.is_a?(Api::Type::NestedObject) -%>
 def <%= func_def %>
-    result = parent_prop.setdefault("<%= property.out_name %>", {})
-    if result is None:
+    result = current_value
+    if not result:
         result = {}
-        parent_prop["<%= property.out_name %>"] = result
 <%   nested_properties = nested_properties(property) -%>
-<%   nested_properties.each_index do |prop| -%>
+<%   nested_properties.each do |prop| -%>
 <%     if prop.crud.eql?("r") -%>
 
     if include_computed:
-<%= convert_resp_parameter(prop, "res, array_index, result, include_computed", new_prefix, 8) %>
+<%= convert_resp_parameter(prop, "res, array_index", new_prefix, "result", 8) %>
 <%     else -%>
-<%   c = convert_resp_parameter(prop, "res, array_index, result, include_computed", new_prefix, 4) -%>
+<%   c = convert_resp_parameter(prop, "res, array_index", new_prefix, "result", 4) -%>
 <%       unless c.empty? -%>
 
 <%= c %>
 <%       end -%>
 <%     end -%>
 <%   end -%>
+
+    return result
 <%   nested_properties.each do |prop| -%>
 
 <%= lines(build_flatten_method(new_prefix, prop), 1) -%>
