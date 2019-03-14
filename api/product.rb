@@ -35,7 +35,7 @@ module Api
       check_property :objects, Array
       check_property_list :objects, Api::Resource
       check_property :prefix, String
-      check_property :scopes, ::Array
+      check_optional_property :scopes, ::Array
       check_property_list :scopes, String
       check_optional_property :cloud_full_name, String
       unless @cloud_full_name.nil?
@@ -44,7 +44,7 @@ module Api
         check_property :cloud_full_name_upper, String
       end
 
-      check_versions
+      # check_versions
     end
 
     # Represents a version of the API for this product
