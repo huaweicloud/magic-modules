@@ -138,8 +138,9 @@ module Provider
       FileUtils.mkpath target_folder
       name = Google::StringUtils.underscore(data[:object].name)
       version = Google::StringUtils.underscore(data[:object].version)
+      version = "_" + version unless version.empty?
       product_name = Google::StringUtils.underscore(data[:product_name])
-      filepath = File.join(target_folder, "resource_#{package}_#{product_name}_#{name}_#{version}.go")
+      filepath = File.join(target_folder, "resource_#{package}_#{product_name}_#{name}#{version}.go")
       generate_resource_file data.clone.merge(
         default_template: 'templates/terraform/resource.erb',
         out_file: filepath
@@ -156,9 +157,10 @@ module Provider
       FileUtils.mkpath target_folder
       name = Google::StringUtils.underscore(data[:object].name)
       version = Google::StringUtils.underscore(data[:object].version)
+      version = "_" + version unless version.empty?
       product_name = Google::StringUtils.underscore(data[:product_name])
       filepath =
-        File.join(target_folder, "#{product_name}_#{name}_#{version}.html.markdown")
+        File.join(target_folder, "#{product_name}_#{name}#{version}.html.markdown")
       generate_resource_file data.clone.merge(
         default_template: 'templates/terraform/resource.html.markdown.erb',
         out_file: filepath,
@@ -216,8 +218,9 @@ module Provider
       FileUtils.mkpath target_folder
       name = Google::StringUtils.underscore(data[:object].name)
       version = Google::StringUtils.underscore(data[:object].version)
+      version = "_" + version unless version.empty?
       product_name = Google::StringUtils.underscore(data[:product_name])
-      filepath = File.join(target_folder, "resource_#{package}_#{product_name}_#{name}_#{version}_test.go")
+      filepath = File.join(target_folder, "resource_#{package}_#{product_name}_#{name}#{version}_test.go")
 
       generate_resource_file data.clone.merge(
         default_template: 'templates/terraform/acc_test.go.erb',
