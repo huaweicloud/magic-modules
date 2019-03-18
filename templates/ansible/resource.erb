@@ -168,11 +168,46 @@ def create(config):
     module.params['id'] = navigate_value(r, [<%= index2navigate(create_api.resource_id_path ) %>])
 <%   else -%>
     timeout = 60 * int(module.params['timeouts']['create'].rstrip('m'))
-    obj = async_wait(module, config, r, client, timeout)
+    obj = async_wait(config, r, client, timeout)
     module.params['id'] = navigate_value(obj, [<%= index2navigate(create_api.async.result.field) %>])
 <%   end # object.async-%>
 
     return read_resource(config)
+<% if updatable?(object) -%>
+
+
+def update(config):
+    module = config.module
+    opts = user_input_parameters(module)
+<%   update_api = object.apis.fetch("update", nil) -%>
+<%   unless update_api.nil? -%>
+
+    params = dict()
+<%= lines(build_expand_properties(object, update_api.parameters, "upate", "opts, None", update_api.out_name, "params", false), 1) %>
+
+    client = config.client(<%= argu_for_sdkclient(update_api) %>)
+    link = build_path(module, "<%= update_api.path %>")
+
+<%     if update_api.async.nil? -%>
+<%=
+  indent(send_request(
+    method_call("client.#{update_api.verb.downcase}", ['link', 'params'])
+  ), 4)
+%>
+<%     else -%>
+<%=
+  indent(send_request(
+    "r = " + method_call("client.#{update_api.verb.downcase}", ['link', 'params'])
+  ), 4)
+%>
+
+    timeout = 60 * int(module.params['timeouts']['update'].rstrip('m'))
+    async_wait(config, r, client, timeout)
+<%     end -%>
+
+<%   end # update_api.nil? -%>
+    return get_resource(config)
+<% end # updatable? -%>
 
 
 <% delete_api = object.apis["delete"] -%>
@@ -197,7 +232,7 @@ def delete(config):
   ), 4)
 %>
     timeout = 60 * int(module.params['timeouts']['delete'].rstrip('m'))
-    async_wait(module, config, r, client, timeout)
+    async_wait(config, r, client, timeout)
 <% end -%>
 
 
