@@ -1,4 +1,4 @@
-func async_wait(module, config, result, client, timeout):
+func async_wait(config, result, client, timeout):
 <%
    async = api.async
    async_op = async.operation
@@ -17,9 +17,9 @@ func async_wait(module, config, result, client, timeout):
         for key, path in path_parameters.items()
     }
 
-    url = build_path(module, "<%= async_op.path -%>", data)
+    url = build_path(config.module, "<%= async_op.path -%>", data)
 <%   elsif async_op.path.include?("{") -%>
-    url = build_path(module, "<%= async_op.path -%>")
+    url = build_path(config.module, "<%= async_op.path -%>")
 <%   else -%>
 <%     url_v = sprintf("\"%s\"", async_op.path) -%>
 <%   end -%>
@@ -35,7 +35,7 @@ func async_wait(module, config, result, client, timeout):
 <% if status_check -%>
 
     def _query_status():
-        r = <%= cl %>.Get(url, None, {"Content-Type": "application/json"})
+        r = <%= cl %>.get(url, None, {"Content-Type": "application/json"})
         status = navigate_value(r, [<%= index2navigate(status_check.field) %>])
         return r, status
 
@@ -49,7 +49,7 @@ func async_wait(module, config, result, client, timeout):
 <% elsif async.custom_status_check_func -%>
 
     def _query_status():
-        r = <%= cl %>.Get(url, None, {"Content-Type": "application/json"})
+        r = <%= cl %>.get(url, None, {"Content-Type": "application/json"})
 	status = "Done" if <%= async.custom_status_check_func %>(r) else "Pending"
         return r, status
     }
