@@ -32,21 +32,34 @@ module Provider
                          resource_name: resource_name
       end
 
+      def build_set_properties_method(object, resource_name)
+        compile_template 'templates/terraform/set_properties.erb',
+                         object: object,
+                         resource_name: resource_name
+      end
+
+      def build_request_body_method(resource, stage, resource_name, api)
+        compile_template 'templates/terraform/build_request_body.erb',
+                         resource: resource,
+                         stage: stage,
+                         resource_name: resource_name,
+                         api: api
+      end
+
       # Transforms a Terraform schema representation of a property into a
       # representation used by the Cloud API.
-      def build_expand_method(resource, op, prefix, property)
+      def build_expand_method(resource, stage, prefix, property)
         compile_template 'templates/terraform/expand_parameter_method.erb',
                          resource: resource,
-                         op: op,
+                         stage: stage,
                          prefix: prefix,
                          property: property
       end
 
-      def build_expand_properties(resource, properties, op, args, prefix, map_obj, return_value)
+      def build_expand_properties(stage, properties, args, prefix, map_obj, return_value)
         compile_template 'templates/terraform/expand_properties.erb',
-                         resource: resource,
                          properties: properties,
-                         op: op,
+                         stage: stage,
                          args: args,
                          prefix: prefix,
                          map_obj: map_obj,
@@ -94,16 +107,15 @@ module Provider
                          api: api
       end
 
-      def build_other_r_method(resource_name, api)
-        compile_template 'templates/terraform/other_r.erb',
+      def build_read_method(resource_name, api)
+        compile_template 'templates/terraform/read_method.erb',
                          resource_name: resource_name,
                          api: api
       end
 
-      def build_other_cu_method(resource, prefix, resource_name, api)
-        compile_template 'templates/terraform/other_cu.erb',
-                         resource: resource,
-                         prefix: prefix,
+      def build_send_request_method(stage, resource_name, api)
+        compile_template 'templates/terraform/send_request.erb',
+                         stage: stage,
                          resource_name: resource_name,
                          api: api
       end

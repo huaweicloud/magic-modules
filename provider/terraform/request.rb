@@ -253,7 +253,7 @@ module Provider
           v = arguments.split(", ")
 
           if prop.crud.eql?("r")
-            return first_assign, indent([
+            return false, indent([
               sprintf("%s, err := navigateValue(%s, %s, %s)", prop_var, v[0], i, v[1]),
               (set_to.eql?("parent") ? set_to_parent : set_to_schema),
             ].compact.flatten, 4)

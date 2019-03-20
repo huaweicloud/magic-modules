@@ -1,5 +1,5 @@
-func action<%= resource_name %><%= titlelize(api.name) %>(d *schema.ResourceData, result interface{}, client *golangsdk.ServiceClient) error {
-<% url_v = "url" -%>
+<% prefix = resource_name + titlelize(api.name) -%>
+func action<%= prefix %>(d *schema.ResourceData, result interface{}, client *golangsdk.ServiceClient) error {
 <% if api.path_parameter -%>
     pathParameters := map[string][]string {
 <%     api.path_parameter.each do |k, v| -%>
@@ -14,25 +14,26 @@ func action<%= resource_name %><%= titlelize(api.name) %>(d *schema.ResourceData
         }
 	data[key] = value.(string)
     }
-    url, err = replaceVars(d, "<%= api.path -%>", data)
+    url, err := replaceVars(d, "<%= api.path -%>", data)
     if err != nil {
         return err
     }
+    url = client.ServiceURL(url)
 <% elsif api.path.include?("{") -%>
-    url, err = replaceVars(d, "<%= api.path -%>", nil)
+    url, err := replaceVars(d, "<%= api.path -%>", nil)
     if err != nil {
         return err
     }
+    url = client.ServiceURL(url)
 <% else -%>
-<%   url_v = sprintf("\"%s\"", api.path) -%>
+    url := client.ServiceURL(<%= sprintf("\"%s\"", api.path) %>)
 <% end -%>
-    url = client.ServiceURL(<%= url_v %>)
 
     params := make(map[string]interface{})
-<%= lines(build_expand_properties(resource, api.parameters, "api", "nil, nil", "Action" + resource_name, "params", false), 1) %>
+<%= lines(build_expand_properties("", api.parameters, "nil, nil", prefix, "params", false), 1) %>
 
     r := golangsdk.Result{}
-    _, r.Err = client.<%= api.verb.capitalize %>(url, &params, &r.Body, &golangsdk.RequestOpts{
+    _, r.Err = client.<%= api.verb.capitalize %>(url, params, &r.Body, &golangsdk.RequestOpts{
         OkCodes: successHTTPCodes,
     })
     if r.Err != nil {

@@ -1,0 +1,17 @@
+func set<%= resource_name -%>Properties(d *schema.ResourceData, response map[string]interface{}) error {
+    opts := resource<%= resource_name -%>UserInputParams(d)
+<% first_assign = true -%>
+<% properties_to_show(object).each do |prop| -%>
+<%   first_assign, c = convert_resp_parameter(prop, 'response, nil', resource_name, first_assign, 'opts', "schema", object.name) -%>
+<%   unless c.empty? -%>
+
+    <%= c %>
+<%   end -%>
+<% end -%>
+
+    return nil
+}
+
+<% properties_to_show(object).each do |prop| -%>
+<%= lines(build_flatten_method(resource_name, prop, object.name), 1) -%>
+<% end -%>

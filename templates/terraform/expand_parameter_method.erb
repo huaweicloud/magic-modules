@@ -45,7 +45,7 @@ func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIn
         newArrayIndex["<%= to_schema_index(property.field) %>"] = i
         transformed := make(map[string]interface{})
 
-        <%= lines(build_expand_properties(resource, nested_properties, op, "d, newArrayIndex", prefix + titlelize(property.name), "transformed", true), 1) -%>
+        <%= lines(build_expand_properties(stage, nested_properties, "d, newArrayIndex", prefix + titlelize(property.name), "transformed", true), 1) -%>
         req = append(req, transformed)
     }
 
@@ -53,18 +53,18 @@ func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIn
 }
 <%   nested_properties.each do |prop| -%>
 
-<%= lines(build_expand_method(resource, op, prefix + titlelize(property.name), prop), 1) -%>
+<%= lines(build_expand_method(resource, stage, prefix + titlelize(property.name), prop), 1) -%>
 <%   end -%>
 <% elsif property.is_a?(Api::Type::NestedObject) -%>
 func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
     req := make(map[string]interface{})
 
 <%   nested_properties = nested_properties(property) -%>
-    <%= lines(build_expand_properties(resource, nested_properties, op, "d, arrayIndex", prefix + titlelize(property.name), "req", true), 1) -%>
+    <%= lines(build_expand_properties(stage, nested_properties, "d, arrayIndex", prefix + titlelize(property.name), "req", true), 1) -%>
     return req, nil
 }
 <%   nested_properties.each do |prop| -%>
 
-<%= lines(build_expand_method(resource, op, prefix + titlelize(property.name), prop), 1) -%>
+<%= lines(build_expand_method(resource, stage, prefix + titlelize(property.name), prop), 1) -%>
 <%   end -%>
 <% end # if property.is_a?(Api::Type::Array) -%>

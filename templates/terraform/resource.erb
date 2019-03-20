@@ -87,42 +87,28 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     }
 <% end -%>
 
-    params := make(map[string]interface{})
-<%= lines(build_expand_properties(object, create_api.parameters, "create", "opts, " + ai_name, resource_name + titlelize(create_api.name), "params", false), 1) %>
-
-    log.Printf("[DEBUG] Creating new <%= object.name -%>: %#v", params)
-
-    url, err := replaceVars(d, "<%= create_api.path -%>", nil)
+    r, err := send<%= resource_name -%>CreateRequest(d, opts, <%= ai_name -%>, client)
     if err != nil {
-        return err
-    }
-    url = client.ServiceURL(url)
-
-    r := golangsdk.Result{}
-    _, r.Err = client.<%= create_api.verb.capitalize %>(url, &params, &r.Body, &golangsdk.RequestOpts{
-        OkCodes: successHTTPCodes,
-    })
-    if r.Err != nil {
-        return fmt.Errorf("Error creating <%= object.name -%>: %s", r.Err)
+        return fmt.Errorf("Error creating <%= resource_name -%>: %s", err)
     }
 <% action = action_after_send_create_request(object) -%>
 <% unless action.nil? -%>
 
-    err = action<%= resource_name %><%= titlelize(action.name) %>(d, r.Body, client)
+    err = action<%= resource_name %><%= titlelize(action.name) %>(d, r, client)
     if err != nil {
         return err
     }
 <% end -%>
 <% if create_api.async.nil? -%>
 
-    id, err := navigateValue(r.Body, []string{<%= index2navigate(create_api.resource_id_path) %>}, nil)
+    id, err := navigateValue(r, []string{<%= index2navigate(create_api.resource_id_path) %>}, nil)
     if err != nil {
         return fmt.Errorf("Error constructing id: %s", err)
     }
     d.SetId(id.(string))
 <% else -%>
 
-    obj, err := asyncWait<%= resource_name %><%= titlelize(create_api.name) %>(d, config, r.Body, client, d.Timeout(schema.TimeoutCreate))
+    obj, err := asyncWait<%= resource_name %><%= titlelize(create_api.name) %>(d, config, r, client, d.Timeout(schema.TimeoutCreate))
     if err != nil {
         return err
     }
@@ -133,8 +119,9 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     d.SetId(id.(string))
 <% end # unless object.async -%>
 <% other_api(object, "c").each do | item | -%>
+<%   stage = item.crud.include?("u") ? "Create": "" -%>
 
-    err = set<%= resource_name %><%= titlelize(item.name) %>(d, opts, <%= ai_name%>, client)
+    _, err = send<%= stage %><%= resource_name %><%= titlelize(item.name) %>Request(d, opts, <%= ai_name %>, client)
     if err != nil {
         return err
     }
@@ -151,26 +138,9 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
         return fmt.Errorf("Error creating sdk client, err=%s", err)
     }
 
-    url, err := replaceVars(d, "<%= self_link_url(object) -%>", nil)
-    if err != nil {
-        return err
-    }
-    url = client.ServiceURL(url)
-
-    r := golangsdk.Result{}
-    _, r.Err = client.Get(
-        url, &r.Body,
-        &golangsdk.RequestOpts{MoreHeaders: map[string]string{"Content-Type": "application/json"}})
-    if r.Err != nil {
-        return fmt.Errorf("Error reading %s: %s", fmt.Sprintf("<%= resource_name -%> %q", d.Id()), r.Err)
-    }
-    v, ok := r.Body.(map[string]interface{})
-    if !ok {
-        return fmt.Errorf("Error reading %s: the result is not map", fmt.Sprintf("<%= resource_name -%> %q", d.Id()))
-    }
-
-    res := map[string]interface{} {"<%= read_api.out_name%>": v}
-<% other_api(object, "r").each do | item | -%>
+    res := make(map[string]interface{})
+<% read_apis = [read_api, other_api(object, "r")].flatten.compact -%>
+<% read_apis.each do | item | -%>
 
     err = read<%= resource_name %><%= titlelize(item.name) %>(d, client, res)
     if err != nil {
@@ -178,13 +148,7 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
     }
 <% end -%>
 
-    opts := resource<%= resource_name -%>UserInputParams(d)
-
-<% properties_to_show(object).each do |prop| -%>
-    <%= convert_resp_parameter(prop, 'res, nil', resource_name, false, 'opts', "schema", object.name)[1] %>
-
-<% end -%>
-    return nil
+    return set<%= resource_name -%>Properties(d, res)
 }
 <% if updatable?(object) -%>
 
@@ -206,36 +170,24 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
     }
 <% end -%>
 <%   unless update_api.nil? -%>
+<%     r = update_api.async.nil? ? "_, err =" : "r, err :=" -%>
 
-    params := make(map[string]interface{})
-<%= lines(build_expand_properties(object, update_api.parameters, "update", "opts, " + ai_name, resource_name + titlelize(update_api.name), "params", false), 1) %>
-
-    log.Printf("[DEBUG] Updating <%= object.name -%> %q: %#v", d.Id(), params)
-
-    url, err := replaceVars(d, "<%= update_api.path -%>", nil)
+    <%= r %> send<%= resource_name -%>UpdateRequest(d, opts, <%= ai_name -%>, client)
     if err != nil {
-        return err
-    }
-    url = client.ServiceURL(url)
-
-    r := golangsdk.Result{}
-    _, r.Err = client.<%= update_api.verb.capitalize %>(url, &params, &r.Body, &golangsdk.RequestOpts{
-        OkCodes: successHTTPCodes,
-    })
-    if r.Err != nil {
-        return fmt.Errorf("Error updating <%= object.name -%> %q: %s", d.Id(), r.Err)
+        return fmt.Errorf("Error updating (<%= resource_name -%>: %v): %s", d.Id(), err)
     }
 <%     unless update_api.async.nil? -%>
 
-    _, err = asyncWait<%= resource_name %><%= titlelize(update_api.name) %>(d, config, r.Body, client, d.Timeout(schema.TimeoutUpdate))
+    _, err = asyncWait<%= resource_name %><%= titlelize(update_api.name) %>(d, config, r, client, d.Timeout(schema.TimeoutUpdate))
     if err != nil {
         return err
     }
 <%     end # unless object.async -%>
 <%   end # update_api.nil -%>
 <%   other_api(object, "u").each do | item | -%>
+<%     stage = item.crud.include?("c") ? "Update" : "" -%>
 
-    err = <%= item.crud.include?("c") ? "set" : "update" %><%= resource_name %><%= titlelize(item.name) %>(d, opts, <%= ai_name%>, client)
+    _, err = send<%= stage %><%= resource_name %><%= titlelize(item.name) %>Request(d, opts, <%= ai_name%>, client)
     if err != nil {
         return err
     }
@@ -308,42 +260,46 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 
     <%= lines(build_resource_async_op(create_api, "d.Timeout(schema.TimeoutCreate)", resource_name), 1) %>
 <% end -%>
+<% create_apis = [create_api, other_api(object, "c")].flatten.compact -%>
+<% create_apis.each do | item | -%>
+<%   stage = item.is_a?(Api::ApiOther) && item.crud.include?("u") ? "Create" : "" -%>
 
-<% create_api.parameters.each do |prop| -%>
-<%= lines(build_expand_method(object, "create", resource_name + titlelize(create_api.name), prop), 1) -%>
+<%= lines(build_send_request_method(stage, resource_name, item), 1) -%>
+
+<%= lines(build_request_body_method(object, stage, resource_name, item), 1) -%>
+<% end -%>
+<% if updatable?(object) -%>
+<%   unless update_api.nil? -%>
+<%     unless update_api.async.nil? -%>
+
+<%= lines(build_resource_async_op(update_api, "d.Timeout(schema.TimeoutUpdate)", resource_name), 1) %>
+<%     end -%>
+<%   end -%>
+<%   update_apis = [update_api, other_api(object, "u")].flatten.compact -%>
+<%   update_apis.each do | item | -%>
+<%     stage = item.is_a?(Api::ApiOther) && item.crud.include?("c") ? "Update" : "" -%>
+
+<%= lines(build_send_request_method(stage, resource_name, item), 1) -%>
+
+<%= lines(build_request_body_method(object, stage, resource_name, item), 1) -%>
+<%   end -%>
+<% end -%>
+<% unless delete_api.parameters.nil? -%>
+
+<%= lines(build_request_body_method(object, resource_name, delete_api), 1) -%>
 <% end -%>
 <% unless delete_api.async.nil? -%>
 
     <%= lines(build_resource_async_op(delete_api, "d.Timeout(schema.TimeoutDelete)", resource_name), 1) %>
 <% end -%>
-<% if updatable?(object) && update_api -%>
-<%   unless update_api.async.nil? -%>
+<% read_apis.each do | item | -%>
 
-    <%= lines(build_resource_async_op(update_api, "d.Timeout(schema.TimeoutUpdate)", resource_name), 1) %>
-<%   end -%>
-
-<%   update_api.parameters.each do |prop| -%>
-<%= lines(build_expand_method(object, "update", resource_name + titlelize(update_api.name), prop), 1) -%>
-<%   end -%>
+<%= lines(build_read_method(resource_name, item), 1) -%>
 <% end -%>
 
-<% properties_to_show(object).each do |prop| -%>
-<%= lines(build_flatten_method(resource_name, prop, object.name), 1) -%>
-<% end -%>
+<%= lines(build_set_properties_method(object, resource_name), 1) -%>
 <% action = action_after_send_create_request(object) -%>
 <% if action -%>
 
 <%= lines(build_action_method(object, resource_name, action), 1) -%>
-<% end -%>
-<% object.apis.values.select { |item| item.is_a? Api::ApiOther }.each do |item| -%>
-
-<%   if item.crud.include? "r" -%>
-<%= lines(build_other_r_method(resource_name, item), 1) -%>
-<%   else -%>
-<%= lines(build_other_cu_method(object, item.crud.include?("c") ? "set" : "update", resource_name, item), 1) -%>
-
-<%     item.parameters.each do |prop| -%>
-<%= lines(build_expand_method(object, item.crud.include?("c") ? "create" : "update", resource_name + titlelize(item.name), prop), 1) -%>
-<%     end -%>
-<%   end -%>
 <% end -%>

@@ -10,6 +10,8 @@ module Api
     attr_reader :async
     attr_reader :service_level
     attr_reader :service_type
+    attr_reader :msg_prefix
+    attr_reader :msg_prefix_array_items
 
     def validate
       super
@@ -26,6 +28,11 @@ module Api
       end
 
       check_optional_property :async, Api::Async
+      check_optional_property :msg_prefix, String
+      check_optional_property :msg_prefix_array_items, Array
+      unless @msg_prefix_array_items.nil?
+        check_property_list :msg_prefix_array_items, String
+      end
     end
   end
 
