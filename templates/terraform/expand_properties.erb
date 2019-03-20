@@ -22,7 +22,7 @@
     }
     if !e {
         <%= r %>
-<%   if op.eql?("update") -%>
+<%   if stage.eql?("Update") -%>
 <%     if prop.send_empty_value -%>
     } else {
         if _, ok := isUserInput(d, []string{<%= index2navigate(prop.field, true) %>}, <%= globalIndex %>); ok {
