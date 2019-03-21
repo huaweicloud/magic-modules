@@ -285,7 +285,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <% end -%>
 <% unless delete_api.parameters.nil? -%>
 
-<%= lines(build_request_body_method(object, resource_name, delete_api), 1) -%>
+<%= lines(build_request_body_method(object, "", resource_name, delete_api), 1) -%>
 <% end -%>
 <% unless delete_api.async.nil? -%>
 
