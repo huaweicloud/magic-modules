@@ -1,5 +1,6 @@
 <% prefix = resource_name + titlelize(api.name) -%>
-func send<%= stage -%><%= prefix -%>Request(d *schema.ResourceData, opts map[string]interface{}, arrayIndex map[string]int, client *golangsdk.ServiceClient) (interface{}, error) {
+func send<%= stage -%><%= prefix -%>Request(d *schema.ResourceData, opts map[string]interface{},
+    arrayIndex map[string]int, client *golangsdk.ServiceClient) (interface{}, error) {
 <% if api.path.include?("{") -%>
     url, err := replaceVars(d, "<%= api.path -%>", nil)
     if err != nil {

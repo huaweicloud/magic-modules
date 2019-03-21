@@ -57,28 +57,28 @@ To get more information about <%= object.name -%>, see:
 ## Argument Reference
 
 The following arguments are supported:
-<% properties.select(&:required).each do |prop| -%>
+<% properties.select(&:required).sort_by(&:out_name).each do |prop| -%>
 <%= lines(build_property_documentation(prop)) -%>
 <% end -%>
-<% properties.select(&:required).each do |prop| -%>
+<% properties.select(&:required).sort_by(&:out_name).each do |prop| -%>
 <%= lines(build_nested_property_documentation(prop)) -%>
 <% end -%>
 
 - - -
-<% properties.reject(&:required).reject(&:output).each do |prop| -%>
+<% properties.reject(&:required).reject(&:output).sort_by(&:out_name).each do |prop| -%>
 <%= lines(build_property_documentation(prop)) -%>
 <% end -%>
-<% properties.reject(&:required).reject(&:output).each do |prop| -%>
+<% properties.reject(&:required).reject(&:output).sort_by(&:out_name).each do |prop| -%>
 <%= lines(build_nested_property_documentation(prop)) -%>
 <% end -%>
 
 ## Attributes Reference
 
 In addition to the arguments listed above, the following computed attributes are exported:
-<% properties.select(&:output).each do |prop| -%>
+<% properties.select(&:output).sort_by(&:out_name).each do |prop| -%>
 <%= lines(build_property_documentation(prop)) -%>
 <% end -%>
-<% properties.select(&:output).each do |prop| -%>
+<% properties.select(&:output).sort_by(&:out_name).each do |prop| -%>
 <%= lines(build_nested_property_documentation(prop)) -%>
 <% end -%>
 <% at = async_timout(object) %>
