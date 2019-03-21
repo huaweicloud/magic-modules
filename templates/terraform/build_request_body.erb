@@ -8,17 +8,16 @@ func build<%= prefix -%>Parameters(opts map[string]interface{}, arrayIndex map[s
 <%   items = api.msg_prefix.split(".")
      array_items = api.msg_prefix_array_items || []
 -%>
-    p := params
 <%   while !items.empty? do -%>
 <%     ai = items.join(".") -%>
 <%     if array_items.include?(ai) -%>
-    p = map[string]interface{} {"<%= items.pop %>": []interface{} {p}}
+    params = map[string]interface{} {"<%= items.pop %>": []interface{} {params}}
 <%     else -%>
-    p = map[string]interface{} {"<%= items.pop %>": p}
+    params = map[string]interface{} {"<%= items.pop %>": params}
 <%     end%>
 
 <%   end -%>
-    return p, nil
+    return params, nil
 <% end -%>
 }
 

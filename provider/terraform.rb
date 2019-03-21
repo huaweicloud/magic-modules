@@ -34,9 +34,9 @@ module Provider
     # Sorts properties in the order they should appear in the TF schema:
     # Required, Optional, Computed
     def order_properties(properties)
-      properties.select(&:required).sort_by(&:name) +
-        properties.reject(&:required).reject(&:output) +
-        properties.select(&:output).sort_by(&:name)
+      properties.select(&:required).sort_by(&:out_name) +
+        properties.reject(&:required).reject(&:output).sort_by(&:out_name) +
+        properties.select(&:output).sort_by(&:out_name)
     end
 
     # Converts between the Magic Modules type of an object and its type in the

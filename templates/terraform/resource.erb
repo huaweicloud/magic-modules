@@ -50,7 +50,6 @@ func resource<%= resource_name -%>() *schema.Resource {
             <% end -%>
         },
         <% end -%>
-<%= lines(compile(object.custom_code.resource_definition)) if object.custom_code.resource_definition -%>
 
         Schema: map[string]*schema.Schema{
 <% order_properties(object.all_user_properties).each do |prop| -%>
@@ -63,7 +62,7 @@ func resource<%= resource_name -%>() *schema.Resource {
 
 func resource<%= resource_name -%>UserInputParams(d *schema.ResourceData) map[string]interface{} {
     return map[string]interface{}{
-<% object.not_output_properties.each do |prop| -%>
+<% object.not_output_properties.sort_by(&:out_name).each do |prop| -%>
         "<%= prop.out_name %>": d.Get("<%= prop.out_name %>"),
 <% end -%>
     }
