@@ -84,15 +84,6 @@ module Provider
         )
       end
 
-      def build_async_wait_method(async, status, return_v, timeout, client)
-        compile_template 'templates/terraform/async_wait_method.erb',
-                         async: async,
-                         status: status,
-                         return_v: return_v,
-                         timeout: timeout,
-                         client: client
-      end
-
       def build_resource_async_op(api, timeout, resource_name)
         compile_template 'templates/terraform/async_wait.erb',
                          api: api,
