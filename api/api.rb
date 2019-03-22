@@ -57,11 +57,12 @@ module Api
     def validate
       super
 
-      check_property :identity, Array
-      check_property_list :identity, String
+      check_property :identity, Hash
       check_property :resource_id_path, String
       check_optional_property :query_params, Array
       check_optional_property_list :query_params, String
+
+      @query_params || []
 
     end
 

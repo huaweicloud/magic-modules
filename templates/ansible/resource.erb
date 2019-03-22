@@ -268,3 +268,72 @@ def read_resource(config, include_computed=True):
 <% properties_to_show(object).each do |prop| -%>
 <%= lines(build_flatten_method("", prop), 1) -%>
 <% end -%>
+
+
+<% list_api = object.apis.fetch("list", nil) -%>
+def get_resource_id(config):
+    r = read_resource_by_list(config)
+    if r:
+        return r["<%= list_api.resource_id_path %>"]
+
+
+def read_resource_by_list(config):
+    module = config.module
+    opts = user_input_parameters(module)
+    identity = {
+<% list_api.identity.each do |k, v| -%>
+<%   p = find_property(object, v.split("."))
+     unless p.required
+       raise "property(#{p.name}) referenced by list identity#{k} must be required"
+     end
+-%>
+        "<%= k %>": navigate_value(opts, [<%= index2navigate(v, true) %>], None)
+<% end -%>
+    }
+
+    link = build_path(module, "<%= list_api.path %>")
+<% query_link = build_list_query_params(list_api, 4) -%>
+<% unless query_link.empty? -%>
+
+<%=  lines(query_link, 1) %>
+
+    if link[-1] != "?":
+        link += "?"
+    link += query_link
+<% end -%>
+
+<% if list_api.query_params.include?('marker') -%>
+    p = {'marker': ''}
+    while True:
+        rlink = link % p
+        # read
+        for item in r:
+            for k, v in identity.items():
+                if item[k] != v:
+                    break
+            else:
+                return item
+
+        p['marker'] = r[-1].get(<%= quote_string(list_api.resource_id_path) -%>)
+<% elsif list_api.query_params.include?('offset') -%>
+    p = {'offset': 0}
+    while True:
+        rlink = link % p
+        # read
+        for item in r:
+            for k, v in identity.items():
+                if item[k] != v:
+                    break
+            else:
+                return item
+
+        p['offset'] += 1
+<% else -%>
+    # read
+    for item in v:
+        for k, v in identity.items():
+        if item[k] != v:
+            break
+    else:
+        return item
+<% end -%>
