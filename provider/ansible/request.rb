@@ -293,6 +293,35 @@ module Provider
           end
         end
       end
+
+      def build_list_query_params(api, spaces)
+        page = []
+        identity = []
+        api.query_params.each do |i|
+          case i
+          when "limit"
+            page << "limit=10"
+          when "offset"
+            page << "offset={offset}"
+          when "marker"
+            page << "marker={marker}"
+          else
+            identity << i if api.identity.has_key?(i)
+          end
+        end
+
+        if identity.empty?
+          page.empty? ? "" : indent(sprintf("query_link = \"%s\"", page.join("&")), spaces)
+        else
+          out << "query_link = \"&\".join(["
+          identity.each do |k|
+            out << "    \"#{k}=%s\" % str(identity[\"#{k}]\"),"
+          end
+          out << sprintf("    \"%s\"", page.join(", ")) unless page.empty?
+          out << "])"
+          indent(out, spaces)
+        end
+      end
     end
     # rubocop:enable Metrics/ModuleLength
   end
