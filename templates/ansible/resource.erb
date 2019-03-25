@@ -197,27 +197,21 @@ def update(config):
 <% end # updatable? -%>
 
 
-<% delete_api = object.apis["delete"] -%>
 def delete(config):
     module = config.module
-    client = config.client(<%= argu_for_sdkclient(delete_api) %>)
-    link = build_path(module, "<%= delete_api.path %>")
+    client = config.client(<%= argu_for_sdkclient(create_api) %>)
+<% delete_api = object.apis["delete"] -%>
+<% unless delete_api.parameters.nil? -%>
+    opts = user_input_parameters(module)
+<% end -%>
 
 <% if delete_api.async.nil? -%>
-<%   if create_api.async.nil? -%>
-<%=
-  indent(send_request(
-    method_call("client.delete", ['link']), "", "config.module"
-  ), 4)
-%>
-<%   else # if create api is async, then it is best to make sure the resource is delete successfully -%>
+    send_update_request(config, client<%= delete_api.parameters.nil? ? ", opts" : "" %>)
+<%   unless create_api.async.nil? -%>
+<%   # if create api is async, then it is best to make sure the resource is delete successfully -%>
 <%   end -%>
 <% else -%>
-<%=
-  indent(send_request(
-    "r = " + method_call("client.delete", ['link']), "", "config.module"
-  ), 4)
-%>
+    r = send_update_request(config, client<%= delete_api.parameters.nil? ? ", opts" : "" %>)
     timeout = 60 * int(module.params['timeouts']['delete'].rstrip('m'))
     async_wait(config, r, client, timeout)
 <% end -%>
@@ -313,9 +307,11 @@ def read_resource_by_list(config):
 
 
 <%= lines(build_send_request_method(stage, item), 1) -%>
+<%   unless item.parameters.nil? -%>
 
 
 <%= lines(build_request_body_method(object, stage, item), 1) -%>
+<%   end -%>
 <% end -%>
 <% if updatable?(object) -%>
 <%   update_apis = [update_api, other_api(object, "u")].flatten.compact -%>
@@ -324,9 +320,11 @@ def read_resource_by_list(config):
 
 
 <%= lines(build_send_request_method(stage, item), 1) -%>
+<%     unless item.parameters.nil? -%>
 
 
 <%= lines(build_request_body_method(object, stage, item), 1) -%>
+<%     end -%>
 <%   end -%>
 <% end -%>
 <% read_apis.each do | item | -%>
@@ -337,3 +335,8 @@ def read_resource_by_list(config):
 
 
 <%= lines(build_update_properties_method(object), 1) -%>
+<% unless delete_api.parameters.nil? -%>
+
+
+<%= lines(build_request_body_method(object, "", delete_api), 1) -%>
+<% end -%>
