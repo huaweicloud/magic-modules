@@ -1,0 +1,34 @@
+def fetch_<%= api.out_name %>_resp(config, client<%= input_url ? ", url" : "" %>):
+    module = config.module
+<% unless input_url -%>
+<%   if api.path.include?("{") -%>
+    url = build_path(module, "<%= api.path -%>")
+<%   else -%>
+    url = <%= sprintf("\"%s\"", api.path) %>
+<%   end -%>
+<% end -%>
+
+    r = None
+    try:
+        r = client.get(url)
+    except HwcClientException as ex:
+        msg = "error running api(<%= api.name %>) for "
+              "resource(<%= resource_name%>: %s), error: %s" % str(ex)
+        module.fail_json(msg=msg)
+
+<% if api.msg_prefix.nil? -%>
+    return {"<%= api.out_name %>": r}
+<% else -%>
+<%   ai = "None" -%>
+<%   unless api.msg_prefix_array_items.nil? -%>
+<%   ai = "array_index" -%>
+    array_index = {
+<%     api.msg_prefix_array_items.each do |i| -%>
+	"<%= i %>": 0,
+<%     end -%>
+    }
+<%   end -%>
+    v= navigate_value(r, [<%= index2navigate(api.msg_prefix) %>], <%= ai %>)
+    return {"<%= api.out_name %>": v}
+<% end -%>
+}

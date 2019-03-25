@@ -1,0 +1,17 @@
+func set_properties(module, response, for_compare=False):
+    r = user_input_parameters(module)
+
+<% object.all_user_properties.each do |prop| -%>
+<%   c = convert_resp_parameter(prop, "response, None", "", "r", 4) -%>
+<%   unless c.empty? -%>
+
+<%= c %>
+<%   end -%>
+<% end -%>
+
+    return r
+
+
+<% properties_to_show(object).each do |prop| -%>
+<%= lines(build_flatten_method("", prop), 1) -%>
+<% end -%>

@@ -1,6 +1,6 @@
 <%
    new_prefix = sprintf("%s%s%s", prefix, prefix.empty? ? "" : "_", property.out_name)
-   func_def = sprintf("flatten_%s(res, array_index, current_value, include_computed):", new_prefix)
+   func_def = sprintf("flatten_%s(res, array_index, current_value, for_compare):", new_prefix)
 -%>
 <% if !property.from_response.nil? -%>
 def <%= func_def -%>
@@ -33,21 +33,16 @@ def <%= func_def %>
             result.append({})
 <%   nested_properties = nested_properties(property) -%>
 <%   nested_properties.each do |prop| -%>
-<%     if prop.crud.eql?("r") -%>
-
-        if include_computed:
-<%= convert_resp_parameter(prop, "res, new_array_index", new_prefix, "result[i]", 12) %>
-<%     else -%>
-<%       c = convert_resp_parameter(prop, "res, new_array_index", new_prefix, "result[i]", 8) -%>
-<%       unless c.empty? -%>
+<%     c = convert_resp_parameter(prop, "res, new_array_index", new_prefix, "result[i]", 8) -%>
+<%     unless c.empty? -%>
 
 <%= c %>
-<%       end -%>
 <%     end -%>
 <%   end -%>
 
     return result
 <%   nested_properties.each do |prop| -%>
+<%     next unless has_output_property(prop) -%>
 
 <%= lines(build_flatten_method(new_prefix, prop), 1) -%>
 <%   end -%>
@@ -58,21 +53,16 @@ def <%= func_def %>
         result = {}
 <%   nested_properties = nested_properties(property) -%>
 <%   nested_properties.each do |prop| -%>
-<%     if prop.crud.eql?("r") -%>
-
-    if include_computed:
-<%= convert_resp_parameter(prop, "res, array_index", new_prefix, "result", 8) %>
-<%     else -%>
-<%   c = convert_resp_parameter(prop, "res, array_index", new_prefix, "result", 4) -%>
-<%       unless c.empty? -%>
+<%     c = convert_resp_parameter(prop, "res, array_index", new_prefix, "result", 4) -%>
+<%     unless c.empty? -%>
 
 <%= c %>
-<%       end -%>
 <%     end -%>
 <%   end -%>
 
     return result
 <%   nested_properties.each do |prop| -%>
+<%     next unless has_output_property(prop) -%>
 
 <%= lines(build_flatten_method(new_prefix, prop), 1) -%>
 <%   end -%>

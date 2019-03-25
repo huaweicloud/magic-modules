@@ -31,6 +31,11 @@ module Provider
                          property: property
       end
 
+      def build_update_properties_method(object)
+        compile_template 'templates/ansible/update_properties.erb',
+                         object: object
+      end
+
       # Transforms a Terraform schema representation of a property into a
       # representation used by the Cloud API.
       def build_expand_method(resource, op, prefix, property)
@@ -93,10 +98,11 @@ module Provider
                          api: api
       end
 
-      def build_other_r_method(resource_name, api)
-        compile_template 'templates/ansible/other_r.erb',
+      def build_read_method(resource_name, api, input_url=false)
+        compile_template 'templates/ansible/read_method.erb',
                          resource_name: resource_name,
-                         api: api
+                         api: api,
+                         input_url: input_url
       end
 
       def build_other_cu_method(resource, prefix, resource_name, api)
