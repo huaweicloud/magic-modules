@@ -7,10 +7,12 @@ def send_<%= prefix -%>_request(config, client, opts):
     url = <%= sprintf("\"%s\"", api.path) -%>
 <% end -%>
 
+<% unless api.parameters.nil? -%>
     params = build_<%= prefix -%>_parameters(opts)
+<% end -%>
 
     try:
-        r = client.<%= api.verb.capitalize -%>(url, params)
+        r = client.<%= api.verb.downcase -%>(url, <%= api.parameters.nil? ? "None": "params" %>)
     except HwcClientException as ex:
         msg = "module(%s): error running api(<%= api.name %>) "
               ", error: %s" % (module.name, str(ex))
