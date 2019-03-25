@@ -36,7 +36,7 @@ func resource<%= resource_name -%>() *schema.Resource {
         Importer: &schema.ResourceImporter{
             State: schema.ImportStatePassthrough,
         },
-	<% at = async_timout(object) %>
+        <% at = async_timout(object) %>
         <% unless at.empty? -%>
         Timeouts: &schema.ResourceTimeout {
             <% unless at["create"].nil? -%>
@@ -81,7 +81,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 
     arrayIndex := map[string]int{
 <%   resource_nestedobj_properties.each do |i| -%>
-	"<%= to_schema_index(i) %>": 0,
+        "<%= to_schema_index(i) %>": 0,
 <%   end -%>
     }
 <% end -%>
@@ -163,7 +163,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 
     arrayIndex := map[string]int{
 <%   resource_nestedobj_properties.each do |i| -%>
-	"<%= to_schema_index(i) %>": 0,
+        "<%= to_schema_index(i) %>": 0,
 <%   end -%>
     }
 <% end -%>
@@ -210,12 +210,29 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
     }
     url = client.ServiceURL(url)
 
+<% unless delete_api.parameters.nil? -%>
+    opts := resource<%= resource_name -%>UserInputParams(d)
+<%   unless resource_nestedobj_properties.nil? -%>
+    arrayIndex := map[string]int{
+<%     resource_nestedobj_properties.each do |i| -%>
+        "<%= to_schema_index(i) %>": 0,
+<%     end -%>
+    }
+
+<%   end -%>
+    params, err := build<%= resource_name -%>DeleteParameters(opts, arrayIndex)
+    if err != nil {
+        return nil, fmt.Errorf("Error building the request body of api(delete)")
+    }
+
+<% end -%>
     log.Printf("[DEBUG] Deleting <%= object.name -%> %q", d.Id())
     r := golangsdk.Result{}
     _, r.Err = client.Delete(url, &golangsdk.RequestOpts{
         OkCodes: successHTTPCodes,
+        JSONBody: <%= delete_api.parameters.nil? ? "nil" : "params" %>
         JSONResponse: &r.Body,
-	MoreHeaders:  map[string]string{"Content-Type": "application/json"},
+        MoreHeaders:  map[string]string{"Content-Type": "application/json"},
     })
     if r.Err != nil {
         return fmt.Errorf("Error deleting <%= object.name -%> %q: %s", d.Id(), r.Err)
@@ -264,8 +281,10 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <%   stage = item.is_a?(Api::ApiOther) && item.crud.include?("u") ? "Create" : "" -%>
 
 <%= lines(build_send_request_method(stage, resource_name, item), 1) -%>
+<%   unless item.parameters.nil? -%>
 
 <%= lines(build_request_body_method(object, stage, resource_name, item), 1) -%>
+<%   end -%>
 <% end -%>
 <% if updatable?(object) -%>
 <%   unless update_api.nil? -%>
@@ -279,8 +298,10 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <%     stage = item.is_a?(Api::ApiOther) && item.crud.include?("c") ? "Update" : "" -%>
 
 <%= lines(build_send_request_method(stage, resource_name, item), 1) -%>
+<%     unless item.parameters.nil? -%>
 
 <%= lines(build_request_body_method(object, stage, resource_name, item), 1) -%>
+<%     end -%>
 <%   end -%>
 <% end -%>
 <% unless delete_api.parameters.nil? -%>
