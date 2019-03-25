@@ -105,11 +105,16 @@ module Provider
                          input_url: input_url
       end
 
-      def build_other_cu_method(resource, prefix, resource_name, api)
-        compile_template 'templates/ansible/other_cu.erb',
+      def build_send_request_method(stage, api)
+        compile_template 'templates/terraform/send_request.erb',
+                         stage: stage,
+                         api: api
+      end
+
+      def build_request_body_method(resource, stage, api)
+        compile_template 'templates/terraform/build_request_body.erb',
                          resource: resource,
-                         prefix: prefix,
-                         resource_name: resource_name,
+                         stage: stage,
                          api: api
       end
 

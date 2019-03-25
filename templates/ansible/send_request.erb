@@ -1,0 +1,20 @@
+<% prefix = sprintf("%s%s%s", stage, stage.empty? ? "" : "_", api.out_name) -%>
+def send_<%= prefix -%>_request(config, client, opts):
+    module = config.module
+<% if api.path.include?("{") -%>
+    url = build_path(module, "<%= api.path -%>")
+<% else -%>
+    url = <%= sprintf("\"%s\"", api.path) -%>
+<% end -%>
+
+    params = build_<%= prefix -%>_parameters(opts)
+
+    try:
+        r = client.<%= api.verb.capitalize -%>(url, params)
+    except HwcClientException as ex:
+        msg = "module(%s): error running api(<%= api.name %>) "
+              ", error: %s" % (module.name, str(ex))
+        module.fail_json(msg=msg)
+
+    return r
+}

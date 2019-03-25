@@ -12,8 +12,8 @@ def fetch_<%= api.out_name %>_resp(config, client<%= input_url ? ", url" : "" %>
     try:
         r = client.get(url)
     except HwcClientException as ex:
-        msg = "error running api(<%= api.name %>) for "
-              "resource(<%= resource_name%>: %s), error: %s" % str(ex)
+        msg = "module(%s): error running api(<%= api.name %>), "
+              "error: %s" % (module.name, str(ex))
         module.fail_json(msg=msg)
 
 <% if api.msg_prefix.nil? -%>
