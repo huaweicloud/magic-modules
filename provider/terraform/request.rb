@@ -212,6 +212,8 @@ module Provider
       end
 
       def convert_resp_parameter(prop, arguments, prefix, first_assign, parent_var, set_to, resource_name)
+        return first_assign, "" unless has_output_property(prop)
+
         read_err = sprintf("fmt.Errorf(\"Error reading %s:%s, err: %%s\", err)", resource_name, prop.out_name)
         prop_var = "#{go_variable(prop.name)}Prop"
 
@@ -247,26 +249,13 @@ module Provider
           return false,  f
 
         else
-          return first_assign, "" unless prop.crud.include?("r")
-
           i = "[]string{#{index2navigate(prop.field, false)}}"
           v = arguments.split(", ")
 
-          if prop.crud.eql?("r")
-            return false, indent([
-              sprintf("%s, err := navigateValue(%s, %s, %s)", prop_var, v[0], i, v[1]),
-              (set_to.eql?("parent") ? set_to_parent : set_to_schema),
-            ].compact.flatten, 4)
-          else
-            return first_assign, indent([
-              sprintf("%s, ok := %s[\"%s\"]", prop_var, parent_var, prop.out_name),
-              sprintf("if %s != nil {\nok, _ = isEmptyValue(reflect.ValueOf(%s))\nok = !ok}", prop_var, prop_var),
-              "if !ok {",
-              sprintf("%s, err %s navigateValue(%s, %s, %s)", prop_var, first_assign ? ":=" : "=", v[0], i, v[1]),
-              (set_to.eql?("parent") ? set_to_parent : set_to_schema),
-              "}"
-            ].compact.flatten, 4)
-          end
+          return false, indent([
+            sprintf("%s, err := navigateValue(%s, %s, %s)", prop_var, v[0], i, v[1]),
+            (set_to.eql?("parent") ? set_to_parent : set_to_schema),
+          ].compact.flatten, 4)
         end
       end
     end
