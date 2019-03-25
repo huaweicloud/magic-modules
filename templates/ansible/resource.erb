@@ -151,18 +151,10 @@ def user_input_parameters(module):
 <% create_api = object.apis["create"] -%>
 def create(config):
     module = config.module
-    opts = user_input_parameters(module)
-    params = dict()
-<%= lines(build_expand_properties(object, create_api.parameters, "create", "opts, None", create_api.out_name, "params", false), 1) -%>
     client = config.client(<%= argu_for_sdkclient(create_api) %>)
-    link = build_path(module, "<%= create_api.path %>")
+    opts = user_input_parameters(module)
 
-    r = None
-<%=
-  indent(send_request(
-     "r = " + method_call("client.#{create_api.verb.downcase}", ['link', 'params'])
-  ), 4)
-%>
+    r = send_create_request(config, client, opts)
 
 <%   if create_api.async.nil? -%>
     module.params['id'] = navigate_value(r, [<%= index2navigate(create_api.resource_id_path ) %>])
@@ -171,6 +163,11 @@ def create(config):
     obj = async_wait(config, r, client, timeout)
     module.params['id'] = navigate_value(obj, [<%= index2navigate(create_api.async.result.field) %>])
 <%   end # object.async-%>
+<% other_api(object, "c").each do | item | -%>
+<%   stage = item.crud.include?("u") ? "_create": "" -%>
+
+    send<%= stage %>_<%= item.out_name %>_request(config, client, opts)
+<% end -%>
 
     return read_resource(config)
 <% if updatable?(object) -%>
@@ -320,6 +317,16 @@ def read_resource_by_list(config):
 
 
 <%= lines(build_read_method(resource_name, list_api, true), 1) -%>
+<% create_apis = [create_api, other_api(object, "c")].flatten.compact -%>
+<% create_apis.each do | item | -%>
+<%   stage = item.is_a?(Api::ApiOther) && item.crud.include?("u") ? "create" : "" -%>
+
+
+<%= lines(build_send_request_method(stage, item), 1) -%>
+
+
+<%= lines(build_request_body_method(object, stage, item), 1) -%>
+<% end -%>
 <% read_apis.each do | item | -%>
 
 
