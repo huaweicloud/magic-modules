@@ -132,7 +132,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 <%- read_api = object.apis["read"] %>
 func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{}) error {
     config := meta.(*Config)
-    client, err := config.sdkClient(<%= argu_for_sdkclient(read_api) %>)
+    client, err := config.sdkClient(<%= argu_for_sdkclient(create_api) %>)
     if err != nil {
         return fmt.Errorf("Error creating sdk client, err=%s", err)
     }
@@ -151,10 +151,9 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
 }
 <% if updatable?(object) -%>
 
-<%   update_api = object.apis.fetch("update", nil) -%>
 func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{}) error {
     config := meta.(*Config)
-    client, err := config.sdkClient(<%= argu_for_sdkclient(update_api) %>)
+    client, err := config.sdkClient(<%= argu_for_sdkclient(create_api) %>)
     if err != nil {
         return fmt.Errorf("Error creating sdk client, err=%s", err)
     }
@@ -168,6 +167,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 <%   end -%>
     }
 <% end -%>
+<%   update_api = object.apis.fetch("update", nil) -%>
 <%   unless update_api.nil? -%>
 <%     r = update_api.async.nil? ? "_, err =" : "r, err :=" -%>
 
@@ -196,14 +196,14 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 }
 <% end -%>
 
-<% delete_api = object.apis["delete"] -%>
 func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{}) error {
     config := meta.(*Config)
-    client, err := config.sdkClient(<%= argu_for_sdkclient(delete_api) %>)
+    client, err := config.sdkClient(<%= argu_for_sdkclient(create_api) %>)
     if err != nil {
         return fmt.Errorf("Error creating sdk client, err=%s", err)
     }
 
+<% delete_api = object.apis["delete"] -%>
     url, err := replaceVars(d, "<%= delete_api.path -%>", nil)
     if err != nil {
         return err
