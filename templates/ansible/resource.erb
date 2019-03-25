@@ -237,37 +237,17 @@ def delete(config):
 
 
 <%- read_api = object.apis["read"] %>
-def read_resource(config, include_computed=True):
-    module = config.module
-    link = build_path(module, "<%= read_api.path %>")
+def read_resource(config, for_compare=False):
     client = config.client(<%= argu_for_sdkclient(read_api) %>)
 
-    v = None
-<%=
-  indent(send_request(
-    "v = client.get(link)", "", "session.module"
-  ), 4)
-%>
+    res = {}
+<% read_apis = [read_api, other_api(object, "r")].flatten.compact -%>
+<% read_apis.each do | item | -%>
 
-    res = {"<%= read_api.out_name%>": v}
-
-    r = user_input_parameters(module)
-
-<% properties_to_show(object).each do |prop| -%>
-<%  if prop.crud.eql?("r") -%>
-    if include_computed:
-<%= convert_resp_parameter(prop, "res, None", "", "r", 8) %>
-<%  else -%>
-<%= convert_resp_parameter(prop, "res, None", "", "r", 4) %>
-<%  end -%>
-
+    res.update(fetch_<%= item.out_name%>_resp(config, client))
 <% end -%>
-    return r
 
-
-<% properties_to_show(object).each do |prop| -%>
-<%= lines(build_flatten_method("", prop), 1) -%>
-<% end -%>
+    return update_properties(module, res, for_compare)
 
 
 <% list_api = object.apis.fetch("list", nil) -%>
@@ -305,8 +285,8 @@ def read_resource_by_list(config):
 <% if list_api.query_params.include?('marker') -%>
     p = {'marker': ''}
     while True:
-        rlink = link % p
-        # read
+        url = link % p
+        r = fetch_<%= list_api.out_name %>_resp(config, client, url)["<%= list_api.out_name %>"]
         for item in r:
             for k, v in identity.items():
                 if item[k] != v:
@@ -318,8 +298,8 @@ def read_resource_by_list(config):
 <% elsif list_api.query_params.include?('offset') -%>
     p = {'offset': 0}
     while True:
-        rlink = link % p
-        # read
+        url = link % p
+        r = fetch_<%= list_api.out_name %>_resp(config, client, url)["<%= list_api.out_name %>"]
         for item in r:
             for k, v in identity.items():
                 if item[k] != v:
@@ -329,7 +309,7 @@ def read_resource_by_list(config):
 
         p['offset'] += 1
 <% else -%>
-    # read
+    r = fetch_<%= list_api.out_name %>_resp(config, client, link)["<%= list_api.out_name %>"]
     for item in v:
         for k, v in identity.items():
         if item[k] != v:
@@ -337,3 +317,14 @@ def read_resource_by_list(config):
     else:
         return item
 <% end -%>
+
+
+<%= lines(build_read_method(resource_name, list_api, true), 1) -%>
+<% read_apis.each do | item | -%>
+
+
+<%= lines(build_read_method(resource_name, item), 1) -%>
+<% end -%>
+
+
+<%= lines(build_update_properties_method(object), 1) -%>

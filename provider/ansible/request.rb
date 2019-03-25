@@ -253,42 +253,60 @@ module Provider
       end
 
       def convert_resp_parameter(prop, arguments, prefix, parent_var, spaces)
+	return "" unless has_output_property(prop)
+
         prop_var = "#{prop.out_name}_prop"
         set_parent = sprintf("%s[\"%s\"] = %s", parent_var, prop.out_name, prop_var)
-        f = indent([
+        f = [
           sprintf("%s = %s.get(\"%s\")", prop_var, parent_var, prop.out_name),
-          sprintf("%s = flatten%s%s_%s(%s, %s, include_computed)", prop_var, prefix.empty? ? "" : "_", prefix, prop.out_name, arguments, prop_var),
+          sprintf("%s = flatten%s%s_%s(%s, %s, for_compare)", prop_var, prefix.empty? ? "" : "_", prefix, prop.out_name, arguments, prop_var),
           set_parent
-        ], spaces)
+        ]
 
         if prop.from_response
-          return f
+          if prop.crud.eql?("r")
+            return indent([
+	      "if not for_compare:",
+	      indent(f, 4)
+	    ], spaces)
+	  else:
+            return indent(f, spaces)
 
         elsif prop.is_a? Api::Type::NestedObject
-          return f
+          if prop.crud.eql?("r")
+            return indent([
+	      "if not for_compare:",
+	      indent(f, 4)
+	    ], spaces)
+	  else:
+            return indent(f, spaces)
 
         elsif prop.is_a?(Api::Type::Array) && \
               prop.item_type.is_a?(Api::Type::NestedObject)
-          return f
+          if prop.crud.eql?("r")
+            return indent([
+	      "if not for_compare:",
+	      indent(f, 4)
+	    ], spaces)
+	  else:
+            return indent(f, spaces)
 
-        elsif prop.is_a?(Api::Type::NameValues)
-          return f
+        # elsif prop.is_a?(Api::Type::NameValues)
+        #   return f
 
         else
-          return "" unless prop.crud.include?("r")
-
           i = "[#{index2navigate(prop.field, false)}]"
           v = arguments.split(", ")
           if prop.crud.eql?("r")
             indent([
-              sprintf("%s = navigate_value(%s, %s, %s)", prop_var, v[0], i, v[1]),
-              set_parent,
+	      "if not for_compare:",
+              sprintf("    %s = navigate_value(%s, %s, %s)", prop_var, v[0], i, v[1]),
+              sprintf("    %s", set_parent),
             ], spaces)
           else
             indent([
-              sprintf("if %s.get(\"%s\") is None:", parent_var, prop.out_name),
-              sprintf("    %s = navigate_value(%s, %s, %s)", prop_var, v[0], i, v[1]),
-              sprintf("    %s", set_parent),
+              sprintf("%s = navigate_value(%s, %s, %s)", prop_var, v[0], i, v[1]),
+              sprintf("%s", set_parent),
             ], spaces)
           end
         end
