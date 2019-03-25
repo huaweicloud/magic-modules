@@ -175,34 +175,24 @@ def create(config):
 
 def update(config):
     module = config.module
+    client = config.client(<%= argu_for_sdkclient(create_api) %>)
     opts = user_input_parameters(module)
 <%   update_api = object.apis.fetch("update", nil) -%>
 <%   unless update_api.nil? -%>
+<%     r = update_api.async.nil? ? "" : "r = " -%>
 
-    params = dict()
-<%= lines(build_expand_properties(object, update_api.parameters, "upate", "opts, None", update_api.out_name, "params", false), 1) %>
-
-    client = config.client(<%= argu_for_sdkclient(update_api) %>)
-    link = build_path(module, "<%= update_api.path %>")
-
-<%     if update_api.async.nil? -%>
-<%=
-  indent(send_request(
-    method_call("client.#{update_api.verb.downcase}", ['link', 'params'])
-  ), 4)
-%>
-<%     else -%>
-<%=
-  indent(send_request(
-    "r = " + method_call("client.#{update_api.verb.downcase}", ['link', 'params'])
-  ), 4)
-%>
-
+    <%= r %>send_update_request(config, client, opts)
+<%     unless update_api.async.nil? -%>
     timeout = 60 * int(module.params['timeouts']['update'].rstrip('m'))
     async_wait(config, r, client, timeout)
 <%     end -%>
-
 <%   end # update_api.nil? -%>
+<%   other_api(object, "u").each do | item | -%>
+<%     stage = item.crud.include?("c") ? "_update" : "" -%>
+
+    send<%= stage %>_<%= item.out_name %>_request(config, client, opts)
+<%   end -%>
+
     return get_resource(config)
 <% end # updatable? -%>
 
@@ -326,6 +316,18 @@ def read_resource_by_list(config):
 
 
 <%= lines(build_request_body_method(object, stage, item), 1) -%>
+<% end -%>
+<% if updatable?(object) -%>
+<%   update_apis = [update_api, other_api(object, "u")].flatten.compact -%>
+<%   update_apis.each do | item | -%>
+<%     stage = item.is_a?(Api::ApiOther) && item.crud.include?("c") ? "update" : "" -%>
+
+
+<%= lines(build_send_request_method(stage, item), 1) -%>
+
+
+<%= lines(build_request_body_method(object, stage, item), 1) -%>
+<%   end -%>
 <% end -%>
 <% read_apis.each do | item | -%>
 
