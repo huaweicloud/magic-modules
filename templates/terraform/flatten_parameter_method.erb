@@ -59,6 +59,7 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
     return result, nil
 }
 <%   nested_properties.each do |prop| -%>
+<%     next unless has_output_property(prop) -%>
 
 <%= lines(build_flatten_method(prefix + titlelize(property.name), prop, resource_name), 1) -%>
 <%   end -%>
@@ -87,6 +88,7 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
     return result, nil
 }
 <%   nested_properties.each do |prop| -%>
+<%     next unless has_output_property(prop) -%>
 
 <%= lines(build_flatten_method(prefix + titlelize(property.name), prop, resource_name), 1) -%>
 <%   end -%>
