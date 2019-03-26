@@ -159,8 +159,7 @@ def create(config):
 <%   if create_api.async.nil? -%>
     module.params['id'] = navigate_value(r, [<%= index2navigate(create_api.resource_id_path ) %>])
 <%   else -%>
-    timeout = 60 * int(module.params['timeouts']['create'].rstrip('m'))
-    obj = async_wait(config, r, client, timeout)
+    obj = async_wait_create(config, r, client)
     module.params['id'] = navigate_value(obj, [<%= index2navigate(create_api.async.result.field) %>])
 <%   end # object.async-%>
 <% other_api(object, "c").each do | item | -%>
@@ -183,8 +182,7 @@ def update(config):
 
     <%= r %>send_update_request(config, client, opts)
 <%     unless update_api.async.nil? -%>
-    timeout = 60 * int(module.params['timeouts']['update'].rstrip('m'))
-    async_wait(config, r, client, timeout)
+    async_wait_update(config, r, client)
 <%     end -%>
 <%   end # update_api.nil? -%>
 <%   other_api(object, "u").each do | item | -%>
@@ -212,8 +210,7 @@ def delete(config):
 <%   end -%>
 <% else -%>
     r = send_update_request(config, client<%= delete_api.parameters.nil? ? ", opts" : "" %>)
-    timeout = 60 * int(module.params['timeouts']['delete'].rstrip('m'))
-    async_wait(config, r, client, timeout)
+    async_wait_delete(config, r, client)
 <% end -%>
 
 
@@ -294,6 +291,11 @@ def fetch_resource(config):
 
 
 <%= lines(build_read_method(resource_name, list_api, true), 1) -%>
+<% unless create_api.async.nil? -%>
+
+
+<%= lines(build_resource_async_op(create_api, "60 * int(module.params['timeouts']['create'].rstrip('m'))"), 1) %>
+<% end -%>
 <% create_apis = [create_api, other_api(object, "c")].flatten.compact -%>
 <% create_apis.each do | item | -%>
 <%   stage = item.is_a?(Api::ApiOther) && item.crud.include?("u") ? "create" : "" -%>
@@ -307,6 +309,11 @@ def fetch_resource(config):
 <%   end -%>
 <% end -%>
 <% if updatable?(object) -%>
+<% unless update_api.nil? || update_api.async.nil? -%>
+
+
+<%= lines(build_resource_async_op(update_api, "60 * int(module.params['timeouts']['update'].rstrip('m'))"), 1) %>
+<% end -%>
 <%   update_apis = [update_api, other_api(object, "u")].flatten.compact -%>
 <%   update_apis.each do | item | -%>
 <%     stage = item.is_a?(Api::ApiOther) && item.crud.include?("c") ? "update" : "" -%>
@@ -332,4 +339,9 @@ def fetch_resource(config):
 
 
 <%= lines(build_request_body_method(object, "", delete_api), 1) -%>
+<% end -%>
+<% unless delete_api.async.nil? -%>
+
+
+<%= lines(build_resource_async_op(delete_api, "60 * int(module.params['timeouts']['delete'].rstrip('m'))"), 1) %>
 <% end -%>

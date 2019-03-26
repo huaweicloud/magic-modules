@@ -118,6 +118,12 @@ module Provider
                          api: api
       end
 
+      def build_resource_async_op(api, timeout)
+        compile_template 'templates/terraform/async_wait.erb',
+                         api: api,
+                         timeout: timeout
+      end
+
       private
 
       def autogen_notice_contrib
