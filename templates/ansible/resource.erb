@@ -108,9 +108,9 @@ def main():
    raise "no list api" if list_api.nil?
 -%>
     resource = fetch_resource(config)
-<% if object.apis["read"].path.match('/{id}') -%>
-    module.params['id'] = navigate_value(resource, [<%= index2navigate(list_api.resource_id_path) %>])
-<% end -%>
+    if resource:
+        module.params['id'] = navigate_value(
+            resource, [<%= index2navigate(list_api.resource_id_path) %>])
 
     result = {}
     changed = False
@@ -123,9 +123,9 @@ def main():
 <% unless updatable?(object) -%>
             result = read_resource(config)
 <% else -%>
-            current = read_resource(config, include_computed=False)
-            expect = _expect_state(module)
-            if not is_different(expect, current):
+            current = read_resource(config, for_compare=True)
+            expect = user_input_parameters(module)
+            if DictComparison(expect) != DictComparison(current):
                 result = update(config)
                 changed = True
             else:
@@ -231,14 +231,7 @@ def read_resource(config, for_compare=False):
     return update_properties(module, res, for_compare)
 
 
-<% list_api = object.apis.fetch("list", nil) -%>
-def get_resource_id(config):
-    r = read_resource_by_list(config)
-    if r:
-        return r["<%= list_api.resource_id_path %>"]
-
-
-def read_resource_by_list(config):
+def fetch_resource(config):
     module = config.module
     opts = user_input_parameters(module)
     identity = {
