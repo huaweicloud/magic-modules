@@ -1,4 +1,5 @@
-func async_wait(config, result, client, timeout):
+def async_wait_<%= api.out_name%>(config, result, client):
+    module = config.module
 <%
    async = api.async
    async_op = async.operation
@@ -17,9 +18,9 @@ func async_wait(config, result, client, timeout):
         for key, path in path_parameters.items()
     }
 
-    url = build_path(config.module, "<%= async_op.path -%>", data)
+    url = build_path(module, "<%= async_op.path -%>", data)
 <%   elsif async_op.path.include?("{") -%>
-    url = build_path(config.module, "<%= async_op.path -%>")
+    url = build_path(module, "<%= async_op.path -%>")
 <%   else -%>
 <%     url_v = sprintf("\"%s\"", async_op.path) -%>
 <%   end -%>
@@ -31,35 +32,56 @@ func async_wait(config, result, client, timeout):
 <%   cl = "async_client" -%>
 <% end -%>
 
+    timeout = <%= timeout %>
 <% status_check = async.status_check -%>
 <% if status_check -%>
 
     def _query_status():
-        r = <%= cl %>.get(url, None, {"Content-Type": "application/json"})
-        status = navigate_value(r, [<%= index2navigate(status_check.field) %>])
-        return r, status
+        r = None
+        try:
+            r = <%= cl %>.get(
+                url, None, {"Content-Type": "application/json"},
+                timeout=timeout)
+        except HwcClientException:
+            return None, ""
 
-    return wait_to_finish(
-        [<%= status_check.complete.compact.map { |x| "\"#{x}\"" }.join(", ") %>],
-        [<%= status_check.pending.compact.map { |x| "\"#{x}\"" }.join(", ") %>, "Pending"],
-        timeout,
-        <%= sprintf('%d', async.operation.wait_ms / 1000) %> * time.Second,
-        _query_status,
-    )
+        try:
+            s = navigate_value(r, [<%= index2navigate(status_check.field) %>])
+            return r, s
+        except Exception:
+            return None, ""
+
+    try:
+        return wait_to_finish(
+            [<%= status_check.complete.compact.map { |x| "\"#{x}\"" }.join(", ") %>],
+            [<%= status_check.pending.compact.map { |x| "\"#{x}\"" }.join(", ") %>],
+            _query_status, timeout)
+    except Exception as ex:
+        module.fail_json(msg="module(%s): error waiting for "
+                             "api(<%= api.name %>) to be done, "
+                             "error: %s" % (module.name, str(ex)))
 <% elsif async.custom_status_check_func -%>
 
     def _query_status():
-        r = <%= cl %>.get(url, None, {"Content-Type": "application/json"})
-	status = "Done" if <%= async.custom_status_check_func %>(r) else "Pending"
-        return r, status
-    }
+        r = None
+        try:
+            r = <%= cl %>.get(
+                url, None, {"Content-Type": "application/json"},
+                timeout=timeout)
+        except HwcClientException:
+            return None, ""
 
-    return wait_to_finish(
-        ["Done"], ["Pending"],
-        timeout,
-        <%= sprintf('%d', async.operation.wait_ms / 1000) %> * time.Second,
-        _query_status,
-    )
+        if <%= async.custom_status_check_func %>(r):
+            return r, "Done"
+
+        return r, "Pending"
+
+    try:
+        return wait_to_finish(["Done"], ["Pending"], _query_status, timeout)
+    except Exception as ex:
+        module.fail_json(msg="module(%s): error waiting for "
+                             "api(<%= api.name %>) to be done, "
+                             "error: %s" % (module.name, str(ex)))
 <% else -%>
 <%   raise "Must sepecify status check for api: #{api.name}" -%>
 <% end -%>
