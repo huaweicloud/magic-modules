@@ -69,9 +69,7 @@ RETURN = '''
 ###############################################################################
 
 from ansible.module_utils.hwc_utils import (HwcSession, HwcModule,
-                                            DictComparison, navigate_hash,
-                                            remove_nones_from_dict,
-                                            remove_empty_from_dict,
+                                            DictComparison, navigate_value,
                                             HwcClientException,
                                             HwcClientException404)
 <%
