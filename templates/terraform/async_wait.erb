@@ -48,7 +48,7 @@ func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schem
 <% if status_check -%>
     return waitToFinish(
         []string{<%= status_check.complete.compact.map { |x| "\"#{x}\"" }.join(", ") %>},
-        []string{<%= status_check.pending.compact.map { |x| "\"#{x}\"" }.join(", ") %>, "Pending"},
+        []string{<%= status_check.pending.compact.map { |x| "\"#{x}\"" }.join(", ") %>},
         <%= timeout %>,
         <%= sprintf('%d', async.operation.wait_ms / 1000) %> * time.Second,
         func() (interface{}, string, error) {

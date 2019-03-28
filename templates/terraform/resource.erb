@@ -230,7 +230,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
     r := golangsdk.Result{}
     _, r.Err = client.Delete(url, &golangsdk.RequestOpts{
         OkCodes: successHTTPCodes,
-        JSONBody: <%= delete_api.parameters.nil? ? "nil" : "params" %>
+        JSONBody: <%= delete_api.parameters.nil? ? "nil" : "params" %>,
         JSONResponse: &r.Body,
         MoreHeaders:  map[string]string{"Content-Type": "application/json"},
     })
@@ -242,15 +242,17 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <%   if create_api.async.nil? -%>
     return nil
 <%   else # if create api is async, then it is best to make sure the resource is delete successfully -%>
-    url, err := replaceVars(d, "<%= read_api.path -%>", nil)
+<%     unless delete_api.path.eql?(read_api.path) -%>
+    url, err = replaceVars(d, "<%= read_api.path -%>", nil)
     if err != nil {
         return err
     }
     url = client.ServiceURL(url)
 
+<%     end -%>
     _, err = waitToFinish(
         []string{"Done"}, []string{"Pending"},
-        d.Timeout(schema.TimeoutDelete),
+        d.Timeout(schema.TimeoutCreate),
         <%= sprintf('%d', create_api.async.operation.wait_ms / 1000) %> * time.Second,
         func() (interface{}, string, error) {
             resp, err := client.Get(
@@ -272,10 +274,6 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
     return err
 <% end -%>
 }
-<% unless create_api.async.nil? -%>
-
-    <%= lines(build_resource_async_op(create_api, "d.Timeout(schema.TimeoutCreate)", resource_name), 1) %>
-<% end -%>
 <% create_apis = [create_api, other_api(object, "c")].flatten.compact -%>
 <% create_apis.each do | item | -%>
 <%   stage = item.is_a?(Api::ApiOther) && item.crud.include?("u") ? "Create" : "" -%>
@@ -285,14 +283,12 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 
 <%= lines(build_request_body_method(object, stage, resource_name, item), 1) -%>
 <%   end -%>
+<%   unless item.async.nil? -%>
+
+    <%= lines(build_resource_async_op(item, "d.Timeout(schema.TimeoutCreate)", resource_name), 1) %>
+<%   end -%>
 <% end -%>
 <% if updatable?(object) -%>
-<%   unless update_api.nil? -%>
-<%     unless update_api.async.nil? -%>
-
-<%= lines(build_resource_async_op(update_api, "d.Timeout(schema.TimeoutUpdate)", resource_name), 1) %>
-<%     end -%>
-<%   end -%>
 <%   update_apis = [update_api, other_api(object, "u")].flatten.compact -%>
 <%   update_apis.each do | item | -%>
 <%     stage = item.is_a?(Api::ApiOther) && item.crud.include?("c") ? "Update" : "" -%>
@@ -301,6 +297,10 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <%     unless item.parameters.nil? -%>
 
 <%= lines(build_request_body_method(object, stage, resource_name, item), 1) -%>
+<%     end -%>
+<%     unless item.async.nil? -%>
+
+    <%= lines(build_resource_async_op(item, "d.Timeout(schema.TimeoutUpdate)", resource_name), 1) %>
 <%     end -%>
 <%   end -%>
 <% end -%>

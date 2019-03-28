@@ -770,21 +770,19 @@ module Provider
     def async_timout(resource)
       r = Hash.new
 
-      a = resource.apis["create"].async
-      if a
-        r["create"] = a.timeout
+      [resource.apis["create"], other_api(resource, "c")].flatten.compact.each do |i|
+        next if i.async.nil?
+        r["create"] = i.async.timeout
+        break
       end
 
       a = resource.apis["delete"].async
-      if a
-        r["delete"] = a.timeout
-      end
+      r["delete"] = a.timeout unless a.nil?
 
-      a = resource.apis["update"]
-      unless a.nil?
-        if a.async
-          r["update"] = a.async.timeout
-        end
+      [resource.apis.fetch("update", nil), other_api(resource, "u")].flatten.compact.each do |i|
+        next if i.async.nil?
+        r["update"] = i.async.timeout
+        break
       end
 
       r
