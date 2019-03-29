@@ -50,6 +50,7 @@ module Api
       attr_reader :send_empty_value
       attr_reader :alone_parameter
       attr_reader :default
+      attr_reader :depends_on
     end
 
     include Fields
@@ -82,6 +83,7 @@ module Api
       check_optional_property :is_id, :boolean
       check_optional_property :send_empty_value, :boolean
       check_optional_property :alone_parameter, :boolean
+      check_optional_property :depends_on, ::String
 
       check_default_value
     end

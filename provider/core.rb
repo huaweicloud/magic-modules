@@ -876,5 +876,9 @@ module Provider
         property.item_type.properties
       end
     end
+
+    def order_request_properties(properties)
+      [properties.reject(&:depends_on), properties.select(&:depends_on)].flatten
+    end
   end
 end
