@@ -8,7 +8,7 @@ func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schem
 <% if need_build_async_client(api) -%>
     asyncClient, err := config.sdkClient(<%= argu_for_sdkclient(async.operation) %>)
     if err != nil {
-        return fmt.Errorf("Error creating async sdk client, err=%s", err)
+        return nil, fmt.Errorf("Error creating async sdk client, err=%s", err)
     }
 <%   cl = "asyncClient" -%>
 
@@ -24,19 +24,19 @@ func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schem
     for key, path := range pathParameters {
         value, err := navigateValue(result, path, nil)
         if err != nil {
-            return fmt.Errorf("Error retrieving async operation path parameter: %s", err)
+            return nil, fmt.Errorf("Error retrieving async operation path parameter: %s", err)
         }
         data[key] = value.(string)
     }
     url, err := replaceVars(d, "<%= async_op.path -%>", data)
     if err != nil {
-        return err
+        return nil, err
     }
     url = <%= cl %>.ServiceURL(url)
 <%   elsif async_op.path.include?("{") -%>
     url, err := replaceVars(d, "<%= async_op.path -%>", nil)
     if err != nil {
-        return err
+        return nil, err
     }
     url = <%= cl %>.ServiceURL(url)
 <%   else -%>

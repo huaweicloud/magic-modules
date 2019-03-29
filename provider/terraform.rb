@@ -204,7 +204,7 @@ module Provider
         end
       end
 
-      if obj.is_a?(Api::Type::NestedObject)
+      if obj.is_a?(Api::Type::NestedObject) && (!obj.crud.eql?("r"))
         r << obj.name
       end
 
