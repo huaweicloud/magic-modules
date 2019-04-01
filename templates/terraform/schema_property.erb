@@ -95,9 +95,9 @@
 <%   if property.sensitive -%>
         Sensitive: true,
 <%   end -%>
-<% #  unless property.default.value.nil? -%>
- <% #       Default:  go_literal(property.default.value) -%>,
-<% #  end -%>
+<%   unless property.default.nil? -%>
+        Default: <%= go_literal(property.default) %>,
+<%   end -%>
 },
 <% else -%>
   // TODO: Property '<%= property.name -%>' of type <%= property.class -%> is not supported
