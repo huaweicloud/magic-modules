@@ -182,6 +182,9 @@ module Provider
         if prop.to_request
           return f
 
+        elsif prop.to_request_method
+          return sprintf("%s(%s)", prop.to_request_method, arguments)
+
         elsif prop.is_a? Api::Type::NestedObject
           return f
 

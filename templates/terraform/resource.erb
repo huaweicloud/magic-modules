@@ -62,6 +62,7 @@ func resource<%= resource_name -%>() *schema.Resource {
 
 func resource<%= resource_name -%>UserInputParams(d *schema.ResourceData) map[string]interface{} {
     return map[string]interface{}{
+        "terraform_resource_data": d,
 <% object.not_output_properties.sort_by(&:out_name).each do |prop| -%>
         "<%= prop.out_name %>": d.Get("<%= prop.out_name %>"),
 <% end -%>
