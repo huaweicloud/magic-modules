@@ -863,7 +863,7 @@ module Provider
     end
 
     def updatable?(resource)
-      !(resource.not_output_properties.select{ |i| i.crud.include?("u") }.empty?)
+      !([resource.apis.fetch("update", nil), other_api(resource, "u")].flatten.compact.empty?)
     end
 
     # Returns the nested properties. An empty list is returned if the property

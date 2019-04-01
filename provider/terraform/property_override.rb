@@ -62,6 +62,7 @@ module Provider
       # includes the codes not the file path to the codes template.
       attr_reader :to_request
       attr_reader :from_response
+      attr_reader :to_request_method
 
     end
 
@@ -149,6 +150,7 @@ module Provider
         check_optional_property :state_func, String
         check_optional_property :validation, Provider::Terraform::Validation
         check_optional_property :to_request, String
+        check_optional_property :to_request_method, String
         check_optional_property :from_response, String
       end
 
