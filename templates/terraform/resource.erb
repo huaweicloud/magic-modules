@@ -119,11 +119,18 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 <% end # unless object.async -%>
 <% other_api(object, "c").each do | item | -%>
 <%   stage = item.crud.include?("u") ? "Create": "" -%>
+<%   r = item.async.nil? ? "_, err =" : "v, err :=" -%>
 
-    _, err = send<%= stage %><%= resource_name %><%= titlelize(item.name) %>Request(d, opts, <%= ai_name %>, client)
+    <%= r %> send<%= stage %><%= resource_name %><%= titlelize(item.name) %>Request(d, opts, <%= ai_name %>, client)
     if err != nil {
         return err
     }
+<%   unless item.async.nil? -%>
+    _, err = asyncWait<%= resource_name %><%= titlelize(item.name) %>(d, config, v, client)
+    if err != nil {
+        return err
+    }
+<%   end -%>
 <% end -%>
 
     return resource<%= resource_name -%>Read(d, meta)
@@ -185,11 +192,18 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 <%   end # update_api.nil -%>
 <%   other_api(object, "u").each do | item | -%>
 <%     stage = item.crud.include?("c") ? "Update" : "" -%>
+<%     r = item.async.nil? ? "_, err =" : "v, err :=" -%>
 
-    _, err = send<%= stage %><%= resource_name %><%= titlelize(item.name) %>Request(d, opts, <%= ai_name%>, client)
+    <%= r %> send<%= stage %><%= resource_name %><%= titlelize(item.name) %>Request(d, opts, <%= ai_name%>, client)
     if err != nil {
         return err
     }
+<%   unless item.async.nil? -%>
+    _, err = asyncWait<%= resource_name %><%= titlelize(item.name) %>(d, config, v, client)
+    if err != nil {
+        return err
+    }
+<%   end -%>
 <%   end -%>
 
     return resource<%= resource_name -%>Read(d, meta)
