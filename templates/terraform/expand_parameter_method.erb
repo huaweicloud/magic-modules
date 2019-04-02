@@ -38,7 +38,7 @@ func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIn
         return nil, err
     }
 
-<%   nested_properties = order_request_properties(nested_properties(property)) -%>
+<%   nested_properties = nested_properties(property) -%>
     n := len(v.([]interface{}))
     req := make([]interface{}, 0, n)
     for i := 0; i < n; i++ {
@@ -59,7 +59,7 @@ func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIn
 func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
     req := make(map[string]interface{})
 
-<%   nested_properties = order_request_properties(nested_properties(property)) -%>
+<%   nested_properties = nested_properties(property) -%>
     <%= lines(build_expand_properties(stage, nested_properties, "d, arrayIndex", prefix + titlelize(property.name), "req", true), 1) -%>
     return req, nil
 }
