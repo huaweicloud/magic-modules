@@ -13,7 +13,7 @@ func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schem
 <%   cl = "asyncClient" -%>
 
 <% end -%>
-<% if need_build_async_url(api) %>
+<% if need_build_async_url(api) -%>
 <%   if async_op.path_parameter -%>
     pathParameters := map[string][]string {
 <%     async_op.path_parameter.each do |k, v| -%>
