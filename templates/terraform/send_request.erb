@@ -1,6 +1,6 @@
 <% prefix = resource_name + titlelize(api.name) -%>
-func send<%= stage -%><%= prefix -%>Request(d *schema.ResourceData, opts map[string]interface{},
-    arrayIndex map[string]int, client *golangsdk.ServiceClient) (interface{}, error) {
+func send<%= prefix -%>Request(d *schema.ResourceData, params interface{},
+    client *golangsdk.ServiceClient) (interface{}, error) {
 <% if api.path.include?("{") -%>
     url, err := replaceVars(d, "<%= api.path -%>", nil)
     if err != nil {
@@ -10,16 +10,9 @@ func send<%= stage -%><%= prefix -%>Request(d *schema.ResourceData, opts map[str
 <% else -%>
     url := client.ServiceURL(<%= sprintf("\"%s\"", api.path) -%>)
 <% end -%>
-<% unless api.parameters.nil? -%>
-
-    params, err := build<%= stage -%><%= prefix -%>Parameters(opts, arrayIndex)
-    if err != nil {
-        return nil, fmt.Errorf("Error building the request body of api(<%= api.name -%>)")
-    }
-<% end -%>
 
     r := golangsdk.Result{}
-    _, r.Err = client.<%= api.verb.capitalize -%>(url, <%= api.parameters.nil? ? "nil" : "params" %>, &r.Body, &golangsdk.RequestOpts{
+    _, r.Err = client.<%= api.verb.capitalize -%>(url, params, &r.Body, &golangsdk.RequestOpts{
         OkCodes: successHTTPCodes,
     })
     if r.Err != nil {

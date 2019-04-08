@@ -84,10 +84,9 @@ module Provider
         )
       end
 
-      def build_resource_async_op(api, timeout, resource_name)
+      def build_resource_async_op(api, resource_name)
         compile_template 'templates/terraform/async_wait.erb',
                          api: api,
-                         timeout: timeout,
                          resource_name: resource_name
       end
 
@@ -104,9 +103,8 @@ module Provider
                          api: api
       end
 
-      def build_send_request_method(stage, resource_name, api)
+      def build_send_request_method(resource_name, api)
         compile_template 'templates/terraform/send_request.erb',
-                         stage: stage,
                          resource_name: resource_name,
                          api: api
       end

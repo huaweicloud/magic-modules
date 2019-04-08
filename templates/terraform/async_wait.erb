@@ -1,5 +1,5 @@
-func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schema.ResourceData,
-    config *Config, result interface{}, client *golangsdk.ServiceClient) (interface{}, error) {
+func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schema.ResourceData, config *Config, result interface{}, 
+   client *golangsdk.ServiceClient, timeout time.Duration) (interface{}, error) {
 <%
    async = api.async
    async_op = async.operation
@@ -49,8 +49,7 @@ func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schem
     return waitToFinish(
         []string{<%= status_check.complete.compact.map { |x| "\"#{x}\"" }.join(", ") %>},
         []string{<%= status_check.pending.compact.map { |x| "\"#{x}\"" }.join(", ") %>},
-        <%= timeout %>,
-        <%= sprintf('%d', async.operation.wait_ms / 1000) %> * time.Second,
+        timeout, <%= sprintf('%d', async.operation.wait_ms / 1000) %> * time.Second,
         func() (interface{}, string, error) {
             r := golangsdk.Result{}
             _, r.Err = <%= cl %>.Get(
@@ -69,9 +68,7 @@ func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schem
     )
 <% elsif async.custom_status_check_func -%>
     return waitToFinish(
-        []string{"Done"}, []string{"Pending"},
-        <%= timeout %>,
-        <%= sprintf('%d', async.operation.wait_ms / 1000) %> * time.Second,
+        []string{"Done"}, []string{"Pending"}, timeout, <%= sprintf('%d', async.operation.wait_ms / 1000) %> * time.Second,
         func() (interface{}, string, error) {
             r := golangsdk.Result{}
             _, r.Err = <%= cl %>.Get(
