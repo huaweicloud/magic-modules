@@ -87,7 +87,11 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     }
 <% end -%>
 
-    r, err := send<%= resource_name -%>CreateRequest(d, opts, <%= ai_name -%>, client)
+    params, err := build<%= resource_name -%>CreateParameters(opts, <%= ai_name -%>)
+    if err != nil {
+        return fmt.Errorf("Error building the request body of api(<%= create_api.name -%>)")
+    }
+    r, err := send<%= resource_name -%>CreateRequest(d, params, client)
     if err != nil {
         return fmt.Errorf("Error creating <%= resource_name -%>: %s", err)
     }
@@ -99,6 +103,10 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
         return err
     }
 <% end -%>
+<% unless at["create"].nil? -%>
+
+    timeout := d.Timeout(schema.TimeoutCreate)
+<% end -%>
 <% if create_api.async.nil? -%>
 
     id, err := navigateValue(r, []string{<%= index2navigate(create_api.resource_id_path) %>}, nil)
@@ -107,8 +115,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     }
     d.SetId(id.(string))
 <% else -%>
-
-    obj, err := asyncWait<%= resource_name %><%= titlelize(create_api.name) %>(d, config, r, client)
+    obj, err := asyncWait<%= resource_name %>Create(d, config, r, client, timeout)
     if err != nil {
         return err
     }
@@ -119,17 +126,29 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     d.SetId(id.(string))
 <% end # unless object.async -%>
 <% other_api(object, "c").each do | item | -%>
-<%   stage = item.crud.include?("u") ? "Create": "" -%>
-<%   r = item.async.nil? ? "_, err =" : "v, err :=" -%>
+<%   stage = item.crud.include?("u") ? "Create": ""
+     r = item.async.nil? ? "_, err =" : "r, err ="
+     fn = sprintf("%s%s", resource_name, titlelize(item.name))
+-%>
 
-    <%= r %> send<%= stage %><%= resource_name %><%= titlelize(item.name) %>Request(d, opts, <%= ai_name %>, client)
+<%   unless item.parameters.nil? -%>
+    params, err = build<%= stage %><%= fn -%>Parameters(opts, <%= ai_name -%>)
+    if err != nil {
+        return fmt.Errorf("Error building the request body of api(<%= item.name -%>)")
+    }
+    if e, _ := isEmptyValue(reflect.ValueOf(params)); !e {
+<%   end -%>
+    <%= r %> send<%= fn %>Request(d, <%= item.parameters.nil? ? "nil" : "params" %>, client)
     if err != nil {
         return err
     }
 <%   unless item.async.nil? -%>
-    _, err = asyncWait<%= resource_name %><%= titlelize(item.name) %>(d, config, v, client)
+    _, err = asyncWait<%= fn %>(d, config, r, client, timeout)
     if err != nil {
         return err
+    }
+<%   end -%>
+<%   unless item.parameters.nil? -%>
     }
 <%   end -%>
 <% end -%>
@@ -175,36 +194,58 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 <%   end -%>
     }
 <% end -%>
+<% unless at["update"].nil? -%>
+    timeout := d.Timeout(schema.TimeoutUpdate)
+<% end -%>
+    var params interface{}
+    var r interface{}
+
 <%   update_api = object.apis.fetch("update", nil) -%>
 <%   unless update_api.nil? -%>
-<%     r = update_api.async.nil? ? "_, err =" : "r, err :=" -%>
+<%     r = update_api.async.nil? ? "_, err =" : "r, err =" -%>
 
-    <%= r %> send<%= resource_name -%>UpdateRequest(d, opts, <%= ai_name -%>, client)
+    params, err = build<%= resource_name -%>UpdateParameters(opts, <%= ai_name -%>)
+    if err != nil {
+        return fmt.Errorf("Error building the request body of api(<%= update_api.name -%>)")
+    }
+    <%= r %> send<%= resource_name -%>UpdateRequest(d, params, client)
     if err != nil {
         return fmt.Errorf("Error updating (<%= resource_name -%>: %v): %s", d.Id(), err)
     }
 <%     unless update_api.async.nil? -%>
 
-    _, err = asyncWait<%= resource_name %><%= titlelize(update_api.name) %>(d, config, r, client)
+    _, err = asyncWait<%= resource_name %>Update(d, config, r, client, timeout)
     if err != nil {
         return err
     }
-<%     end # unless object.async -%>
+<%     end -%>
 <%   end # update_api.nil -%>
 <%   other_api(object, "u").each do | item | -%>
-<%     stage = item.crud.include?("c") ? "Update" : "" -%>
-<%     r = item.async.nil? ? "_, err =" : "v, err :=" -%>
+<%     stage = item.crud.include?("c") ? "Update" : ""
+       r = item.async.nil? ? "_, err =" : "r, err ="
+       fn = sprintf("%s%s", resource_name, titlelize(item.name))
+-%>
 
-    <%= r %> send<%= stage %><%= resource_name %><%= titlelize(item.name) %>Request(d, opts, <%= ai_name%>, client)
+<%     unless item.parameters.nil? -%>
+    params, err = build<%= stage %><%= fn -%>Parameters(opts, <%= ai_name -%>)
+    if err != nil {
+        return fmt.Errorf("Error building the request body of api(<%= item.name -%>)")
+    }
+    if e, _ := isEmptyValue(reflect.ValueOf(params)); !e {
+<%     end -%>
+    <%= r %> send<%= fn %>Request(d, <%= item.parameters.nil? ? "nil" : "params" %>, client)
     if err != nil {
         return err
     }
-<%   unless item.async.nil? -%>
-    _, err = asyncWait<%= resource_name %><%= titlelize(item.name) %>(d, config, v, client)
+<%     unless item.async.nil? -%>
+    _, err = asyncWait<%= fn %>(d, config, r, client, timeout)
     if err != nil {
         return err
     }
-<%   end -%>
+<%     end -%>
+<%     unless item.parameters.nil? -%>
+    }
+<%     end -%>
 <%   end -%>
 
     return resource<%= resource_name -%>Read(d, meta)
@@ -237,7 +278,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <%   end -%>
     params, err := build<%= resource_name -%>DeleteParameters(opts, arrayIndex)
     if err != nil {
-        return nil, fmt.Errorf("Error building the request body of api(delete)")
+        return fmt.Errorf("Error building the request body of api(delete)")
     }
 
 <% end -%>
@@ -285,7 +326,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
     return err
 <%   end # unless is_resource_standard_async -%>
 <% else -%>
-    _, err = asyncWait<%= resource_name %><%= titlelize(delete_api.name) %>(d, config, r.Body, client)
+    _, err = asyncWait<%= resource_name %><%= titlelize(delete_api.name) %>(d, config, r.Body, client, d.Timeout(schema.TimeoutDelete))
     return err
 <% end -%>
 }
@@ -293,29 +334,30 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <% create_apis.each do | item | -%>
 <%   stage = item.is_a?(Api::ApiOther) && item.crud.include?("u") ? "Create" : "" -%>
 
-<%= lines(build_send_request_method(stage, resource_name, item), 1) -%>
 <%   unless item.parameters.nil? -%>
-
 <%= lines(build_request_body_method(object, stage, resource_name, item), 1) -%>
+
 <%   end -%>
+<%= lines(build_send_request_method(resource_name, item), 1) -%>
 <%   unless item.async.nil? -%>
 
-    <%= lines(build_resource_async_op(item, "d.Timeout(schema.TimeoutCreate)", resource_name), 1) %>
+    <%= lines(build_resource_async_op(item, resource_name), 1) %>
 <%   end -%>
 <% end -%>
 <% if updatable?(object) -%>
 <%   update_apis = [update_api, other_api(object, "u")].flatten.compact -%>
 <%   update_apis.each do | item | -%>
 <%     stage = item.is_a?(Api::ApiOther) && item.crud.include?("c") ? "Update" : "" -%>
-
-<%= lines(build_send_request_method(stage, resource_name, item), 1) -%>
 <%     unless item.parameters.nil? -%>
 
 <%= lines(build_request_body_method(object, stage, resource_name, item), 1) -%>
 <%     end -%>
+<%     next unless stage.empty? -%>
+
+<%= lines(build_send_request_method(resource_name, item), 1) -%>
 <%     unless item.async.nil? -%>
 
-    <%= lines(build_resource_async_op(item, "d.Timeout(schema.TimeoutUpdate)", resource_name), 1) %>
+    <%= lines(build_resource_async_op(item, resource_name), 1) %>
 <%     end -%>
 <%   end -%>
 <% end -%>
@@ -325,7 +367,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <% end -%>
 <% unless delete_api.async.nil? -%>
 
-    <%= lines(build_resource_async_op(delete_api, "d.Timeout(schema.TimeoutDelete)", resource_name), 1) %>
+    <%= lines(build_resource_async_op(delete_api, resource_name), 1) %>
 <% end -%>
 <% read_apis.each do | item | -%>
 
