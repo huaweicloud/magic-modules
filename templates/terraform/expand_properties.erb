@@ -16,27 +16,30 @@
     if err != nil {
         return <%= rt %>err
     }
+<%   unless prop.send_empty_value -%>
     e, err <%= v2 %> isEmptyValue(reflect.ValueOf(<%= v1 -%>))
     if err != nil {
         return <%= rt %>err
     }
     if !e {
         <%= r %>
-<%   if stage.eql?("Update") -%>
-<%     if prop.send_empty_value -%>
-    } else {
-        if _, ok := isUserInput(d, []string{<%= index2navigate(prop.field, true) %>}, <%= globalIndex %>); ok {
-            <%= r %>
-        }
-<%     end -%>
+    }
 <%   else -%>
-<%     if !is_complex_type(prop) && prop.send_empty_value -%>
+<%     if prop.is_a?(Api::Type::Boolean) || prop.is_a?(Api::Type::Integer) -%>
+    e, err <%= v2 %> isEmptyValue(reflect.ValueOf(<%= v1 -%>))
+    if err != nil {
+        return <%= rt %>err
+    }
+    if !e {
+        <%= r %>
     } else {
-        if _, ok := isUserInput(d, []string{<%= index2navigate(prop.field, true) %>}, <%= globalIndex %>); ok {
+        if ok := isUserInput(d, []string{<%= index2navigate(prop.field, true) %>}, <%= globalIndex %>); ok {
             <%= r %>
         }
+    }
+<%     else -%>
+    <%= r %>
 <%     end -%>
 <%   end -%>
-    }
 
 <% end -%>

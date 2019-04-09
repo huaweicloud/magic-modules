@@ -5,6 +5,9 @@ func build<%= prefix -%>Parameters(opts map[string]interface{}, arrayIndex map[s
 <% if api.msg_prefix.nil? -%>
     return params, nil
 <% else -%>
+    if len(params) == 0 {
+        return params, nil
+    }
 <%   items = api.msg_prefix.split(".")
      array_items = api.msg_prefix_array_items || []
 -%>

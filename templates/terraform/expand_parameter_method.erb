@@ -26,7 +26,7 @@ func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIn
     if arrayIndex != nil {
         for k, v := range arrayIndex {
             newArrayIndex[k] = v
-	}
+        }
     }
 
 <%   rp = find_property(resource, property.field.split(".")) -%>
@@ -46,7 +46,9 @@ func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIn
         transformed := make(map[string]interface{})
 
         <%= lines(build_expand_properties(stage, nested_properties, "d, newArrayIndex", prefix + titlelize(property.name), "transformed", true), 1) -%>
-        req = append(req, transformed)
+        if len(transformed) > 0 {
+            req = append(req, transformed)
+        }
     }
 
     return req, nil
