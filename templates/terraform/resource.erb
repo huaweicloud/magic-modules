@@ -208,15 +208,17 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
     if err != nil {
         return fmt.Errorf("Error building the request body of api(<%= update_api.name -%>)")
     }
-    <%= r %> send<%= resource_name -%>UpdateRequest(d, params, client)
-    if err != nil {
-        return fmt.Errorf("Error updating (<%= resource_name -%>: %v): %s", d.Id(), err)
-    }
+    if e, _ := isEmptyValue(reflect.ValueOf(params)); !e {
+        <%= r %> send<%= resource_name -%>UpdateRequest(d, params, client)
+        if err != nil {
+            return fmt.Errorf("Error updating (<%= resource_name -%>: %v): %s", d.Id(), err)
+        }
 <%     unless update_api.async.nil? -%>
 
-    _, err = asyncWait<%= resource_name %>Update(d, config, r, client, timeout)
-    if err != nil {
-        return err
+        _, err = asyncWait<%= resource_name %>Update(d, config, r, client, timeout)
+        if err != nil {
+            return err
+        }
     }
 <%     end -%>
 <%   end # update_api.nil -%>
