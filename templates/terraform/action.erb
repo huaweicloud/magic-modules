@@ -33,7 +33,7 @@ func action<%= prefix %>(d *schema.ResourceData, result interface{}, client *gol
 <%= lines(build_expand_properties("", api.parameters, "nil, nil", prefix, "params", false), 1) %>
 
     r := golangsdk.Result{}
-    _, r.Err = client.<%= api.verb.capitalize %>(url, params, &r.Body, &golangsdk.RequestOpts{
+    _, r.Err = client.<%= api.verb.capitalize %>(url, params, <%= api.has_response ? "&r.Body" : "nil" %>, &golangsdk.RequestOpts{
         OkCodes: successHTTPCodes,
     })
     if r.Err != nil {

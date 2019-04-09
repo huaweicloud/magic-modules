@@ -56,6 +56,8 @@ module Api
 
         @name ||= "async_query_api"
 
+	@has_response = true
+
         super
       end
     end

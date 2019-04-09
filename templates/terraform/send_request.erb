@@ -12,7 +12,7 @@ func send<%= prefix -%>Request(d *schema.ResourceData, params interface{},
 <% end -%>
 
     r := golangsdk.Result{}
-    _, r.Err = client.<%= api.verb.capitalize -%>(url, params, &r.Body, &golangsdk.RequestOpts{
+    _, r.Err = client.<%= api.verb.capitalize -%>(url, params, <%= api.has_response ? "&r.Body" : "nil" %>, &golangsdk.RequestOpts{
         OkCodes: successHTTPCodes,
     })
     if r.Err != nil {
