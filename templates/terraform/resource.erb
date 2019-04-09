@@ -178,6 +178,8 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
 }
 <% if updatable?(object) -%>
 
+<%   update_api = object.apis.fetch("update", nil) -%>
+<%   update_apis = [update_api, other_api(object, "u")].flatten.compact -%>
 func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{}) error {
     config := meta.(*Config)
     client, err := config.sdkClient(<%= argu_for_sdkclient(create_api) %>)
@@ -197,13 +199,15 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 <% unless at["update"].nil? -%>
     timeout := d.Timeout(schema.TimeoutUpdate)
 <% end -%>
+<% if update_apis.length > 1 -%>
     var params interface{}
     var r interface{}
-<%   update_api = object.apis.fetch("update", nil) -%>
+<% end -%>
+<% assign = update_apis.length > 1 ? "=" : ":=" -%>
 <%   unless update_api.nil? -%>
-<%     r = update_api.async.nil? ? "_, err =" : "r, err =" -%>
+<%     r = update_api.async.nil? ? "_, err =" : "r, err " + assign -%>
 
-    params, err = build<%= resource_name -%>UpdateParameters(opts, <%= ai_name -%>)
+    params, err <%= assign %> build<%= resource_name -%>UpdateParameters(opts, <%= ai_name -%>)
     if err != nil {
         return fmt.Errorf("Error building the request body of api(<%= update_api.name -%>)")
     }
@@ -222,12 +226,12 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 <%   end # update_api.nil -%>
 <%   other_api(object, "u").each do | item | -%>
 <%
-       r = item.async.nil? ? "_, err =" : "r, err ="
+       r = item.async.nil? ? "_, err =" : "r, err " + assign
        fn = sprintf("%s%s", resource_name, titlelize(item.name))
 -%>
 
 <%     unless item.parameters.nil? -%>
-    params, err = build<%= fn -%>Parameters(opts, <%= ai_name -%>)
+    params, err <%= assign %> build<%= fn -%>Parameters(opts, <%= ai_name -%>)
     if err != nil {
         return fmt.Errorf("Error building the request body of api(<%= item.name -%>)")
     }
@@ -344,7 +348,6 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <%   end -%>
 <% end -%>
 <% if updatable?(object) -%>
-<%   update_apis = [update_api, other_api(object, "u")].flatten.compact -%>
 <%   update_apis.each do | item | -%>
 <%     next if item.is_a?(Api::ApiOther) && item.crud.include?("c") -%>
 <%     unless item.parameters.nil? -%>
