@@ -291,7 +291,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
     _, r.Err = client.Delete(url, &golangsdk.RequestOpts{
         OkCodes: successHTTPCodes,
         JSONBody: <%= delete_api.parameters.nil? ? "nil" : "params" %>,
-        JSONResponse: &r.Body,
+        JSONResponse: <%= delete_api.has_response ? "&r.Body" : "nil" %>,
         MoreHeaders:  map[string]string{"Content-Type": "application/json"},
     })
     if r.Err != nil {

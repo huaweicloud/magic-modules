@@ -12,6 +12,7 @@ module Api
     attr_reader :service_type
     attr_reader :msg_prefix
     attr_reader :msg_prefix_array_items
+    attr_reader :has_response
 
     def validate
       super
@@ -19,6 +20,7 @@ module Api
       check_property :name, String
       check_property :path, String
       check_property :service_type, String
+      check_property :has_response, :boolean
       check_property_oneof :service_level, ["project", "domain"], String
       check_optional_property :verb, String
 
