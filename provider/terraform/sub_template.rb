@@ -38,28 +38,25 @@ module Provider
                          resource_name: resource_name
       end
 
-      def build_request_body_method(resource, stage, resource_name, api)
+      def build_request_body_method(resource, resource_name, api)
         compile_template 'templates/terraform/build_request_body.erb',
                          resource: resource,
-                         stage: stage,
                          resource_name: resource_name,
                          api: api
       end
 
       # Transforms a Terraform schema representation of a property into a
       # representation used by the Cloud API.
-      def build_expand_method(resource, stage, prefix, property)
+      def build_expand_method(resource, prefix, property)
         compile_template 'templates/terraform/expand_parameter_method.erb',
                          resource: resource,
-                         stage: stage,
                          prefix: prefix,
                          property: property
       end
 
-      def build_expand_properties(stage, properties, args, prefix, map_obj, return_value)
+      def build_expand_properties(properties, args, prefix, map_obj, return_value)
         compile_template 'templates/terraform/expand_properties.erb',
                          properties: properties,
-                         stage: stage,
                          args: args,
                          prefix: prefix,
                          map_obj: map_obj,
