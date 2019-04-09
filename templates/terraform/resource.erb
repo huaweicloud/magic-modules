@@ -126,13 +126,13 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     d.SetId(id.(string))
 <% end # unless object.async -%>
 <% other_api(object, "c").each do | item | -%>
-<%   stage = item.crud.include?("u") ? "Create": ""
+<%
      r = item.async.nil? ? "_, err =" : "r, err ="
      fn = sprintf("%s%s", resource_name, titlelize(item.name))
 -%>
 
 <%   unless item.parameters.nil? -%>
-    params, err = build<%= stage %><%= fn -%>Parameters(opts, <%= ai_name -%>)
+    params, err = build<%= fn -%>Parameters(opts, <%= ai_name -%>)
     if err != nil {
         return fmt.Errorf("Error building the request body of api(<%= item.name -%>)")
     }
@@ -199,7 +199,6 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 <% end -%>
     var params interface{}
     var r interface{}
-
 <%   update_api = object.apis.fetch("update", nil) -%>
 <%   unless update_api.nil? -%>
 <%     r = update_api.async.nil? ? "_, err =" : "r, err =" -%>
@@ -214,22 +213,21 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
             return fmt.Errorf("Error updating (<%= resource_name -%>: %v): %s", d.Id(), err)
         }
 <%     unless update_api.async.nil? -%>
-
         _, err = asyncWait<%= resource_name %>Update(d, config, r, client, timeout)
         if err != nil {
             return err
         }
-    }
 <%     end -%>
+    }
 <%   end # update_api.nil -%>
 <%   other_api(object, "u").each do | item | -%>
-<%     stage = item.crud.include?("c") ? "Update" : ""
+<%
        r = item.async.nil? ? "_, err =" : "r, err ="
        fn = sprintf("%s%s", resource_name, titlelize(item.name))
 -%>
 
 <%     unless item.parameters.nil? -%>
-    params, err = build<%= stage %><%= fn -%>Parameters(opts, <%= ai_name -%>)
+    params, err = build<%= fn -%>Parameters(opts, <%= ai_name -%>)
     if err != nil {
         return fmt.Errorf("Error building the request body of api(<%= item.name -%>)")
     }
@@ -334,10 +332,9 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 }
 <% create_apis = [create_api, other_api(object, "c")].flatten.compact -%>
 <% create_apis.each do | item | -%>
-<%   stage = item.is_a?(Api::ApiOther) && item.crud.include?("u") ? "Create" : "" -%>
 
 <%   unless item.parameters.nil? -%>
-<%= lines(build_request_body_method(object, stage, resource_name, item), 1) -%>
+<%= lines(build_request_body_method(object, resource_name, item), 1) -%>
 
 <%   end -%>
 <%= lines(build_send_request_method(resource_name, item), 1) -%>
@@ -349,12 +346,11 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <% if updatable?(object) -%>
 <%   update_apis = [update_api, other_api(object, "u")].flatten.compact -%>
 <%   update_apis.each do | item | -%>
-<%     stage = item.is_a?(Api::ApiOther) && item.crud.include?("c") ? "Update" : "" -%>
+<%     next if item.is_a?(Api::ApiOther) && item.crud.include?("c") -%>
 <%     unless item.parameters.nil? -%>
 
-<%= lines(build_request_body_method(object, stage, resource_name, item), 1) -%>
+<%= lines(build_request_body_method(object, resource_name, item), 1) -%>
 <%     end -%>
-<%     next unless stage.empty? -%>
 
 <%= lines(build_send_request_method(resource_name, item), 1) -%>
 <%     unless item.async.nil? -%>
