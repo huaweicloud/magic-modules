@@ -70,6 +70,7 @@ RETURN = '''
 
 from ansible.module_utils.hwc_utils import (HwcSession, HwcModule,
                                             DictComparison, navigate_value,
+                                            get_region,
                                             HwcClientException,
                                             HwcClientException404)
 <%
@@ -83,9 +84,6 @@ from ansible.module_utils.hwc_utils import (HwcSession, HwcModule,
 ###############################################################################
 
 
-<%
-  # prod_name = object.__product.prefix[1..-1]
--%>
 def main():
     """Main function"""
 
@@ -102,6 +100,7 @@ def main():
         )
     )
 
+    config = Config(module, "<%= object.__product.prefix[1..-1] %>")
 <% list_api = object.apis.fetch("list", nil)
    raise "no list api" if list_api.nil?
 -%>
@@ -121,7 +120,7 @@ def main():
 <% unless updatable?(object) -%>
             result = read_resource(config)
 <% else -%>
-            current = read_resource(config, for_compare=True)
+            current = read_resource(config, exclude_output=True)
             expect = user_input_parameters(module)
             if DictComparison(expect) != DictComparison(current):
                 result = update(config)
@@ -145,25 +144,38 @@ def user_input_parameters(module):
 <% end -%>
     }
 
-
+<% at = async_timout(object) %>
 <% create_api = object.apis["create"] -%>
 def create(config):
     module = config.module
     client = config.client(<%= argu_for_sdkclient(create_api) %>)
+<% unless at["create"].nil? -%>
+    timeout = 60 * int(module.params['timeouts']['create'].rstrip('m'))
+<% end -%>
     opts = user_input_parameters(module)
 
-    r = send_create_request(config, client, opts)
-
-<%   if create_api.async.nil? -%>
+    params = build_create_parameters(opts)
+    r = send_create_request(module, params, client)
+<% if create_api.async.nil? -%>
     module.params['id'] = navigate_value(r, [<%= index2navigate(create_api.resource_id_path ) %>])
-<%   else -%>
-    obj = async_wait_create(config, r, client)
+<% else -%>
+    obj = async_wait_create(config, r, client, timeout)
     module.params['id'] = navigate_value(obj, [<%= index2navigate(create_api.async.result.field) %>])
-<%   end # object.async-%>
+<% end -%>
 <% other_api(object, "c").each do | item | -%>
-<%   stage = item.crud.include?("u") ? "_create": "" -%>
+<% 
+     r = item.async.nil? ? "" : "r = "
+     spaces = item.parameters.nil? ? "" : "    "
+-%>
 
-    send<%= stage %>_<%= item.out_name %>_request(config, client, opts)
+<%   unless item.parameters.nil? -%>
+    params = build_<%= item.out_name %>_parameters(opts)
+    if params:
+<%   end -%>
+    <%= spaces %><%= r %>send_<%= item.out_name %>_request(module, <%= item.parameters.nil? ? "None" : "params" %>, client)
+<%   unless item.async.nil? -%>
+    <%= spaces %>async_wait<%= item.out_name %>(config, r, client, timeout)
+<%   end -%>
 <% end -%>
 
     return read_resource(config)
@@ -173,57 +185,82 @@ def create(config):
 def update(config):
     module = config.module
     client = config.client(<%= argu_for_sdkclient(create_api) %>)
+<%   unless at["update"].nil? -%>
+    timeout = 60 * int(module.params['timeouts']['update'].rstrip('m'))
+<%   end -%>
     opts = user_input_parameters(module)
 <%   update_api = object.apis.fetch("update", nil) -%>
 <%   unless update_api.nil? -%>
 <%     r = update_api.async.nil? ? "" : "r = " -%>
 
-    <%= r %>send_update_request(config, client, opts)
+    params = build_update_parameters(opts)
+    if params:
+        <%= r %>send_update_request(module, params, client)
 <%     unless update_api.async.nil? -%>
-    async_wait_update(config, r, client)
+        async_wait_update(config, r, client, timeout)
 <%     end -%>
 <%   end # update_api.nil? -%>
 <%   other_api(object, "u").each do | item | -%>
-<%     stage = item.crud.include?("c") ? "_update" : "" -%>
+<% 
+       r = item.async.nil? ? "" : "r = "
+       spaces = item.parameters.nil? ? "" : "    "
+-%>
 
-    send<%= stage %>_<%= item.out_name %>_request(config, client, opts)
+<%     unless item.parameters.nil? -%>
+    params = build_<%= item.out_name %>_parameters(opts)
+    if params:
+<%     end -%>
+    <%= spaces %><%= r %>send_<%= item.out_name %>_request(module, <%= item.parameters.nil? ? "None" : "params" %>, client)
+<%     unless item.async.nil? -%>
+    <%= spaces %>async_wait<%= item.out_name %>(config, r, client, timeout)
+<%     end -%>
 <%   end -%>
 
-    return get_resource(config)
+    return read_resource(config)
 <% end # updatable? -%>
 
 
 def delete(config):
     module = config.module
     client = config.client(<%= argu_for_sdkclient(create_api) %>)
+<% unless at["delete"].nil? -%>
+    timeout = 60 * int(module.params['timeouts']['delete'].rstrip('m'))
+<% end -%>
 <% delete_api = object.apis["delete"] -%>
+<% 
+   r = delete_api.async.nil? ? "" : "r = "
+   spaces = delete_api.parameters.nil? ? "" : "    "
+-%>
+
 <% unless delete_api.parameters.nil? -%>
     opts = user_input_parameters(module)
+    params = build_delete_parameters(opts)
+    if params:
 <% end -%>
-
-<% if delete_api.async.nil? -%>
-    send_update_request(config, client<%= delete_api.parameters.nil? ? ", opts" : "" %>)
+    <%= spaces %><%= r %>send_delete_request(module, <%= delete_api.parameters.nil? ? "None" : "params" %>, client)
+<% unless delete.async.nil? -%>
+    <%= spaces %>async_wait_delete(config, r, client, timeout)
+<% else -%>
 <%   unless create_api.async.nil? -%>
 <%   # if create api is async, then it is best to make sure the resource is delete successfully -%>
 <%   end -%>
-<% else -%>
-    r = send_update_request(config, client<%= delete_api.parameters.nil? ? ", opts" : "" %>)
-    async_wait_delete(config, r, client)
 <% end -%>
 
 
 <%- read_api = object.apis["read"] %>
-def read_resource(config, for_compare=False):
+def read_resource(config, exclude_output=False):
+    module = config.module
     client = config.client(<%= argu_for_sdkclient(read_api) %>)
 
     res = {}
 <% read_apis = [read_api, other_api(object, "r")].flatten.compact -%>
 <% read_apis.each do | item | -%>
 
-    res.update(fetch_<%= item.out_name%>_resp(config, client))
+    r = send_<%= item.out_name%>_request(module, client)
+    res["<%= item.out_name %>"] = r
 <% end -%>
 
-    return update_properties(module, res, for_compare)
+    return update_properties(module, res, exclude_output)
 
 
 def fetch_resource(config):
@@ -255,7 +292,7 @@ def fetch_resource(config):
     p = {'marker': ''}
     while True:
         url = link % p
-        r = fetch_<%= list_api.out_name %>_resp(config, client, url)["<%= list_api.out_name %>"]
+        r = send_<%= list_api.out_name %>_request(module, client, url)
         for item in r:
             for k, v in identity.items():
                 if item[k] != v:
@@ -268,7 +305,7 @@ def fetch_resource(config):
     p = {'offset': 0}
     while True:
         url = link % p
-        r = fetch_<%= list_api.out_name %>_resp(config, client, url)["<%= list_api.out_name %>"]
+        r = send_<%= list_api.out_name %>_request(module, client, url)
         for item in r:
             for k, v in identity.items():
                 if item[k] != v:
@@ -278,7 +315,7 @@ def fetch_resource(config):
 
         p['offset'] += 1
 <% else -%>
-    r = fetch_<%= list_api.out_name %>_resp(config, client, link)["<%= list_api.out_name %>"]
+    r = send_<%= list_api.out_name %>_request(module, client, link)
     for item in v:
         for k, v in identity.items():
         if item[k] != v:
@@ -288,58 +325,59 @@ def fetch_resource(config):
 <% end -%>
 
 
-<%= lines(build_read_method(resource_name, list_api, true), 1) -%>
-<% unless create_api.async.nil? -%>
-
-
-<%= lines(build_resource_async_op(create_api, "60 * int(module.params['timeouts']['create'].rstrip('m'))"), 1) %>
-<% end -%>
 <% create_apis = [create_api, other_api(object, "c")].flatten.compact -%>
 <% create_apis.each do | item | -%>
-<%   stage = item.is_a?(Api::ApiOther) && item.crud.include?("u") ? "create" : "" -%>
-
-
-<%= lines(build_send_request_method(stage, item), 1) -%>
 <%   unless item.parameters.nil? -%>
 
 
-<%= lines(build_request_body_method(object, stage, item), 1) -%>
+<%= lines(build_request_body_method(object, item), 1) -%>
+<%   end -%>
+
+
+<%= lines(build_send_request_method(item), 1) -%>
+<%   unless item.async.nil? -%>
+
+
+<%= lines(build_resource_async_op(item), 1) %>
 <%   end -%>
 <% end -%>
 <% if updatable?(object) -%>
-<% unless update_api.nil? || update_api.async.nil? -%>
-
-
-<%= lines(build_resource_async_op(update_api, "60 * int(module.params['timeouts']['update'].rstrip('m'))"), 1) %>
-<% end -%>
 <%   update_apis = [update_api, other_api(object, "u")].flatten.compact -%>
 <%   update_apis.each do | item | -%>
-<%     stage = item.is_a?(Api::ApiOther) && item.crud.include?("c") ? "update" : "" -%>
-
-
-<%= lines(build_send_request_method(stage, item), 1) -%>
+<%     next if item.is_a?(Api::ApiOther) && item.crud.include?("c") -%>
 <%     unless item.parameters.nil? -%>
 
 
-<%= lines(build_request_body_method(object, stage, item), 1) -%>
+<%= lines(build_request_body_method(object, item), 1) -%>
+<%     end -%>
+
+
+<%= lines(build_send_request_method(item), 1) -%>
+<%     unless item.async.nil? -%>
+
+
+<%= lines(build_resource_async_op(item), 1) %>
 <%     end -%>
 <%   end -%>
 <% end -%>
-<% read_apis.each do | item | -%>
-
-
-<%= lines(build_read_method(resource_name, item), 1) -%>
-<% end -%>
-
-
-<%= lines(build_update_properties_method(object), 1) -%>
 <% unless delete_api.parameters.nil? -%>
 
 
-<%= lines(build_request_body_method(object, "", delete_api), 1) -%>
+<%= lines(build_request_body_method(object, delete_api), 1) -%>
 <% end -%>
 <% unless delete_api.async.nil? -%>
 
 
-<%= lines(build_resource_async_op(delete_api, "60 * int(module.params['timeouts']['delete'].rstrip('m'))"), 1) %>
+    <%= lines(build_resource_async_op(delete_api), 1) %>
 <% end -%>
+<% read_apis.each do | item | -%>
+
+
+<%= lines(build_read_method(item, false), 1) -%>
+<% end -%>
+
+
+<%= lines(build_update_properties_method(object), 1) -%>
+
+
+<%= lines(build_read_method(list_api, true), 1) -%>

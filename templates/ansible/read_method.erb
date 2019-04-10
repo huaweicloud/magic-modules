@@ -1,5 +1,4 @@
-def fetch_<%= api.out_name %>_resp(config, client<%= input_url ? ", url" : "" %>):
-    module = config.module
+def send_<%= api.out_name %>_request(module, client<%= input_url ? ", url" : "" %>):
 <% unless input_url -%>
 <%   if api.path.include?("{") -%>
     url = build_path(module, "<%= api.path -%>")
@@ -17,18 +16,16 @@ def fetch_<%= api.out_name %>_resp(config, client<%= input_url ? ", url" : "" %>
         module.fail_json(msg=msg)
 
 <% if api.msg_prefix.nil? -%>
-    return {"<%= api.out_name %>": r}
+    return r
 <% else -%>
 <%   ai = "None" -%>
 <%   unless api.msg_prefix_array_items.nil? -%>
-<%   ai = "array_index" -%>
+<%     ai = "array_index" -%>
     array_index = {
 <%     api.msg_prefix_array_items.each do |i| -%>
 	"<%= i %>": 0,
 <%     end -%>
     }
 <%   end -%>
-    v= navigate_value(r, [<%= index2navigate(api.msg_prefix) %>], <%= ai %>)
-    return {"<%= api.out_name %>": v}
+    return navigate_value(r, [<%= index2navigate(api.msg_prefix) %>], <%= ai %>)
 <% end -%>
-}

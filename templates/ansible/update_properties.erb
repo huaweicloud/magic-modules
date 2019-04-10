@@ -1,4 +1,4 @@
-func set_properties(module, response, for_compare=False):
+def update_properties(module, response, exclude_output=False):
     r = user_input_parameters(module)
 
 <% object.all_user_properties.each do |prop| -%>

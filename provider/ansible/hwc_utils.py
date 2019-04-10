@@ -129,14 +129,19 @@ class HwcSession(object):
 
 
 class Config(object):
-    def __init__(self, module):
+    def __init__(self, module, product):
         self._project_client = None
         self._domain_client = None
         self._module = module
+        self._product = product
         self._endpoints = {}
 
         self._validate()
         self._gen_provider_client()
+
+    @property
+    def module(self):
+        return self._module
 
     def client(self, region, service_type, service_level):
         c = self._project_client
@@ -145,7 +150,7 @@ class Config(object):
 
         e = self._get_service_endpoint(c, service_type, region)
 
-        return HwcSession(c, e)
+        return HwcSession(c, e, self._product)
 
     def _gen_provider_client(self):
         logger = self._init_log()
@@ -414,3 +419,7 @@ def build_path(module, path, kv={}):
                 v[n] = ""
 
     return path.format(**v)
+
+
+def get_region(module):
+    return module.params['project_name'].split("_")[0]

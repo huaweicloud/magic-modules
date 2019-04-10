@@ -236,12 +236,12 @@ module Provider
 
       def argu_for_sdkclient(api, is_test=false)
         region = "\"\""
-        service_level = "serviceDomainLevel"
+        service_level = "domain"
 
         if api.service_level == "project"
-          region = is_test ? "OS_REGION_NAME" : "GetRegion(d, config)"
+          region = is_test ? "OS_REGION_NAME" : "get_region(module)"
 
-          service_level = "serviceProjectLevel"
+          service_level = "project"
         end
 
         sprintf("%s, \"%s\", %s", region, api.service_type, service_level)
