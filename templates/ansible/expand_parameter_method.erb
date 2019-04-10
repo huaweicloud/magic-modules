@@ -23,21 +23,23 @@ def <%= func_def -%>
     req = []
     for i in range(len(v)):
         new_array_index["<%= to_schema_index(property.field) %>"] = i
-        <%= lines(build_expand_properties(resource, nested_properties, op, "d, new_array_index", new_prefix, "transformed", true), 1) -%>
-        req.append(transformed)
+        transformed = dict()
+        <%= lines(build_expand_properties(nested_properties, "d, new_array_index", new_prefix, "transformed"), 1) -%>
+	if transformed:
+            req.append(transformed)
 
     return req
 <%   nested_properties.each do |prop| -%>
 
-<%= lines(build_expand_method(resource, op, new_prefix, prop), 1) -%>
+<%= lines(build_expand_method(resource, new_prefix, prop), 1) -%>
 <%   end -%>
 <% elsif property.is_a?(Api::Type::NestedObject) -%>
 def <%= func_def -%>
 <%   nested_properties = nested_properties(property) -%>
-    <%= lines(build_expand_properties(resource, nested_properties, op, "d, array_index", new_prefix, "req", true), 1) -%>
+    <%= lines(build_expand_properties(nested_properties, "d, array_index", new_prefix, "req"), 1) -%>
     return req
 <%   nested_properties.each do |prop| -%>
 
-<%= lines(build_expand_method(resource, op, new_prefix, prop), 1) -%>
+<%= lines(build_expand_method(resource, new_prefix, prop), 1) -%>
 <%   end -%>
 <% end # if property.is_a?(Api::Type::Array) -%>

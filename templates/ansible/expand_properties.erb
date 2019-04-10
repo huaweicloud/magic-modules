@@ -1,29 +1,18 @@
-<%
-   globalIndex = args.split(", ")[1]
-%>
 <% properties.each_index do |i|
      prop = properties[i]
-     v1 = "#{prop.out_name}_prop"
-     r = sprintf("%s[\"%s\"] = %s", map_obj, prop.name, v1)
+     r = sprintf("%s[\"%s\"] = v", map_obj, prop.name)
 -%>
+
 <%   unless prop.default.nil? -%>
     <%= sprintf("%s[\"%s\"] = %s", map_obj, prop.name, convert_parameter(prop, args, prefix)) %>
 <%     next -%>
 <%   end -%>
-    <%= v1 -%> = <%= convert_parameter(prop, args, prefix) %>
-    e = is_empty_value(reflect.ValueOf(<%= v1 -%>))
-    if not e:
-        <%= r %>
-<%   if op.eql?("update") -%>
-<%     if prop.send_empty_value -%>
-    elif is_user_input(d, [<%= index2navigate(prop.field, true) %>], <%= globalIndex %>):
+    v = <%= convert_parameter(prop, args, prefix) %>
+    if v is not None:
+<%   unless prop.send_empty_value -%>
+        if not is_empty_value(v):
             <%= r %>
-<%     end -%>
 <%   else -%>
-<%     if !is_complex_type(prop) && prop.send_empty_value -%>
-    elif is_user_input(d, [<%= index2navigate(prop.field, true) %>], <%= globalIndex %>):
-            <%= r %>
-<%     end -%>
+        <%= r %>
 <%   end -%>
-
 <% end -%>

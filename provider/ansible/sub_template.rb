@@ -38,23 +38,19 @@ module Provider
 
       # Transforms a Terraform schema representation of a property into a
       # representation used by the Cloud API.
-      def build_expand_method(resource, op, prefix, property)
+      def build_expand_method(resource, prefix, property)
         compile_template 'templates/ansible/expand_parameter_method.erb',
                          resource: resource,
-                         op: op,
                          prefix: prefix,
                          property: property
       end
 
-      def build_expand_properties(resource, properties, op, args, prefix, map_obj, return_value)
+      def build_expand_properties(properties, args, prefix, map_obj)
         compile_template 'templates/ansible/expand_properties.erb',
-                         resource: resource,
                          properties: properties,
-                         op: op,
                          args: args,
                          prefix: prefix,
-                         map_obj: map_obj,
-                         return_value: return_value
+                         map_obj: map_obj
       end
 
       def build_expand_resource_ref(var_name, property)
@@ -105,16 +101,14 @@ module Provider
                          input_url: input_url
       end
 
-      def build_send_request_method(stage, api)
+      def build_send_request_method(api)
         compile_template 'templates/terraform/send_request.erb',
-                         stage: stage,
                          api: api
       end
 
-      def build_request_body_method(resource, stage, api)
+      def build_request_body_method(resource, api)
         compile_template 'templates/terraform/build_request_body.erb',
                          resource: resource,
-                         stage: stage,
                          api: api
       end
 
