@@ -1,4 +1,4 @@
-def async_wait_<%= api.out_name%>(config, result, client):
+def async_wait_<%= api.out_name%>(config, result, client, timeout):
     module = config.module
 <%
    async = api.async
@@ -32,7 +32,6 @@ def async_wait_<%= api.out_name%>(config, result, client):
 <%   cl = "async_client" -%>
 <% end -%>
 
-    timeout = <%= timeout %>
 <% status_check = async.status_check -%>
 <% if status_check -%>
 

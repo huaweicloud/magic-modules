@@ -259,37 +259,40 @@ module Provider
         set_parent = sprintf("%s[\"%s\"] = %s", parent_var, prop.out_name, prop_var)
         f = [
           sprintf("%s = %s.get(\"%s\")", prop_var, parent_var, prop.out_name),
-          sprintf("%s = flatten%s%s_%s(%s, %s, for_compare)", prop_var, prefix.empty? ? "" : "_", prefix, prop.out_name, arguments, prop_var),
+          sprintf("%s = flatten%s%s_%s(%s, %s, exclude_output)", prop_var, prefix.empty? ? "" : "_", prefix, prop.out_name, arguments, prop_var),
           set_parent
         ]
 
         if prop.from_response
           if prop.crud.eql?("r")
             return indent([
-	      "if not for_compare:",
+	      "if not exclude_output:",
 	      indent(f, 4)
 	    ], spaces)
-	  else:
+	  else
             return indent(f, spaces)
+	  end
 
         elsif prop.is_a? Api::Type::NestedObject
           if prop.crud.eql?("r")
             return indent([
-	      "if not for_compare:",
+	      "if not exclude_output:",
 	      indent(f, 4)
 	    ], spaces)
-	  else:
+	  else
             return indent(f, spaces)
+	  end
 
         elsif prop.is_a?(Api::Type::Array) && \
               prop.item_type.is_a?(Api::Type::NestedObject)
           if prop.crud.eql?("r")
             return indent([
-	      "if not for_compare:",
+	      "if not exclude_output:",
 	      indent(f, 4)
 	    ], spaces)
-	  else:
+	  else
             return indent(f, spaces)
+	  end
 
         # elsif prop.is_a?(Api::Type::NameValues)
         #   return f
@@ -299,7 +302,7 @@ module Provider
           v = arguments.split(", ")
           if prop.crud.eql?("r")
             indent([
-	      "if not for_compare:",
+	      "if not exclude_output:",
               sprintf("    %s = navigate_value(%s, %s, %s)", prop_var, v[0], i, v[1]),
               sprintf("    %s", set_parent),
             ], spaces)

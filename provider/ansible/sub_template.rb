@@ -80,11 +80,9 @@ module Provider
                          client: client
       end
 
-      def build_resource_async_op(api, timeout, resource_name)
+      def build_resource_async_op(api)
         compile_template 'templates/ansible/async_wait.erb',
-                         api: api,
-                         timeout: timeout,
-                         resource_name: resource_name
+                         api: api
       end
 
       def build_action_method(resource, resource_name, api)
@@ -94,28 +92,21 @@ module Provider
                          api: api
       end
 
-      def build_read_method(resource_name, api, input_url=false)
+      def build_read_method(api, input_url=false)
         compile_template 'templates/ansible/read_method.erb',
-                         resource_name: resource_name,
                          api: api,
                          input_url: input_url
       end
 
       def build_send_request_method(api)
-        compile_template 'templates/terraform/send_request.erb',
+        compile_template 'templates/ansible/send_request.erb',
                          api: api
       end
 
       def build_request_body_method(resource, api)
-        compile_template 'templates/terraform/build_request_body.erb',
+        compile_template 'templates/ansible/build_request_body.erb',
                          resource: resource,
                          api: api
-      end
-
-      def build_resource_async_op(api, timeout)
-        compile_template 'templates/terraform/async_wait.erb',
-                         api: api,
-                         timeout: timeout
       end
 
       private

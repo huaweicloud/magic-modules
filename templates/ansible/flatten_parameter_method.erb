@@ -1,6 +1,6 @@
 <%
    new_prefix = sprintf("%s%s%s", prefix, prefix.empty? ? "" : "_", property.out_name)
-   func_def = sprintf("flatten_%s(res, array_index, current_value, for_compare):", new_prefix)
+   func_def = sprintf("flatten_%s(res, array_index, current_value, exclude_output):", new_prefix)
 -%>
 <% if !property.from_response.nil? -%>
 def <%= func_def -%>
