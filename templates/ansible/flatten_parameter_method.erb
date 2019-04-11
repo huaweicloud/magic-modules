@@ -3,12 +3,15 @@
    func_def = sprintf("flatten_%s(res, array_index, current_value, exclude_output):", new_prefix)
 -%>
 <% if !property.from_response.nil? -%>
-def <%= func_def -%>
+
+
+def <%= func_def %>
     v = navigate_value(res, [<%= index2navigate(property.field) %>], array_index)
-    <%= lines(property.from_response) -%>
+<%= indent(lines(property.from_response), 4) -%>
     return v
-}
 <% elsif property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
+
+
 def <%= func_def %>
     n = 0
     result = current_value
@@ -30,7 +33,7 @@ def <%= func_def %>
         new_array_index["<%= property.field %>"] = i
 
         if len(result) < (i + 1):
-            result.append({})
+            result.append(dict())
 <%   nested_properties = nested_properties(property) -%>
 <%   nested_properties.each do |prop| -%>
 <%     c = convert_resp_parameter(prop, "res, new_array_index", new_prefix, "result[i]", 8) -%>
@@ -43,14 +46,15 @@ def <%= func_def %>
     return result
 <%   nested_properties.each do |prop| -%>
 <%     next unless has_output_property(prop) -%>
-
-<%= lines(build_flatten_method(new_prefix, prop), 1) -%>
+<%= lines(build_flatten_method(new_prefix, prop)) -%>
 <%   end -%>
 <% elsif property.is_a?(Api::Type::NestedObject) -%>
+
+
 def <%= func_def %>
     result = current_value
     if not result:
-        result = {}
+        result = dict()
 <%   nested_properties = nested_properties(property) -%>
 <%   nested_properties.each do |prop| -%>
 <%     c = convert_resp_parameter(prop, "res, array_index", new_prefix, "result", 4) -%>
@@ -63,7 +67,6 @@ def <%= func_def %>
     return result
 <%   nested_properties.each do |prop| -%>
 <%     next unless has_output_property(prop) -%>
-
-<%= lines(build_flatten_method(new_prefix, prop), 1) -%>
+<%= lines(build_flatten_method(new_prefix, prop)) -%>
 <%   end -%>
 <% end # if property.is_a?(Api::Type::Array) -%>

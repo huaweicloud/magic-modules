@@ -1,6 +1,5 @@
 def update_properties(module, response, exclude_output=False):
     r = user_input_parameters(module)
-
 <% object.all_user_properties.each do |prop| -%>
 <%   c = convert_resp_parameter(prop, "response, None", "", "r", 4) -%>
 <%   unless c.empty? -%>
@@ -10,8 +9,6 @@ def update_properties(module, response, exclude_output=False):
 <% end -%>
 
     return r
-
-
 <% properties_to_show(object).each do |prop| -%>
-<%= lines(build_flatten_method("", prop), 1) -%>
+<%= lines(build_flatten_method("", prop)) -%>
 <% end -%>
