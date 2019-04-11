@@ -166,12 +166,16 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
 
     res := make(map[string]interface{})
 <% read_apis = [read_api, other_api(object, "r")].flatten.compact -%>
+<% if read_apis.length > 1 -%>
+    var v interface{}
+<% end -%>
 <% read_apis.each do | item | -%>
 
-    err = read<%= resource_name %><%= titlelize(item.name) %>(d, client, res)
+    v, err <%= read_apis.length > 1 ? "=" : ":=" %> send<%= resource_name %><%= titlelize(item.name) %>Request(d, client)
     if err != nil {
         return err
     }
+    res["<%= item.name %>"] = v
 <% end -%>
 
     return set<%= resource_name -%>Properties(d, res)
@@ -336,11 +340,11 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 }
 <% create_apis = [create_api, other_api(object, "c")].flatten.compact -%>
 <% create_apis.each do | item | -%>
-
 <%   unless item.parameters.nil? -%>
-<%= lines(build_request_body_method(object, resource_name, item), 1) -%>
 
+<%= lines(build_request_body_method(object, resource_name, item), 1) -%>
 <%   end -%>
+
 <%= lines(build_send_request_method(resource_name, item), 1) -%>
 <%   unless item.async.nil? -%>
 
@@ -364,7 +368,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <% end -%>
 <% unless delete_api.parameters.nil? -%>
 
-<%= lines(build_request_body_method(object, "", resource_name, delete_api), 1) -%>
+<%= lines(build_request_body_method(object, resource_name, delete_api), 1) -%>
 <% end -%>
 <% unless delete_api.async.nil? -%>
 
