@@ -98,24 +98,24 @@ class HwcSession(object):
         }
 
     @session_method_wrapper
-    def get(self, url, body=None, header=None):
+    def get(self, url, body=None, header=None, **kwargs):
         return self._client.get(url, json=body, raise_exc=False,
-                                headers=self._header(header))
+                                headers=self._header(header), **kwargs)
 
     @session_method_wrapper
-    def post(self, url, body=None, header=None):
+    def post(self, url, body=None, header=None, **kwargs):
         return self._client.post(url, json=body, raise_exc=False,
-                                 headers=self._header(header))
+                                 headers=self._header(header), **kwargs)
 
     @session_method_wrapper
-    def delete(self, url, body=None, header=None):
+    def delete(self, url, body=None, header=None, **kwargs):
         return self._client.delete(url, json=body, raise_exc=False,
-                                   headers=self._header(header))
+                                   headers=self._header(header), **kwargs)
 
     @session_method_wrapper
-    def put(self, url, body=None, header=None):
+    def put(self, url, body=None, header=None, **kwargs):
         return self._client.put(url, json=body, raise_exc=False,
-                                headers=self._header(header))
+                                headers=self._header(header), **kwargs)
 
     def _header(self, header):
         if header and isinstance(header, dict):
@@ -376,7 +376,7 @@ def wait_to_finish(target, pending, refresh, timeout, min_interval=1, delay=3):
     raise Exception("asycn wait timeout after %d seconds" % timeout)
 
 
-def navigate_value(data, index, array_index):
+def navigate_value(data, index, array_index=None):
     d = data
     for n in range(len(index)):
         if not isinstance(d, dict):

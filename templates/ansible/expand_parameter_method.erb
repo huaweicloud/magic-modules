@@ -3,17 +3,26 @@
    func_def = sprintf("expand_%s(d, array_index):", new_prefix)
 -%>
 <% if !property.to_request.nil? -%>
-def <%= func_def -%>
-    v = navigate_value(d, [<%= index2navigate(property.field, true) %>],
+
+
+def <%= func_def %>
+<%   v = index2navigate(property.field, true) -%>
+<%   if v.length <= 37 -%>
+    v = navigate_value(d, [<%= v %>], array_index)
+<%   else -%>
+    v = navigate_value(d, [<%= v %>],
                        array_index)
-    <%= lines(property.to_request) -%>
+<%   end -%>
+<%= indent(lines(property.to_request, -1), 4) -%>
 <% elsif property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
 <%   rp = find_property(resource, property.field.split("."))
      unless rp.is_a?(Api::Type::Array)
        raise "parameter(#{property.name}) is an array, but the matched property is not"
      end
 -%>
-def <%= func_def -%>
+
+
+def <%= func_def %>
     new_array_index = copy.deepcopy(array_index) if array_index else dict()
 
     v = navigate_value(d, [<%= index2navigate(property.field, true) %>],
@@ -24,22 +33,27 @@ def <%= func_def -%>
     for i in range(len(v)):
         new_array_index["<%= to_schema_index(property.field) %>"] = i
         transformed = dict()
-        <%= lines(build_expand_properties(nested_properties, "d, new_array_index", new_prefix, "transformed"), 1) -%>
+
+<%= indent(lines(build_expand_properties(nested_properties, "d, new_array_index", new_prefix, "transformed")), 8) -%>
+
 	if transformed:
             req.append(transformed)
 
     return req
 <%   nested_properties.each do |prop| -%>
-
-<%= lines(build_expand_method(resource, new_prefix, prop), 1) -%>
+<%= lines(build_expand_method(resource, new_prefix, prop)) -%>
 <%   end -%>
 <% elsif property.is_a?(Api::Type::NestedObject) -%>
-def <%= func_def -%>
-<%   nested_properties = nested_properties(property) -%>
-    <%= lines(build_expand_properties(nested_properties, "d, array_index", new_prefix, "req"), 1) -%>
-    return req
-<%   nested_properties.each do |prop| -%>
 
-<%= lines(build_expand_method(resource, new_prefix, prop), 1) -%>
+
+def <%= func_def %>
+    r = dict{}
+
+<%   nested_properties = nested_properties(property) -%>
+<%= lines(build_expand_properties(nested_properties, "d, array_index", new_prefix, "r")) -%>
+
+    return r
+<%   nested_properties.each do |prop| -%>
+<%= lines(build_expand_method(resource, new_prefix, prop)) -%>
 <%   end -%>
-<% end # if property.is_a?(Api::Type::Array) -%>
+<% end -%>

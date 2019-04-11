@@ -238,7 +238,7 @@ def delete(config):
     if params:
 <% end -%>
     <%= spaces %><%= r %>send_delete_request(module, <%= delete_api.parameters.nil? ? "None" : "params" %>, client)
-<% unless delete.async.nil? -%>
+<% unless delete_api.async.nil? -%>
     <%= spaces %>async_wait_delete(config, r, client, timeout)
 <% else -%>
 <%   unless create_api.async.nil? -%>
@@ -247,7 +247,7 @@ def delete(config):
 <% end -%>
 
 
-<%- read_api = object.apis["read"] %>
+<% read_api = object.apis["read"] -%>
 def read_resource(config, exclude_output=False):
     module = config.module
     client = config.client(<%= argu_for_sdkclient(read_api) %>)
@@ -257,7 +257,7 @@ def read_resource(config, exclude_output=False):
 <% read_apis.each do | item | -%>
 
     r = send_<%= item.out_name%>_request(module, client)
-    res["<%= item.out_name %>"] = r
+    res["<%= item.name %>"] = r
 <% end -%>
 
     return update_properties(module, res, exclude_output)
@@ -273,18 +273,17 @@ def fetch_resource(config):
        raise "property(#{p.name}) referenced by list identity#{k} must be required"
      end
 -%>
-        "<%= k %>": navigate_value(opts, [<%= index2navigate(v, true) %>], None)
+        "<%= k %>": navigate_value(opts, [<%= index2navigate(v, true) %>])
 <% end -%>
     }
 
     link = build_path(module, "<%= list_api.path %>")
+    if link[-1] != "?":
+        link += "?"
 <% query_link = build_list_query_params(list_api, 4) -%>
 <% unless query_link.empty? -%>
 
-<%=  lines(query_link, 1) %>
-
-    if link[-1] != "?":
-        link += "?"
+<%=  lines(query_link) -%>
     link += query_link
 <% end -%>
 
@@ -314,6 +313,19 @@ def fetch_resource(config):
                 return item
 
         p['offset'] += 1
+<% elsif list_api.query_params.include?('start') -%>
+    p = {'start': 1}
+    while True:
+        url = link % p
+        r = send_<%= list_api.out_name %>_request(module, client, url)
+        for item in r:
+            for k, v in identity.items():
+                if item[k] != v:
+                    break
+            else:
+                return item
+
+        p['start'] += len(r)
 <% else -%>
     r = send_<%= list_api.out_name %>_request(module, client, link)
     for item in v:
@@ -323,22 +335,20 @@ def fetch_resource(config):
     else:
         return item
 <% end -%>
-
-
 <% create_apis = [create_api, other_api(object, "c")].flatten.compact -%>
 <% create_apis.each do | item | -%>
 <%   unless item.parameters.nil? -%>
 
 
-<%= lines(build_request_body_method(object, item), 1) -%>
+<%= lines(build_request_body_method(object, item)) -%>
 <%   end -%>
 
 
-<%= lines(build_send_request_method(item), 1) -%>
+<%= lines(build_send_request_method(item)) -%>
 <%   unless item.async.nil? -%>
 
 
-<%= lines(build_resource_async_op(item), 1) %>
+<%= lines(build_resource_async_op(item)) -%>
 <%   end -%>
 <% end -%>
 <% if updatable?(object) -%>
@@ -348,36 +358,36 @@ def fetch_resource(config):
 <%     unless item.parameters.nil? -%>
 
 
-<%= lines(build_request_body_method(object, item), 1) -%>
+<%= lines(build_request_body_method(object, item)) -%>
 <%     end -%>
 
 
-<%= lines(build_send_request_method(item), 1) -%>
+<%= lines(build_send_request_method(item)) -%>
 <%     unless item.async.nil? -%>
 
 
-<%= lines(build_resource_async_op(item), 1) %>
+<%= lines(build_resource_async_op(item)) -%>
 <%     end -%>
 <%   end -%>
 <% end -%>
 <% unless delete_api.parameters.nil? -%>
 
 
-<%= lines(build_request_body_method(object, delete_api), 1) -%>
+<%= lines(build_request_body_method(object, delete_api)) -%>
 <% end -%>
 <% unless delete_api.async.nil? -%>
 
 
-    <%= lines(build_resource_async_op(delete_api), 1) %>
+    <%= lines(build_resource_async_op(delete_api)) -%>
 <% end -%>
 <% read_apis.each do | item | -%>
 
 
-<%= lines(build_read_method(item, false), 1) -%>
+<%= lines(build_read_method(item, false)) -%>
 <% end -%>
 
 
-<%= lines(build_update_properties_method(object), 1) -%>
+<%= lines(build_update_properties_method(object)) -%>
 
 
-<%= lines(build_read_method(list_api, true), 1) -%>
+<%= lines(build_read_method(list_api, true)) -%>

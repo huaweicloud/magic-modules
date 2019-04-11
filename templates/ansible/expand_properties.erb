@@ -2,17 +2,19 @@
      prop = properties[i]
      r = sprintf("%s[\"%s\"] = v", map_obj, prop.name)
 -%>
+<%   if i != 0 -%>
 
+<%   end -%>
 <%   unless prop.default.nil? -%>
     <%= sprintf("%s[\"%s\"] = %s", map_obj, prop.name, convert_parameter(prop, args, prefix)) %>
 <%     next -%>
 <%   end -%>
     v = <%= convert_parameter(prop, args, prefix) %>
-    if v is not None:
 <%   unless prop.send_empty_value -%>
-        if not is_empty_value(v):
-            <%= r %>
+    if (v is not None) and (not is_empty_value(v)):
+        <%= r %>
 <%   else -%>
+    if v is not None:
         <%= r %>
 <%   end -%>
 <% end -%>
