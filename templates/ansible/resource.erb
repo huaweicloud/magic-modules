@@ -386,11 +386,11 @@ def fetch_resource(config):
 <%   end -%>
 
 
-<%= lines(build_send_request_method(item)) -%>
+<%= lines(build_send_request_method(item, module_name(object))) -%>
 <%   unless item.async.nil? -%>
 
 
-<%= lines(build_resource_async_op(item)) -%>
+<%= lines(build_resource_async_op(item, module_name(object))) -%>
 <%   end -%>
 <% end -%>
 <% if updatable?(object) -%>
@@ -404,11 +404,11 @@ def fetch_resource(config):
 <%     end -%>
 
 
-<%= lines(build_send_request_method(item)) -%>
+<%= lines(build_send_request_method(item, module_name(object))) -%>
 <%     unless item.async.nil? -%>
 
 
-<%= lines(build_resource_async_op(item)) -%>
+<%= lines(build_resource_async_op(item, module_name(object))) -%>
 <%     end -%>
 <%   end -%>
 <% end -%>
@@ -419,20 +419,20 @@ def fetch_resource(config):
 <% end -%>
 
 
-<%= lines(build_send_request_method(delete_api)) -%>
+<%= lines(build_send_request_method(delete_api, module_name(object))) -%>
 <% unless delete_api.async.nil? -%>
 
 
-    <%= lines(build_resource_async_op(delete_api)) -%>
+    <%= lines(build_resource_async_op(delete_api, module_name(object))) -%>
 <% end -%>
 <% read_apis.each do | item | -%>
 
 
-<%= lines(build_read_method(item, false)) -%>
+<%= lines(build_read_method(item, module_name(object), false)) -%>
 <% end -%>
 
 
 <%= lines(build_update_properties_method(object)) -%>
 
 
-<%= lines(build_read_method(list_api, true)) -%>
+<%= lines(build_read_method(list_api, module_name(object), true)) -%>

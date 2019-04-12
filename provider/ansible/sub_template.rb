@@ -80,8 +80,9 @@ module Provider
                          client: client
       end
 
-      def build_resource_async_op(api)
+      def build_resource_async_op(api, module_name)
         compile_template 'templates/ansible/async_wait.erb',
+                         module_name: module_name,
                          api: api
       end
 
@@ -92,14 +93,16 @@ module Provider
                          api: api
       end
 
-      def build_read_method(api, input_url=false)
+      def build_read_method(api, module_name, input_url=false)
         compile_template 'templates/ansible/read_method.erb',
+                         module_name: module_name,
                          api: api,
                          input_url: input_url
       end
 
-      def build_send_request_method(api)
+      def build_send_request_method(api, module_name)
         compile_template 'templates/ansible/send_request.erb',
+                         module_name: module_name,
                          api: api
       end
 

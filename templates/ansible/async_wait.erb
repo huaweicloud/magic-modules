@@ -51,9 +51,9 @@ def async_wait_<%= api.out_name%>(config, result, client, timeout):
             [<%= status_check.pending.compact.map { |x| "\"#{x}\"" }.join(", ") %>],
             _query_status, timeout)
     except Exception as ex:
-        module.fail_json(msg="module(%s): error waiting for "
-                             "api(<%= api.name %>) to be done, "
-                             "error: %s" % (module.name, str(ex)))
+        module.fail_json(msg="module(<%= module_name %>): error "
+                             "waiting for api(<%= api.name %>) to "
+                             "be done, error: %s" % str(ex))
 <% elsif async.custom_status_check_func -%>
 
     def _query_status():
@@ -71,9 +71,9 @@ def async_wait_<%= api.out_name%>(config, result, client, timeout):
     try:
         return wait_to_finish(["Done"], ["Pending"], _query_status, timeout)
     except Exception as ex:
-        module.fail_json(msg="module(%s): error waiting for "
-                             "api(<%= api.name %>) to be done, "
-                             "error: %s" % (module.name, str(ex)))
+        module.fail_json(msg="module(<%= module_name %>): error "
+                             "waiting for api(<%= api.name %>) to "
+                             "be done, error: %s" % str(ex))
 <% else -%>
 <%   raise "Must sepecify status check for api: #{api.name}" -%>
 <% end -%>
