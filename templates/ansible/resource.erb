@@ -40,6 +40,35 @@ options:
             - Whether the given object should exist in <%= cloud_name %>.
         choices: ['present', 'absent']
         default: 'present'
+<% at = async_timout(object) -%>
+<% unless at.empty? -%>
+    timeouts:
+        description:
+            - The timeouts for each operations.
+        type: dict
+        suboptions:
+<%   unless at["create"].nil? -%>
+            create:
+                description:
+                    - The timeouts for create operation.
+                type: str
+                default: <%= sprintf('\'%dm\'', at["create"] / 60) %>
+<%   end -%>
+<%   unless at["update"].nil? -%>
+            update:
+                description:
+                    - The timeouts for update operation.
+                type: str
+                default: <%= sprintf('\'%dm\'', at["update"] / 60) %>
+<%   end -%>
+<%   unless at["delete"].nil? -%>
+            delete:
+                description:
+                    - The timeouts for delete operation.
+                type: str
+                default: <%= sprintf('\'%dm\'', at["delete"] / 60) %>
+<%   end -%>
+<% end -%>
 <% object.not_output_properties.each do |prop| -%>
 <%= lines(indent(doc_property_yaml(prop, object, 4), 4)) -%>
 <% end -%>
@@ -96,6 +125,19 @@ def main():
         argument_spec=dict(
             state=dict(default='present', choices=['present', 'absent'],
                        type='str'),
+<% unless at.empty? -%>
+            timeouts=dict(type='dict', options=dict(
+<%   unless at["create"].nil? -%>
+                create=dict(default=<%= sprintf('\'%dm\'', at["create"] / 60) -%>, type='str'),
+<%   end -%>
+<%   unless at["update"].nil? -%>
+                update=dict(default=<%= sprintf('\'%dm\'', at["update"] / 60) -%>, type='str'),
+<%   end -%>
+<%   unless at["delete"].nil? -%>
+                delete=dict(default=<%= sprintf('\'%dm\'', at["delete"] / 60) -%>, type='str'),
+<%   end -%>
+            )),
+<% end -%>
 <%= lines(indent_list(mod_props, 12)) -%>
         )
     )
@@ -144,7 +186,7 @@ def user_input_parameters(module):
 <% end -%>
     }
 
-<% at = async_timout(object) %>
+
 <% create_api = object.apis["create"] -%>
 def create(config):
     module = config.module
