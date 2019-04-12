@@ -9,7 +9,7 @@
     <%= sprintf("%s[\"%s\"] = %s", map_obj, prop.name, convert_parameter(prop, args, prefix)) %>
 <%     next -%>
 <%   end -%>
-    v = <%= convert_parameter(prop, args, prefix) %>
+<%= indent(convert_parameter(prop, args, prefix), 4) %>
 <%   unless prop.send_empty_value -%>
     if (v is not None) and (not is_empty_value(v)):
         <%= r %>

@@ -174,7 +174,7 @@ def create(config):
 <%   end -%>
     <%= spaces %><%= r %>send_<%= item.out_name %>_request(module, <%= item.parameters.nil? ? "None" : "params" %>, client)
 <%   unless item.async.nil? -%>
-    <%= spaces %>async_wait<%= item.out_name %>(config, r, client, timeout)
+    <%= spaces %>async_wait_<%= item.out_name %>(config, r, client, timeout)
 <%   end -%>
 <% end -%>
 
@@ -212,7 +212,7 @@ def update(config):
 <%     end -%>
     <%= spaces %><%= r %>send_<%= item.out_name %>_request(module, <%= item.parameters.nil? ? "None" : "params" %>, client)
 <%     unless item.async.nil? -%>
-    <%= spaces %>async_wait<%= item.out_name %>(config, r, client, timeout)
+    <%= spaces %>async_wait_<%= item.out_name %>(config, r, client, timeout)
 <%     end -%>
 <%   end -%>
 
@@ -375,6 +375,9 @@ def fetch_resource(config):
 
 <%= lines(build_request_body_method(object, delete_api)) -%>
 <% end -%>
+
+
+<%= lines(build_send_request_method(delete_api)) -%>
 <% unless delete_api.async.nil? -%>
 
 

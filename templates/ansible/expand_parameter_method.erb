@@ -47,7 +47,7 @@ def <%= func_def %>
 
 
 def <%= func_def %>
-    r = dict{}
+    r = dict()
 
 <%   nested_properties = nested_properties(property) -%>
 <%= lines(build_expand_properties(nested_properties, "d, array_index", new_prefix, "r")) -%>
