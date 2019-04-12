@@ -12,7 +12,7 @@ def async_wait_<%= api.out_name%>(config, result, client, timeout):
 <%     end -%>
     }
     data = {
-        key : navigate_value(result, path)
+        key: navigate_value(result, path)
         for key, path in path_parameters.items()
     }
 

@@ -1,12 +1,22 @@
 <%
    new_prefix = sprintf("%s%s%s", prefix, prefix.empty? ? "" : "_", property.out_name)
-   func_def = sprintf("flatten_%s(res, array_index, current_value, exclude_output):", new_prefix)
+   func_def = sprintf("flatten_%s(d, array_index, current_value, exclude_output):", new_prefix)
+   if func_def.length > 79
+     spaces = sprintf("def flatten_%s(", new_prefix).length
+     func_def = sprintf("flatten_%s(d, array_index,\n%scurrent_value, exclude_output):", new_prefix, ' ' * spaces)
+   end
 -%>
 <% if !property.from_response.nil? -%>
 
 
 def <%= func_def %>
-    v = navigate_value(res, [<%= index2navigate(property.field) %>], array_index)
+<%   v = index2navigate(property.field) -%>
+<%   if v.length <= 35 -%>
+    v = navigate_value(d, [<%= v %>], array_index)
+<%   else -%>
+    v = navigate_value(d, [<%= v %>],
+                       array_index)
+<%   end -%>
 <%= indent(lines(property.from_response), 4) -%>
     return v
 <% elsif property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
@@ -18,30 +28,34 @@ def <%= func_def %>
     if result:
         n = len(result)
     else:
+        result = []
 <%   if property.crud.include?("r") -%>
-        v = navigate_value(res, [<%= index2navigate(property.field) %>],
-                           new_array_index)
+        v = navigate_value(d, [<%= index2navigate(property.field) %>],
+                           array_index)
         n = len(v)
 <%   else -%>
         n = 1
 <%   end -%>
-        result = []
 
     new_array_index = copy.deepcopy(array_index) if array_index else dict()
 
     for i in range(n):
         new_array_index["<%= property.field %>"] = i
 
-        if len(result) < (i + 1):
-            result.append(dict())
+        val = dict()
+        if len(result) >= (i + 1):
+            val = result[i]
 <%   nested_properties = nested_properties(property) -%>
 <%   nested_properties.each do |prop| -%>
-<%     c = convert_resp_parameter(prop, "res, new_array_index", new_prefix, "result[i]", 8) -%>
+<%     c = convert_resp_parameter(prop, "d, new_array_index", new_prefix, "val", 8) -%>
 <%     unless c.empty? -%>
 
 <%= c %>
 <%     end -%>
 <%   end -%>
+
+        if val and len(result) < (i + 1):
+            result.append(val)
 
     return result
 <%   nested_properties.each do |prop| -%>
@@ -57,7 +71,7 @@ def <%= func_def %>
         result = dict()
 <%   nested_properties = nested_properties(property) -%>
 <%   nested_properties.each do |prop| -%>
-<%     c = convert_resp_parameter(prop, "res, array_index", new_prefix, "result", 4) -%>
+<%     c = convert_resp_parameter(prop, "d, array_index", new_prefix, "result", 4) -%>
 <%     unless c.empty? -%>
 
 <%= c %>

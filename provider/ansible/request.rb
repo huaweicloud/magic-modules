@@ -218,7 +218,7 @@ module Provider
       end
 
       def convert_parameter(prop, arguments, prefix)
-        f = sprintf("expand_%s_%s(%s)", prefix, prop.out_name, arguments)
+        f = sprintf("v = expand_%s_%s(%s)", prefix, prop.out_name, arguments)
 
         if prop.to_request
           return f
@@ -248,14 +248,20 @@ module Provider
         else
           d, ai = arguments.split(", ")
           i = "[#{index2navigate(prop.field, true)}]"
-          return "navigate_value(#{d}, #{i}, #{ai})"
+          if i.length > 39
+            ["v = navigate_value(#{d}, #{i},",
+             "                   #{ai})"
+            ]
+          else
+            "v = navigate_value(#{d}, #{i}, #{ai})"
+          end
         end
       end
 
       def convert_resp_parameter(prop, arguments, prefix, parent_var, spaces)
-	return "" unless has_output_property(prop)
+        return "" unless has_output_property(prop)
 
-        prop_var = "#{prop.out_name}_prop"
+        prop_var = "v"
         set_parent = sprintf("%s[\"%s\"] = %s", parent_var, prop.out_name, prop_var)
         f = [
           sprintf("%s = %s.get(\"%s\")", prop_var, parent_var, prop.out_name),
@@ -266,33 +272,33 @@ module Provider
         if prop.from_response
           if prop.crud.eql?("r")
             return indent([
-	      "if not exclude_output:",
-	      indent(f, 4)
-	    ], spaces)
-	  else
+              "if not exclude_output:",
+              indent(f, 4)
+            ], spaces)
+          else
             return indent(f, spaces)
-	  end
+          end
 
         elsif prop.is_a? Api::Type::NestedObject
           if prop.crud.eql?("r")
             return indent([
-	      "if not exclude_output:",
-	      indent(f, 4)
-	    ], spaces)
-	  else
+              "if not exclude_output:",
+              indent(f, 4)
+            ], spaces)
+          else
             return indent(f, spaces)
-	  end
+          end
 
         elsif prop.is_a?(Api::Type::Array) && \
               prop.item_type.is_a?(Api::Type::NestedObject)
           if prop.crud.eql?("r")
             return indent([
-	      "if not exclude_output:",
-	      indent(f, 4)
-	    ], spaces)
-	  else
+              "if not exclude_output:",
+              indent(f, 4)
+            ], spaces)
+          else
             return indent(f, spaces)
-	  end
+          end
 
         # elsif prop.is_a?(Api::Type::NameValues)
         #   return f
@@ -300,17 +306,23 @@ module Provider
         else
           i = "[#{index2navigate(prop.field, false)}]"
           v = arguments.split(", ")
+          len = sprintf("    %s = navigate_value(%s, , %s)", prop_var, v[0], v[1]).length + spaces
+          len1 = len - sprintf("%s, , %s)", v[0], v[1]).length - spaces
           if prop.crud.eql?("r")
             indent([
-	      "if not exclude_output:",
-              sprintf("    %s = navigate_value(%s, %s, %s)", prop_var, v[0], i, v[1]),
+              "if not exclude_output:",
+              (sprintf("    %s = navigate_value(%s, %s, %s)", prop_var, v[0], i, v[1]) if i.length <= 79 - len),
+              (sprintf("    %s = navigate_value(%s, %s,\n%s%s)", prop_var, v[0], i, ' ' * len1, v[1]) if i.length > 79 - len),
               sprintf("    %s", set_parent),
-            ], spaces)
+            ].compact, spaces)
           else
+            len -= 4
+            len1 -= 4
             indent([
-              sprintf("%s = navigate_value(%s, %s, %s)", prop_var, v[0], i, v[1]),
+              (sprintf("%s = navigate_value(%s, %s, %s)", prop_var, v[0], i, v[1]) if i.length <= 79 - len),
+              (sprintf("%s = navigate_value(%s, %s,\n%s%s)", prop_var, v[0], i, ' ' * len1, v[1]) if i.length > 79 - len),
               sprintf("%s", set_parent),
-            ], spaces)
+            ].compact, spaces)
           end
         end
       end
