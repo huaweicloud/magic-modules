@@ -8,8 +8,8 @@ def send_<%= api.out_name -%>_request(module, params, client):
     try:
         r = client.<%= api.verb.downcase -%>(url, params)
     except HwcClientException as ex:
-        msg = ("module(%s): error running api(<%= api.name %>) "
-               ", error: %s" % (module.name, str(ex)))
+        msg = ("module(<%= module_name %>): error running "
+               "api(<%= api.name %>) , error: %s" % str(ex))
         module.fail_json(msg=msg)
 
     return r
