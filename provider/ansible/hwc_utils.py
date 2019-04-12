@@ -28,6 +28,11 @@ from ansible.module_utils.basic import AnsibleModule, env_fallback
 from ansible.module_utils._text import to_text
 
 
+class HwcModuleException(Exception):
+    def __str__(self):
+        return "[HwcClientException] message=%s" % self.message
+
+
 class HwcClientException(Exception):
     def __init__(self, code, message):
         super(HwcClientException, self).__init__()
@@ -219,11 +224,11 @@ class Config(object):
 
     def _validate(self):
         if not HAS_REQUESTS:
-            raise HwcClientException(0, "Please install the requests library")
+            raise HwcModuleException("Please install the logging library")
 
         if not HAS_THIRD_LIBRARIES:
-            raise HwcClientException(
-                0, "Please install the keystoneauth1 library")
+            raise HwcModuleException(
+                "Please install the keystoneauth1 library")
 
 
 class HwcModule(AnsibleModule):
@@ -260,11 +265,6 @@ class HwcModule(AnsibleModule):
                     type='str',
                     fallback=(env_fallback, ['LOG_FILE']),
                 ),
-                timeouts=dict(type='dict', options=dict(
-                    create=dict(default='10m', type='str'),
-                    update=dict(default='10m', type='str'),
-                    delete=dict(default='10m', type='str'),
-                ), default={}),
                 id=dict(type='str')
             )
         )
@@ -276,6 +276,7 @@ class HwcModule(AnsibleModule):
 # These are dictionaries of arbitrary depth, but made up of standard Python
 # types only.
 # Note: On all lists, order does matter.
+# Note: only compare the value which is not None in a
 class DictComparison(object):
     def __init__(self, request):
         self.request = request
@@ -287,6 +288,9 @@ class DictComparison(object):
         return not self.__eq__(other)
 
     def _compare_dicts(self, dict1, dict2):
+        if dict1 is None:
+            return True
+
         if set(dict1.keys()) != set(dict2.keys()):
             return False
 
@@ -298,6 +302,9 @@ class DictComparison(object):
 
     # Takes in two lists and compares them.
     def _compare_lists(self, list1, list2):
+        if list1 is None:
+            return True
+
         if len(list1) != len(list2):
             return False
 
@@ -311,6 +318,9 @@ class DictComparison(object):
         """
         return: True: value1 is same as value2, otherwise False.
         """
+        if value1 is None:
+            return True
+
         if not (value1 and value2):
             return (not value1) and (not value2)
 
@@ -348,7 +358,7 @@ def wait_to_finish(target, pending, refresh, timeout, min_interval=1, delay=3):
             not_found_times += 1
 
             if not_found_times > 10:
-                raise Exception(
+                raise HwcModuleException(
                     "not found the object for %d times" % not_found_times)
         else:
             not_found_times = 0
@@ -362,7 +372,8 @@ def wait_to_finish(target, pending, refresh, timeout, min_interval=1, delay=3):
                     if status == s:
                         break
                 else:
-                    raise Exception("unexpect status(%s) occured" % status)
+                    raise HwcModuleException(
+                        "unexpect status(%s) occured" % status)
 
         if not is_last_time:
             wait *= 2
@@ -373,19 +384,20 @@ def wait_to_finish(target, pending, refresh, timeout, min_interval=1, delay=3):
 
             time.sleep(wait)
 
-    raise Exception("asycn wait timeout after %d seconds" % timeout)
+    raise HwcModuleException("asycn wait timeout after %d seconds" % timeout)
 
 
 def navigate_value(data, index, array_index=None):
     d = data
     for n in range(len(index)):
         if not isinstance(d, dict):
-            raise Exception("can't navigate value from a non-dict object")
+            raise HwcModuleException(
+                "can't navigate value from a non-dict object")
 
         i = index[n]
         if i not in d:
-            raise Exception("navigate value failed: key(%s) "
-                            "is not exist in dict" % i)
+            raise HwcModuleException(
+                "navigate value failed: key(%s) is not exist in dict" % i)
         d = d[i]
 
         if not array_index:
@@ -394,11 +406,12 @@ def navigate_value(data, index, array_index=None):
         j = array_index.get(".".join(index[: (n + 1)]))
         if j:
             if not isinstance(d, list):
-                raise Exception("can't navigate value from a non-list object")
+                raise HwcModuleException(
+                    "can't navigate value from a non-list object")
 
             if j >= len(d):
-                raise Exception("navigate value failed: "
-                                "the index is out of list")
+                raise HwcModuleException(
+                    "navigate value failed: the index is out of list")
             d = d[j]
 
     return d
