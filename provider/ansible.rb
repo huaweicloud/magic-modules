@@ -244,7 +244,7 @@ module Provider
           service_level = "project"
         end
 
-        sprintf("%s, \"%s\", %s", region, api.service_type, service_level)
+        sprintf("%s, \"%s\", \"%s\"", region, api.service_type, service_level)
       end
 
       def ansible_readable_property?(property)
@@ -403,6 +403,10 @@ module Provider
         @api.cloud_full_name_upper
           .gsub(/([A-Z]+)([A-Z][a-z])/, '\1 \2')
           .gsub(/([a-z\d])([A-Z])/, '\1 \2')
+      end
+
+      def module_dir
+        @api.cloud_half_full_name
       end
 
       def generate_network_datas(data, object) end

@@ -436,3 +436,7 @@ def build_path(module, path, kv={}):
 
 def get_region(module):
     return module.params['project_name'].split("_")[0]
+
+
+def is_empty_value(v):
+    return (not v)
