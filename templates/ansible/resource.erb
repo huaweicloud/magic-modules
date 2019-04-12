@@ -97,16 +97,17 @@ RETURN = '''
 # Imports
 ###############################################################################
 
-from ansible.module_utils.hwc_utils import (HwcSession, HwcModule,
-                                            DictComparison, navigate_value,
-                                            get_region,
-                                            HwcClientException,
-                                            HwcClientException404)
+from ansible.modules.cloud.<%= module_dir %>.custom_functions import *
+from ansible.module_utils.hwc_utils import (Config, HwcModule, DictComparison,
+                                            HwcClientException404, get_region,
+                                            HwcClientException, navigate_value,
+                                            is_empty_value, build_path,
+                                            wait_to_finish)
 <%
-  imports = ['json']
-  imports << 're'
+  # imports = ['json']
+  # imports << 're'
 -%>
-<%= lines(imports.sort.uniq.map { |i| "import #{i}" }) -%>
+<%# = lines(imports.sort.uniq.map { |i| "import #{i}" }) -%>
 
 ###############################################################################
 # Main
@@ -307,6 +308,7 @@ def read_resource(config, exclude_output=False):
 
 def fetch_resource(config):
     module = config.module
+    client = config.client(<%= argu_for_sdkclient(list_api) %>)
     opts = user_input_parameters(module)
     identity = {
 <% list_api.identity.each do |k, v| -%>
@@ -436,3 +438,7 @@ def fetch_resource(config):
 
 
 <%= lines(build_read_method(list_api, module_name(object), true)) -%>
+
+
+if __name__ == '__main__':
+    main()

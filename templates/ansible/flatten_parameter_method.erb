@@ -37,7 +37,9 @@ def <%= func_def %>
         n = 1
 <%   end -%>
 
-    new_array_index = copy.deepcopy(array_index) if array_index else dict()
+    new_array_index = dict()
+    if array_index:
+        new_array_index.update(array_index)
 
     for i in range(n):
         new_array_index["<%= property.field %>"] = i
