@@ -140,7 +140,8 @@ def main():
             )),
 <% end -%>
 <%= lines(indent_list(mod_props, 12)) -%>
-        )
+        ),
+        upports_check_mode=True,
     )
 
     config = Config(module, "<%= object.__product.prefix[1..-1] %>")
@@ -156,7 +157,8 @@ def main():
     changed = False
     if module.params['state'] == 'present':
         if resource is None:
-            result = create(config)
+            if not module.check_mode:
+                result = create(config)
             changed = True
 
         else:
@@ -166,14 +168,16 @@ def main():
             current = read_resource(config, exclude_output=True)
             expect = user_input_parameters(module)
             if DictComparison(expect) != DictComparison(current):
-                result = update(config)
+                if not module.check_mode:
+                    result = update(config)
                 changed = True
             else:
                 result = read_resource(config)
 <% end # updateable(object)? -%>
     else:
         if resource:
-            delete(config)
+            if not module.check_mode:
+                delete(config)
             changed = True
 
     result['changed'] = changed
