@@ -314,19 +314,20 @@ def fetch_resource(config):
 <% list_api.identity.each do |k, v| -%>
 <%   p = find_property(object, v.split("."))
      unless p.required
-       raise "property(#{p.name}) referenced by list identity#{k} must be required"
+       raise "property(#{p.name}) referenced by list identity(#{k}) must be a required option"
      end
 -%>
         "<%= k %>": navigate_value(opts, [<%= index2navigate(v, true) %>])
 <% end -%>
     }
 
+<% if list_api.path.include?("{") -%>
     link = build_path(module, "<%= list_api.path %>")
-    if link[-1] != "?":
-        link += "?"
+<% else -%>
+    link = <%= sprintf("\"%s\"", list_api.path) %>
+<% end -%>
 <% query_link = build_list_query_params(list_api, 4) -%>
 <% unless query_link.empty? -%>
-
 <%=  lines(query_link) -%>
     link += query_link
 <% end -%>
