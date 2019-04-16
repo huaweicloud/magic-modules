@@ -7,14 +7,9 @@
 # Simplified BSD License (see licenses/simplified_bsd.txt or
 # https://opensource.org/licenses/BSD-2-Clause)
 
+import logging
 import time
 import re
-
-try:
-    import logging
-    HAS_REQUESTS = True
-except ImportError:
-    HAS_REQUESTS = False
 
 try:
     from keystoneauth1.adapter import Adapter
@@ -223,9 +218,6 @@ class Config(object):
                 0, "Initiating module log failed, err=%s" % ex)
 
     def _validate(self):
-        if not HAS_REQUESTS:
-            raise HwcModuleException("Please install the logging library")
-
         if not HAS_THIRD_LIBRARIES:
             raise HwcModuleException(
                 "Please install the keystoneauth1 library")
