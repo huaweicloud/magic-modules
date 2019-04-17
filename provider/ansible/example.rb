@@ -191,7 +191,7 @@ module Provider
         again = ''
         again = ' that already exists' if noop && state == 'present'
         again = ' that does not exist' if noop && state == 'absent'
-        scopes = (@scopes || object.__product.scopes).map { |x| "- #{x}" }
+        # scopes = (@scopes || object.__product.scopes).map { |x| "- #{x}" }
         [
           "- name: #{verb} a #{object_name_from_module_name(@name)}#{again}",
           indent([
