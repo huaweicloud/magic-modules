@@ -1,0 +1,36 @@
+<%= lines(autogen_notice :go) -%>
+
+package <%= package %>
+
+import (
+	"testing"
+
+	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/hashicorp/terraform/helper/resource"
+)
+<%
+   example = object.examples.select(&:is_basic).pop
+   resource_name = product_ns + object.name + object.version.upcase
+   test_case_name = resource_name + "_importBasic"
+   terraform_name = "#{package}_" + Google::StringUtils.underscore(resource_name)
+   terraform_resource_name = "#{terraform_name}.#{example.primary_resource_id}"
+%>
+
+func TestAcc<%= test_case_name -%>(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheck<%= "#{resource_name}" -%>Destroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAcc<%= sprintf("%s_basic", resource_name) -%>(acctest.RandString(10)),
+			},
+
+			{
+				ResourceName:      "<%= terraform_resource_name -%>",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}

@@ -229,6 +229,16 @@ module Provider
       )
       # TODO: error check goimports
       %x(goimports -w #{filepath})
+
+      # import test
+      filepath = File.join(target_folder, "import_#{package}_#{product_name}_#{name}#{version}_test.go")
+      generate_resource_file data.clone.merge(
+        default_template: 'templates/terraform/import_test.go.erb',
+        out_file: filepath,
+        product_folder: @product_folder
+      )
+      # TODO: error check goimports
+      %x(goimports -w #{filepath})
     end
 
     def has_output_property(property)
