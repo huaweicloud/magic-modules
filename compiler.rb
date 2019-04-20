@@ -108,5 +108,6 @@ elsif api.cloud_full_name.nil?
   api.cloud_full_name_upper = c[2]
 end
 
+catalog += "/" unless catalog.end_with?("/")
 provider = config.provider.new(config, api, catalog)
 provider.generate output, types_to_generate

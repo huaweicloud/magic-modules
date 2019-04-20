@@ -147,6 +147,7 @@ module Provider
       )
       # TODO: error check goimports
       %x(goimports -w #{filepath})
+      %x(gofmt -w #{filepath})
 
       generate_documentation(data)
     end
@@ -229,6 +230,7 @@ module Provider
       )
       # TODO: error check goimports
       %x(goimports -w #{filepath})
+      %x(gofmt -w #{filepath})
 
       # import test
       filepath = File.join(target_folder, "import_#{package}_#{product_name}_#{name}#{version}_test.go")
@@ -239,6 +241,7 @@ module Provider
       )
       # TODO: error check goimports
       %x(goimports -w #{filepath})
+      %x(gofmt -w #{filepath})
     end
 
     def has_output_property(property)

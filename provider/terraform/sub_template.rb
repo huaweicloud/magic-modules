@@ -94,10 +94,31 @@ module Provider
                          api: api
       end
 
-      def build_read_method(resource_name, api)
+      def build_read_method(resource_name, api, input_url=false)
         compile_template 'templates/terraform/read_method.erb',
                          resource_name: resource_name,
+                         input_url: input_url,
                          api: api
+      end
+
+      def build_list_method(resource, resource_name, api)
+        compile_template 'templates/terraform/list_method.erb',
+                         object: resource,
+                         resource_name: resource_name,
+                         list_api: api
+      end
+
+      def build_list_method_test(resource, resource_name, api)
+        compile_template 'templates/terraform/list_method_test.erb',
+                         object: resource,
+                         resource_name: resource_name,
+                         list_api: api
+      end
+
+      def build_list_method_filter(resource_name, api)
+        compile_template 'templates/terraform/find_resource.erb',
+                         resource_name: resource_name,
+                         list_api: api
       end
 
       def build_send_request_method(resource_name, api)

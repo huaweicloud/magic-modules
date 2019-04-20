@@ -16,7 +16,7 @@ func send<%= prefix -%>Request(d *schema.ResourceData, params interface{},
         OkCodes: successHTTPCodes,
     })
     if r.Err != nil {
-        return nil, fmt.Errorf("Error run api(<%= api.name -%>): %s", r.Err)
+        return nil, fmt.Errorf("Error running api(<%= api.name -%>): %s", r.Err)
     }
     return r.Body, nil
 }

@@ -97,6 +97,7 @@ This resource provides the following timeouts configuration options:
 <%   end -%>
 
 <% end -%>
+<% unless object.apis.fetch("read", nil).nil? -%>
 ## Import
 
 <%= object.name -%> can be imported using the following format:
@@ -104,3 +105,4 @@ This resource provides the following timeouts configuration options:
 ```
 $ terraform import <%= package %>_<%= api_name_lower -%>_<%= resource_name -%>.default {{ resource id}}
 ```
+<% end -%>

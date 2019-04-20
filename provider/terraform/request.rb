@@ -261,6 +261,36 @@ module Provider
           ].compact.flatten, 4)
         end
       end
+
+      def build_list_query_params(api, spaces)
+        page = []
+        identity = []
+        api.query_params.each do |i|
+          case i
+          when "limit"
+            page << "limit=10"
+          when "offset"
+            page << "offset=%v"
+          when "start"
+            page << "start=%v"
+          when "marker"
+            page << "marker=%v"
+          else
+            identity << i if api.identity.has_key?(i)
+          end
+        end
+
+        if identity.empty?
+          page.empty? ? "" : indent(sprintf("queryLink := \"?%s\"", page.join("&")), spaces)
+        else
+          out = ["p := make([]string, 0, #{identity.length})"]
+          identity.each do |k|
+            out << "\nif v, err := convertToStr(identity[\"#{k}\"]); err == nil{\np = append(p, fmt.Sprintf(\"#{k}=%v\", v))\n} else {\nreturn nil, err\n}"
+          end
+          out << sprintf("queryLink := \"?%s\" + strings.Join(p, \"&\")", page.empty? ? "" : page.join("&") + "&")
+          indent(out, spaces)
+        end
+      end
     end
     # rubocop:enable Metrics/ModuleLength
   end
