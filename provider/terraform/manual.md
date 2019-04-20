@@ -1,5 +1,7 @@
 # User guide
 
+该文章介绍了如何根据某个公有云服务的API schema文档（比如rest-services.yaml）生成该服务的terraform provider代码的步骤。
+
 * 1、	用swagger-codege转成中间文档，分别是api.yaml ,  model.yaml 文档
 
 ```
