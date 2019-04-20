@@ -1,5 +1,4 @@
 # User guide
-=============
 
 * 1、	用swagger-codege转成中间文档，分别是api.yaml ,  model.yaml 文档
 
