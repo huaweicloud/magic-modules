@@ -1,0 +1,104 @@
+func find<%= resource_name %>ByList(client *golangsdk.ServiceClient, link string, identity map[string]interface{}) (interface{}, error) {
+<% if list_api.query_params.include?('marker') -%>
+    marker := ""
+    for {
+        url := strings.Sprintf(link, marker)
+        r, err := send<%= resource_name %><%= titlelize(list_api.name) %>Request(client, url)
+        if err != nil {
+                return nil, err
+        }
+
+        var val map[string]interface{}
+        for _, item := range r.([]interface{}) {
+            val = item.(map[string]interface{})
+
+            bingo := true
+            for k, v := range identity {
+                if val[k] != v {
+                    bingo = false
+                    break
+                }
+            }
+            if bingo {
+                return item, nil
+            }
+        }
+
+        marker = val[<%= quote_string(list_api.resource_id_path) -%>]
+    }
+<% elsif list_api.query_params.include?('offset') -%>
+    offset := 0
+    for {
+        url := strings.Sprintf(link, offset)
+        r, err := send<%= resource_name %><%= titlelize(list_api.name) %>Request(client, url)
+        if err != nil {
+                return nil, err
+        }
+
+        for _, item := range r.([]interface{}) {
+            val := item.(map[string]interface{})
+
+            bingo := true
+            for k, v := range identity {
+                if val[k] != v {
+                    bingo = false
+                    break
+                }
+            }
+            if bingo {
+                return item, nil
+            }
+        }
+
+        offset += 1
+    }
+<% elsif list_api.query_params.include?('start') -%>
+    start := 1
+    for {
+        url := strings.Sprintf(link, start)
+        r, err := send<%= resource_name %><%= titlelize(list_api.name) %>Request(client, url)
+        if err != nil {
+                return nil, err
+        }
+
+        for _, item := range r.([]interface{}) {
+            val := item.(map[string]interface{})
+
+            bingo := true
+            for k, v := range identity {
+                if val[k] != v {
+                    bingo = false
+                    break
+                }
+            }
+            if bingo {
+                return item, nil
+            }
+        }
+
+        start += len(r.([]interface{}))
+    }
+<% else -%>
+    r, err := send<%= resource_name %><%= titlelize(list_api.name) %>Request(client, link)
+    if err != nil {
+            return nil, err
+    }
+
+    for _, item := range r.([]interface{}) {
+        val := item.(map[string]interface{})
+
+        bingo := true
+        for k, v := range identity {
+            if val[k] != v {
+                bingo = false
+                break
+            }
+        }
+        if bingo {
+            return item, nil
+        }
+    }
+<% end -%>
+
+    return nil, fmt.Errorf("Error finding the resource by list api")
+}

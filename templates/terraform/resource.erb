@@ -22,6 +22,7 @@ package <%= package %>
   resource_name = product_ns + object.name + object.version.upcase
   resource_nestedobj_properties = nestedobject_properties(object)
   ai_name = resource_nestedobj_properties.nil? ? "nil" : "arrayIndex"
+  read_api = object.apis.fetch("read", nil)
 -%>
 
 func resource<%= resource_name -%>() *schema.Resource {
@@ -32,10 +33,12 @@ func resource<%= resource_name -%>() *schema.Resource {
         Update: resource<%= resource_name -%>Update,
         <% end -%>
         Delete: resource<%= resource_name -%>Delete,
+        <% unless read_api.nil? -%>
 
         Importer: &schema.ResourceImporter{
             State: schema.ImportStatePassthrough,
         },
+        <% end -%>
         <% at = async_timout(object) %>
         <% unless at.empty? -%>
         Timeouts: &schema.ResourceTimeout {
@@ -78,6 +81,11 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     }
 
     opts := resource<%= resource_name -%>UserInputParams(d)
+<% unless create_api.parameters.select { |i| i.name.downcase.eql?("region") }.empty? -%>
+<%   if find_property(object, ["region"]).nil? -%>
+    opts["region"] = GetRegion(d, config)
+<%   end -%>
+<% end -%>
 <% unless resource_nestedobj_properties.nil? -%>
 
     arrayIndex := map[string]int{
@@ -156,7 +164,8 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     return resource<%= resource_name -%>Read(d, meta)
 }
 
-<%- read_api = object.apis["read"] %>
+<% list_api = object.apis.fetch("list", nil) -%>
+<% if !read_api.nil? -%>
 func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{}) error {
     config := meta.(*Config)
     client, err := config.sdkClient(<%= argu_for_sdkclient(create_api) %>)
@@ -180,6 +189,36 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
 
     return set<%= resource_name -%>Properties(d, res)
 }
+<% elsif !list_api.nil? -%>
+func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{}) error {
+    config := meta.(*Config)
+    client, err := config.sdkClient(<%= argu_for_sdkclient(create_api) %>)
+    if err != nil {
+        return fmt.Errorf("Error creating sdk client, err=%s", err)
+    }
+
+    res := make(map[string]interface{})
+
+    v, err := fetch<%= resource_name %>By<%= titlelize(list_api.name) %>(d, client)
+    if err != nil {
+        return err
+    }
+    res["<%= list_api.name %>"] = v
+<% read_apis = other_api(object, "r") -%>
+<% read_apis.each do | item | -%>
+
+    v, err = send<%= resource_name %><%= titlelize(item.name) %>Request(d, client)
+    if err != nil {
+        return err
+    }
+    res["<%= item.name %>"] = v
+<% end -%>
+
+    return set<%= resource_name -%>Properties(d, res)
+}
+<% else -%>
+<%   raise "no read api and list api" -%>
+<% end -%>
 <% if updatable?(object) -%>
 
 <%   update_api = object.apis.fetch("update", nil) -%>
@@ -306,14 +345,15 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <%   if create_api.async.nil? -%>
     return nil
 <%   else # if create api is async, then it is best to make sure the resource is delete successfully -%>
-<%     unless delete_api.path.eql?(read_api.path) -%>
+<%     if !read_api.nil? -%>
+<%       unless delete_api.path.eql?(read_api.path) -%>
     url, err = replaceVars(d, "<%= read_api.path -%>", nil)
     if err != nil {
         return err
     }
     url = client.ServiceURL(url)
 
-<%     end -%>
+<%       end -%>
     _, err = waitToFinish(
         []string{"Done"}, []string{"Pending"},
         d.Timeout(schema.TimeoutCreate),
@@ -332,7 +372,25 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
         },
     )
     return err
-<%   end # unless is_resource_standard_async -%>
+<%     elsif !list_api.nil? -%>
+    _, err = waitToFinish(
+        []string{"Done"}, []string{"Pending"},
+        d.Timeout(schema.TimeoutCreate),
+        <%= sprintf('%d', create_api.async.operation.wait_ms / 1000) %> * time.Second,
+        func() (interface{}, string, error) {
+            resp, err := fetch<%= resource_name %>By<%= titlelize(list_api.name) %>(d, client)
+            if err != nil {
+                if strings.Index(err.Error(), "Error finding the resource by list api") != -1 {
+                     return resp, "Done", nil
+                }
+                return nil, "", nil
+            }
+            return resp, "Pending", nil
+        },
+    )
+    return err
+<%     end -%>
+<%   end -%>
 <% else -%>
     _, err = asyncWait<%= resource_name %><%= titlelize(delete_api.name) %>(d, config, r.Body, client, d.Timeout(schema.TimeoutDelete))
     return err
@@ -377,6 +435,14 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <% read_apis.each do | item | -%>
 
 <%= lines(build_read_method(resource_name, item), 1) -%>
+<% end -%>
+<% if read_api.nil? and !list_api.nil? -%>
+
+<%= lines(build_list_method(object, resource_name, list_api), 1) -%>
+
+<%= lines(build_list_method_filter(resource_name, list_api), 1) -%>
+
+<%= lines(build_read_method(resource_name, list_api, true), 1) -%>
 <% end -%>
 
 <%= lines(build_set_properties_method(object, resource_name), 1) -%>

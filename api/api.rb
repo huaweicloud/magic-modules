@@ -68,9 +68,16 @@ module Api
 
     def check_identity
       # Ensures we have all properties defined
-      @identity.each do |i|
-        raise "Missing property for identity(#{i}) in list operation of resource (#{@__resource.name})" \
-          if @__resource.properties.index { |p| p.name == i }.nil?
+      @identity.each do |k, v|
+        next if k.eql?("id")
+
+        p = find_property(@__resource, v.split("."))
+	if p.nil?
+          raise "Missing property for identity(#{k}) in list operation of resource (#{@__resource.name})"
+	end
+        unless p.required
+          raise "property(#{v}) referenced by list identity(#{k}) must be a required option"
+        end
       end
     end
   end

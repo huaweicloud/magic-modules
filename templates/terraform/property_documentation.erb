@@ -9,4 +9,8 @@
 <% _, _, forcenew = optional_compute_forcenew?(property, nil) -%>
 <% if property.is_a?(Api::Type::NestedObject) || (property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject)) -%>
  Structure is documented below.<% if forcenew -%> Changing this parameter will create a new resource.<% end -%>
+<% else -%>
+<%   if forcenew -%>
+  Changing this parameter will create a new resource.
+<%   end -%>
 <% end -%>

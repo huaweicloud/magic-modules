@@ -39,6 +39,9 @@ func testAcc<%= test_case_name -%>(val string) string {
 <%= example.config_test product_folder -%>
 }
 
+<% read_api = object.apis.fetch("read", nil)
+   list_api = object.apis.fetch("list", nil)
+-%>
 func testAccCheck<%= resource_name -%>Destroy(s *terraform.State) error {
     config := testAccProvider.Meta().(*Config)
     client, err := config.sdkClient(<%= sdkcp %>)
@@ -50,6 +53,7 @@ func testAccCheck<%= resource_name -%>Destroy(s *terraform.State) error {
         if rs.Type != "<%= terraform_name -%>" {
             continue
         }
+        <% if !read_api.nil? -%>
 
         url, err := replaceVarsForTest(rs, "<%= self_link_url(object) -%>")
         if err != nil {
@@ -63,6 +67,17 @@ func testAccCheck<%= resource_name -%>Destroy(s *terraform.State) error {
         if err == nil {
             return fmt.Errorf("<%= terraform_name -%> still exists at %s", url)
         }
+        <% elsif !list_api.nil? -%>
+
+        _, err = fetch<%= resource_name -%>ByListOnTest(rs, client)
+        if err != nil {
+            if strings.Index(err.Error(), "Error finding the resource by list api") != -1 {
+                return nil
+            }
+            return err
+        }
+        return fmt.Errorf("<%= terraform_name -%> still exists")
+        <% end -%>
     }
 
     return nil
@@ -78,8 +93,9 @@ func testAccCheck<%= resource_name -%>Exists() resource.TestCheckFunc {
 
         rs, ok := s.RootModule().Resources["<%= terraform_resource_name -%>"]
         if !ok {
-            return fmt.Errorf("Error checking <%= terraform_resource_name -%> exist, err=not found <%= terraform_resource_name -%>")
+            return fmt.Errorf("Error checking <%= terraform_resource_name -%> exist, err=not found this resource")
         }
+        <% if !read_api.nil? -%>
 
         url, err := replaceVarsForTest(rs, "<%= self_link_url(object) -%>")
         if err != nil {
@@ -97,5 +113,21 @@ func testAccCheck<%= resource_name -%>Exists() resource.TestCheckFunc {
             return fmt.Errorf("Error checking <%= terraform_resource_name -%> exist, err=send request failed: %s", err)
         }
         return nil
+
+        <% elsif !list_api.nil? -%>
+
+        _, err = fetch<%= resource_name -%>ByListOnTest(rs, client)
+        if err != nil {
+            if strings.Index(err.Error(), "Error finding the resource by list api") != -1 {
+                return fmt.Errorf("<%= terraform_name -%> is not exist")
+            }
+            return fmt.Errorf("Error checking <%= terraform_resource_name -%> exist, err=%s", err)
+        }
+        return nil
+        <% end -%>
     }
 }
+<% if read_api.nil? and !list_api.nil? -%>
+
+<%= lines(build_list_method_test(object, resource_name, list_api), 1) -%>
+<% end -%>
