@@ -277,5 +277,12 @@ module Provider
 
       sprintf("%s, \"%s\", %s", region, api.service_type, service_level)
     end
+
+    def import_resource?(resource)
+      return true unless resource.apis.fetch("read", nil).nil?
+
+       list_api = resource.apis["list"]
+      (list_api.identity.length == 1 && list_api.identity.has_key?("id"))
+    end
   end
 end

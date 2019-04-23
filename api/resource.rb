@@ -250,11 +250,14 @@ module Api
 
 
       @apis.each do |k, v|
-	check_property_value "apis::#{k}", v, Api::ApiBasic
+        check_property_value "apis::#{k}", v, Api::ApiBasic
+      end
+      if @apis.fetch("read", nil).nil? and @apis.fetch("list", nil).nil?
+        raise "no read api and list api for resource(#{@name})"
       end
       if @apis.include?("list")
-	list_op = @apis["list"]
-	list_op.set_variable(self, :__resource)
+        list_op = @apis["list"]
+        list_op.set_variable(self, :__resource)
         # list_op.check_identity
       end
 
