@@ -283,11 +283,22 @@ module Provider
         if identity.empty?
           page.empty? ? "" : indent(sprintf("queryLink := \"?%s\"", page.join("&")), spaces)
         else
-          out = ["p := make([]string, 0, #{identity.length})"]
-          identity.each do |k|
-            out << "\nif v, err := convertToStr(identity[\"#{k}\"]); err == nil{\np = append(p, fmt.Sprintf(\"#{k}=%v\", v))\n} else {\nreturn nil, err\n}"
+          out = []
+          if identity.length == 1
+            k = identity[0]
+            if k.eql?("id")
+              out << sprintf("queryLink := \"?%s%s=\" + identity[\"id\"].(string)", page.empty? ? "" : page.join("&") + "&", k)
+            else
+              out << "\nv, err := convertToStr(identity[\"#{k}\"])\nif err != nil{\nreturn nil, err\n}"
+              out << sprintf("queryLink := \"?%s%s=\" + v", page.empty? ? "" : page.join("&") + "&", k)
+            end
+          else
+            out << "p := make([]string, 0, #{identity.length})"
+            identity.each do |k|
+              out << "if v, err := convertToStr(identity[\"#{k}\"]); err == nil{\np = append(p, fmt.Sprintf(\"#{k}=%v\", v))\n} else {\nreturn nil, err\n}"
+            end
+            out << sprintf("queryLink := \"?%s\" + strings.Join(p, \"&\")", page.empty? ? "" : page.join("&") + "&")
           end
-          out << sprintf("queryLink := \"?%s\" + strings.Join(p, \"&\")", page.empty? ? "" : page.join("&") + "&")
           indent(out, spaces)
         end
       end
