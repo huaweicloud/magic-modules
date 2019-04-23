@@ -15,8 +15,8 @@ func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schem
 
 <% end -%>
 <% if need_build_async_url(api) -%>
-    var data = make(map[string]string)
 <%   if async_op.path_parameter -%>
+    data := make(map[string]string)
     pathParameters := map[string][]string {
 <%     async_op.path_parameter.each do |k, v| -%>
 <%=      sprintf("\"%s\": []string{%s},", k, index2navigate(v))  %>
@@ -54,9 +54,17 @@ func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schem
         timeout, <%= sprintf('%d', async.operation.wait_ms / 1000) %> * time.Second,
         func() (interface{}, string, error) {
             r := golangsdk.Result{}
-            _, r.Err = <%= cl %>.Get(
-                url, &r.Body,
-                &golangsdk.RequestOpts{MoreHeaders: map[string]string{"Content-Type": "application/json"}})
+            _, r.Err = <%= cl %>.Get(url, &r.Body, &golangsdk.RequestOpts{
+              <% if async_op.header_params.nil? -%>
+                MoreHeaders: map[string]string{"Content-Type": "application/json"}})
+              <% else -%>
+                MoreHeaders: map[string]string{
+                    "Content-Type": "application/json",
+                <% async_op.header_params.each do |k, v| -%>
+                    <%= sprintf("\"%s\": \"%s\",", k, v)%>
+                <% end -%>
+                }})
+              <% end -%>
             if r.Err != nil {
                 return nil, "", nil
             }
@@ -73,9 +81,17 @@ func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schem
         []string{"Done"}, []string{"Pending"}, timeout, <%= sprintf('%d', async.operation.wait_ms / 1000) %> * time.Second,
         func() (interface{}, string, error) {
             r := golangsdk.Result{}
-            _, r.Err = <%= cl %>.Get(
-                url, &r.Body,
-                &golangsdk.RequestOpts{MoreHeaders: map[string]string{"Content-Type": "application/json"}})
+            _, r.Err = <%= cl %>.Get(url, &r.Body, &golangsdk.RequestOpts{
+              <% if async_op.header_params.nil? -%>
+                MoreHeaders: map[string]string{"Content-Type": "application/json"}})
+              <% else -%>
+                MoreHeaders: map[string]string{
+                    "Content-Type": "application/json",
+                <% async_op.header_params.each do |k, v| -%>
+                    <%= sprintf("\"%s\": \"%s\",", k, v)%>
+                <% end -%>
+                }})
+              <% end -%>
             if r.Err != nil {
                 return nil, "", nil
             }

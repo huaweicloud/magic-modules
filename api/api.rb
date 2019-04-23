@@ -13,6 +13,7 @@ module Api
     attr_reader :msg_prefix
     attr_reader :msg_prefix_array_items
     attr_reader :has_response
+    attr_reader :header_params
 
     def validate
       super
@@ -35,6 +36,8 @@ module Api
       unless @msg_prefix_array_items.nil?
         check_property_list :msg_prefix_array_items, String
       end
+
+      check_optional_property :header_params, Hash
     end
   end
 
