@@ -367,7 +367,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
         d.Timeout(schema.TimeoutCreate),
         <%= sprintf('%d', create_api.async.operation.wait_ms / 1000) %> * time.Second,
         func() (interface{}, string, error) {
-            resp, err := client.Get(url, nil, &golangsdk.RequestOpts{
+            _, err := client.Get(url, nil, &golangsdk.RequestOpts{
             <% if read_api.header_params.nil? -%>
                 MoreHeaders: map[string]string{"Content-Type": "application/json"}})
             <% else -%>
@@ -380,11 +380,11 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
             <% end -%>
             if err != nil {
                 if _, ok := err.(golangsdk.ErrDefault404); ok{
-                    return resp, "Done", nil
+                    return true, "Done", nil
                 }
                 return nil, "", nil
             }
-            return resp, "Pending", nil
+            return true, "Pending", nil
         },
     )
     return err
@@ -394,14 +394,14 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
         d.Timeout(schema.TimeoutCreate),
         <%= sprintf('%d', create_api.async.operation.wait_ms / 1000) %> * time.Second,
         func() (interface{}, string, error) {
-            resp, err := fetch<%= resource_name %>By<%= titlelize(list_api.name) %>(d, client)
+            _, err := fetch<%= resource_name %>By<%= titlelize(list_api.name) %>(d, client)
             if err != nil {
                 if strings.Index(err.Error(), "Error finding the resource by list api") != -1 {
-                     return resp, "Done", nil
+                     return true, "Done", nil
                 }
                 return nil, "", nil
             }
-            return resp, "Pending", nil
+            return true, "Pending", nil
         },
     )
     return err
