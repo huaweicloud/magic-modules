@@ -335,7 +335,16 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
         OkCodes: successHTTPCodes,
         JSONBody: <%= delete_api.parameters.nil? ? "nil" : "params" %>,
         JSONResponse: <%= delete_api.has_response ? "&r.Body" : "nil" %>,
+        <% if delete_api.header_params.nil? -%>
         MoreHeaders:  map[string]string{"Content-Type": "application/json"},
+        <% else -%>
+        MoreHeaders: map[string]string{
+            "Content-Type": "application/json",
+          <% delete_api.header_params.each do |k, v| -%>
+            <%= sprintf("\"%s\": \"%s\",", k, v)%>
+          <% end -%>
+        },
+        <% end -%>
     })
     if r.Err != nil {
         return fmt.Errorf("Error deleting <%= object.name -%> %q: %s", d.Id(), r.Err)
@@ -359,9 +368,17 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
         d.Timeout(schema.TimeoutCreate),
         <%= sprintf('%d', create_api.async.operation.wait_ms / 1000) %> * time.Second,
         func() (interface{}, string, error) {
-            resp, err := client.Get(
-                url, nil,
-                &golangsdk.RequestOpts{MoreHeaders: map[string]string{"Content-Type": "application/json"}})
+            resp, err := client.Get(url, nil, &golangsdk.RequestOpts{
+            <% if read_api.header_params.nil? -%>
+                MoreHeaders: map[string]string{"Content-Type": "application/json"}})
+            <% else -%>
+                MoreHeaders: map[string]string{
+                    "Content-Type": "application/json",
+              <% read_api.header_params.each do |k, v| -%>
+                    <%= sprintf("\"%s\": \"%s\",", k, v)%>
+              <% end -%>
+            }})
+            <% end -%>
             if err != nil {
                 if _, ok := err.(golangsdk.ErrDefault404); ok{
                     return resp, "Done", nil

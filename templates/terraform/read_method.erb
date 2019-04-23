@@ -12,9 +12,17 @@ func send<%= resource_name %><%= titlelize(api.name) %>Request(<%= input_url ? "
 
 <% end -%>
     r := golangsdk.Result{}
-    _, r.Err = client.<%= api.verb.capitalize %>(
-        url, &r.Body,
-        &golangsdk.RequestOpts{MoreHeaders: map[string]string{"Content-Type": "application/json"}})
+    _, r.Err = client.<%= api.verb.capitalize %>(url, &r.Body, &golangsdk.RequestOpts{
+      <% if api.header_params.nil? -%>
+        MoreHeaders: map[string]string{"Content-Type": "application/json"}})
+      <% else -%>
+        MoreHeaders: map[string]string{
+            "Content-Type": "application/json",
+        <% api.header_params.each do |k, v| -%>
+            <%= sprintf("\"%s\": \"%s\",", k, v)%>
+        <% end -%>
+        }})
+      <% end -%>
     if r.Err != nil {
         return nil, fmt.Errorf("Error running api(<%= api.name %>) for resource(<%= resource_name%>), error: %s", r.Err)
     }
