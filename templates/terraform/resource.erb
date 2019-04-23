@@ -22,7 +22,6 @@ package <%= package %>
   resource_name = product_ns + object.name + object.version.upcase
   resource_nestedobj_properties = nestedobject_properties(object)
   ai_name = resource_nestedobj_properties.nil? ? "nil" : "arrayIndex"
-  read_api = object.apis.fetch("read", nil)
 -%>
 
 func resource<%= resource_name -%>() *schema.Resource {
@@ -33,7 +32,7 @@ func resource<%= resource_name -%>() *schema.Resource {
         Update: resource<%= resource_name -%>Update,
         <% end -%>
         Delete: resource<%= resource_name -%>Delete,
-        <% unless read_api.nil? -%>
+        <% if import_resource?(object) -%>
 
         Importer: &schema.ResourceImporter{
             State: schema.ImportStatePassthrough,
@@ -164,7 +163,9 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     return resource<%= resource_name -%>Read(d, meta)
 }
 
-<% list_api = object.apis.fetch("list", nil) -%>
+<% list_api = object.apis.fetch("list", nil)
+   read_api = object.apis.fetch("read", nil)
+-%>
 <% if !read_api.nil? -%>
 func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{}) error {
     config := meta.(*Config)
@@ -216,8 +217,6 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
 
     return set<%= resource_name -%>Properties(d, res)
 }
-<% else -%>
-<%   raise "no read api and list api" -%>
 <% end -%>
 <% if updatable?(object) -%>
 
