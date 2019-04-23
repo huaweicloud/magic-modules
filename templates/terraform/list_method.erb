@@ -1,29 +1,33 @@
 func fetch<%= resource_name %>ByList(d *schema.ResourceData, client *golangsdk.ServiceClient) (interface{}, error) {
+<% identity = list_api.identity -%>
+<% if identity.length == 1 && identity.has_key?("id") -%>
+    identity := map[string]interface{}{"id": d.Id()}
+<% else -%>
     opts := resource<%= resource_name -%>UserInputParams(d)
-<% ai_name = "nil"-%>    
-<% resource_nestedobj_properties = nestedobject_properties(object) -%>
-<% unless resource_nestedobj_properties.nil? -%>
-<% ai_name = "arrayIndex"-%>
+<%   ai_name = "nil"-%>
+<%   resource_nestedobj_properties = nestedobject_properties(object) -%>
+<%   unless resource_nestedobj_properties.nil? -%>
+<%     ai_name = "arrayIndex"-%>
 
     arrayIndex := map[string]int{
-<%   resource_nestedobj_properties.each do |i| -%>
+<%     resource_nestedobj_properties.each do |i| -%>
         "<%= to_schema_index(i) %>": 0,
-<%   end -%>
+<%     end -%>
     }
-<% end -%>
+<%   end -%>
 
     identity := make(map[string]interface{})
-<% list_api.identity.each do |k, v| -%>
-
-<%   if k.eql?("id") -%>
+<%   list_api.identity.each do |k, v| -%>
+<%     if k.eql?("id") -%>
     identity["<%= k %>"] = d.Id()
-<%     next -%>
-<%   end-%>
+<%       next -%>
+<%     end-%>
     if v, err:= navigateValue(opts, []string{<%= index2navigate(v, true) %>}, <%= ai_name %>); err == nil {
         identity["<%= k %>"] = v
     } else {
         return nil, err
     }
+<%   end -%>
 <% end -%>
 <% query_link = build_list_query_params(list_api, 4) -%>
 <% unless query_link.empty? -%>
