@@ -218,7 +218,7 @@ module Provider
         return first_assign, "" unless has_output_property(prop)
 
         read_err = sprintf("fmt.Errorf(\"Error reading %s:%s, err: %%s\", err)", resource_name, prop.out_name)
-        prop_var = "#{go_variable(prop.name)}Prop"
+        prop_var = "v"
 
         set_to_schema = indent([
           "if err != nil {\nreturn #{read_err}\n}",
@@ -232,7 +232,7 @@ module Provider
         ], 4)
 
         f = indent([
-          sprintf("%s, _ := %s[\"%s\"]", prop_var, parent_var, prop.out_name),
+          sprintf("%s, _ %s %s[\"%s\"]", prop_var, first_assign ? ":=" : "=", parent_var, prop.out_name),
           sprintf("%s, err %s flatten%s%s(%s, %s)", prop_var, first_assign ? ":=" : "=", prefix, titlelize(prop.name), arguments, prop_var),
           (set_to.eql?("parent") ? set_to_parent : set_to_schema),
         ].compact.flatten, 4)
@@ -260,7 +260,7 @@ module Provider
           v = arguments.split(", ")
 
           return false, indent([
-            sprintf("%s, err := navigateValue(%s, %s, %s)", prop_var, v[0], i, v[1]),
+            sprintf("%s, err %s navigateValue(%s, %s, %s)", prop_var, first_assign ? ":=" : "=", v[0], i, v[1]),
             (set_to.eql?("parent") ? set_to_parent : set_to_schema),
           ].compact.flatten, 4)
         end

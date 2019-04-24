@@ -33,13 +33,13 @@ func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIn
 <%   unless rp.is_a?(Api::Type::Array) -%>
 <%     raise "parameter(#{property.name}) is an array, but the matched property is not"-%>
 <%   end -%>
-    v, err := navigateValue(d, []string{<%= index2navigate(property.field, true) %>}, newArrayIndex)
+    val, err := navigateValue(d, []string{<%= index2navigate(property.field, true) %>}, newArrayIndex)
     if err != nil {
         return nil, err
     }
 
 <%   nested_properties = nested_properties(property) -%>
-    n := len(v.([]interface{}))
+    n := len(val.([]interface{}))
     req := make([]interface{}, 0, n)
     for i := 0; i < n; i++ {
         newArrayIndex["<%= to_schema_index(property.field) %>"] = i
