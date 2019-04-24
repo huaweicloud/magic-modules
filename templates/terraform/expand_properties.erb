@@ -4,33 +4,28 @@
 <% properties.each_index do |i|
      prop = properties[i]
      v2 = i == 0 ? ":=" : "="
-     v1 = "#{go_variable(prop.name)}Prop"
-     r = sprintf("%s[\"%s\"] = %s", map_obj, prop.name, v1)
+     r = sprintf("%s[\"%s\"] = v", map_obj, prop.name)
      rt = return_value ? "nil, " : ""
 -%>
 <%   unless prop.default.nil? -%>
     <%= sprintf("%s[\"%s\"] = %s", map_obj, prop.name, convert_parameter(prop, args, prefix)) %>
 <%     next -%>
 <%   end -%>
-    <%= v1 -%>, err := <%= convert_parameter(prop, args, prefix) %>
+    v, err <%= v2 %> <%= convert_parameter(prop, args, prefix) %>
     if err != nil {
         return <%= rt %>err
     }
 <%   unless prop.send_empty_value -%>
-    e, err <%= v2 %> isEmptyValue(reflect.ValueOf(<%= v1 -%>))
-    if err != nil {
+    if e, err := isEmptyValue(reflect.ValueOf(v)); err != nil {
         return <%= rt %>err
-    }
-    if !e {
+    } else if !e {
         <%= r %>
     }
 <%   else -%>
 <%     if prop.is_a?(Api::Type::Boolean) || prop.is_a?(Api::Type::Integer) -%>
-    e, err <%= v2 %> isEmptyValue(reflect.ValueOf(<%= v1 -%>))
-    if err != nil {
+    if e, err := isEmptyValue(reflect.ValueOf(v); err != nil {
         return <%= rt %>err
-    }
-    if !e {
+    } else if !e {
         <%= r %>
     } else {
         if ok := isUserInput(d, []string{<%= index2navigate(prop.field, true) %>}, <%= globalIndex %>); ok {
