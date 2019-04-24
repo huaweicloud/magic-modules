@@ -63,6 +63,7 @@ module Provider
       attr_reader :to_request
       attr_reader :from_response
       attr_reader :to_request_method
+      attr_reader :from_response_method
 
     end
 
@@ -152,6 +153,7 @@ module Provider
         check_optional_property :to_request, String
         check_optional_property :to_request_method, String
         check_optional_property :from_response, String
+        check_optional_property :from_response_method, String
       end
 
       def apply(api_property)
