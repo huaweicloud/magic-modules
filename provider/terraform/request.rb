@@ -241,6 +241,10 @@ module Provider
         if prop.from_response
           return false, f
 
+        elsif prop.from_response_method
+          s = sprintf("flatten%s%s", prefix, titlelize(prop.name))
+          return false, f.sub(s, prop.from_response_method)
+
         elsif prop.is_a? Api::Type::NestedObject
           return false,  f
 
