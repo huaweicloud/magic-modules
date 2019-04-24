@@ -348,9 +348,9 @@ module Provider
         if identity.empty?
           page.empty? ? "" : indent(sprintf("query_link = \"?%s\"", page.join("&")), spaces)
         else
-          out << sprintf("query_link = \"?%s\" + \"&\".join([", page.empty? ? "" : page.join("&") + "&")
+          out = [sprintf("query_link = \"?%s\" + \"&\".join([", page.empty? ? "" : page.join("&") + "&")]
           identity.each do |k|
-            out << "    \"#{k}=%s\" % str(identity[\"#{k}]\"),"
+            out << "    \"#{k}=%s\" % str(identity[\"#{k}\"]),"
           end
           out << "])"
           indent(out, spaces)
