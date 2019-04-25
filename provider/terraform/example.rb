@@ -42,6 +42,8 @@ module Provider
       # }
       attr_reader :primary_resource_id
 
+      attr_reader :description
+
       # it stands for that this example is basic usage and there is only one
       # basic example for each resource
       attr_reader :is_basic
@@ -83,9 +85,9 @@ module Provider
       end
 
       def substitute_tf_var(tf)
-        gv = tf.scan(/env-OS_[A-Z_]+/)
+        gv = tf.scan(/env-OS_[A-Z_0-9]+/)
         iv = tf.enum_for(:scan, /(?=_env-val)/).map { Regexp.last_match.offset(0).first }
-        ig = tf.enum_for(:scan, /(?=env-OS_[A-Z_]+)/).map { Regexp.last_match.offset(0).first }
+        ig = tf.enum_for(:scan, /(?=env-OS_[A-Z_0-9]+)/).map { Regexp.last_match.offset(0).first }
 
         r = []
         iv.each_index do |i|
@@ -97,7 +99,7 @@ module Provider
         r1 = []
         r.sort { |x, y| x[0] <=> y[0] }.each { |i| r1 << i[1]}
 
-        s = tf.gsub(/env-OS_[A-Z_]+/, "%s")
+        s = tf.gsub(/env-OS_[A-Z_0-9]+/, "%s")
         s = s.gsub(/_env-val/, "%s")
         lines([
           " return fmt.Sprintf(`",
@@ -107,14 +109,14 @@ module Provider
       end
 
       def substitute_tf_var1(tf)
-        gv = tf.scan(/env-OS_[A-Z_]+/)
+        gv = tf.scan(/env-OS_[A-Z_0-9]+/)
 
         h = Hash.new
         gv.each do |i|
           h[i] = "{{ " + i.sub("env-OS_", "").downcase + " }}"
         end
 
-        s = tf.gsub(/env-OS_[A-Z_]+/, h)
+        s = tf.gsub(/env-OS_[A-Z_0-9]+/, h)
         s = s.gsub(/_env-val/, "")
         lines([
           "```hcl",
@@ -128,6 +130,7 @@ module Provider
 
         check_property :name, String
         check_property :primary_resource_id, String
+        check_property :description, String
         check_optional_property :is_basic, :boolean
       end
     end
