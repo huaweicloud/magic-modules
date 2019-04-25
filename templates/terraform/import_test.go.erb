@@ -27,9 +27,8 @@ func TestAcc<%= test_case_name -%>(t *testing.T) {
 			},
 
 			{
-				ResourceName:      "<%= terraform_resource_name -%>",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName: "<%= terraform_resource_name -%>",
+				ImportState:  true,
 			},
 		},
 	})
