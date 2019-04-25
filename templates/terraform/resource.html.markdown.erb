@@ -48,7 +48,7 @@ To get more information about <%= object.name -%>, see:
 ## Example Usage
 <%   object.examples.each do |example| -%>
 
-### <%= Google::StringUtils.uncombine(Google::StringUtils.camelize(example.name, :upper)) %>
+### <%= example.description %>
 
 <%= example.config_documentation(product_folder) -%>
 <%   end -%>
