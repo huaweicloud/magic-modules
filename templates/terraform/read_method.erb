@@ -24,7 +24,7 @@ func send<%= resource_name %><%= titlelize(api.name) %>Request(<%= input_url ? "
         }})
       <% end -%>
     if r.Err != nil {
-        return nil, fmt.Errorf("Error running api(<%= api.name %>) for resource(<%= resource_name%>), error: %s", r.Err)
+        return nil, fmt.Errorf("Error running api(<%= api.name %>) for resource(<%= resource_name%>), err=%s", r.Err)
     }
 
 <% if api.msg_prefix.nil? -%>

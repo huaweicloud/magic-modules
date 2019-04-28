@@ -96,11 +96,11 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 
     params, err := build<%= resource_name -%>CreateParameters(opts, <%= ai_name -%>)
     if err != nil {
-        return fmt.Errorf("Error building the request body of api(<%= create_api.name -%>)")
+        return fmt.Errorf("Error building the request body of api(<%= create_api.name -%>), err=%s", err)
     }
     r, err := send<%= resource_name -%>CreateRequest(d, params, client)
     if err != nil {
-        return fmt.Errorf("Error creating <%= resource_name -%>: %s", err)
+        return fmt.Errorf("Error creating <%= resource_name -%>, err=%s", err)
     }
 <% action = action_after_send_create_request(object) -%>
 <% unless action.nil? -%>
@@ -118,7 +118,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 
     id, err := navigateValue(r, []string{<%= index2navigate(create_api.resource_id_path) %>}, nil)
     if err != nil {
-        return fmt.Errorf("Error constructing id: %s", err)
+        return fmt.Errorf("Error constructing id, err=%s", err)
     }
     d.SetId(id.(string))
 <% else -%>
@@ -128,7 +128,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     }
     id, err := navigateValue(obj, []string{<%= index2navigate(create_api.async.result.field) %>}, nil)
     if err != nil {
-        return fmt.Errorf("Error constructing id: %s", err)
+        return fmt.Errorf("Error constructing id, err=%s", err)
     }
     d.SetId(id.(string))
 <% end # unless object.async -%>
@@ -141,7 +141,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 <%   unless item.parameters.nil? -%>
     params, err = build<%= fn -%>Parameters(opts, <%= ai_name -%>)
     if err != nil {
-        return fmt.Errorf("Error building the request body of api(<%= item.name -%>)")
+        return fmt.Errorf("Error building the request body of api(<%= item.name -%>), err=%s", err)
     }
     if e, _ := isEmptyValue(reflect.ValueOf(params)); !e {
 <%   end -%>
@@ -251,12 +251,12 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 
     params, err <%= assign %> build<%= resource_name -%>UpdateParameters(opts, <%= ai_name -%>)
     if err != nil {
-        return fmt.Errorf("Error building the request body of api(<%= update_api.name -%>)")
+        return fmt.Errorf("Error building the request body of api(<%= update_api.name -%>), err=%s", err)
     }
     if e, _ := isEmptyValue(reflect.ValueOf(params)); !e {
         <%= r %> send<%= resource_name -%>UpdateRequest(d, params, client)
         if err != nil {
-            return fmt.Errorf("Error updating (<%= resource_name -%>: %v): %s", d.Id(), err)
+            return fmt.Errorf("Error updating (<%= resource_name -%>: %v), err=%s", d.Id(), err)
         }
 <%     unless update_api.async.nil? -%>
         _, err = asyncWait<%= resource_name %>Update(d, config, r, client, timeout)
@@ -275,7 +275,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 <%     unless item.parameters.nil? -%>
     params, err <%= assign %> build<%= fn -%>Parameters(opts, <%= ai_name -%>)
     if err != nil {
-        return fmt.Errorf("Error building the request body of api(<%= item.name -%>)")
+        return fmt.Errorf("Error building the request body of api(<%= item.name -%>), err=%s", err)
     }
     if e, _ := isEmptyValue(reflect.ValueOf(params)); !e {
 <%     end -%>
@@ -324,7 +324,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <%   end -%>
     params, err := build<%= resource_name -%>DeleteParameters(opts, arrayIndex)
     if err != nil {
-        return fmt.Errorf("Error building the request body of api(delete)")
+        return fmt.Errorf("Error building the request body of api(delete), err=%s", err)
     }
 
 <% end -%>
@@ -346,7 +346,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
         <% end -%>
     })
     if r.Err != nil {
-        return fmt.Errorf("Error deleting <%= object.name -%> %q: %s", d.Id(), r.Err)
+        return fmt.Errorf("Error deleting <%= object.name -%> %q, err=%s", d.Id(), r.Err)
     }
 
 <% if delete_api.async.nil? -%>
