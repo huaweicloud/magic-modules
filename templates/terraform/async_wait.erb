@@ -25,7 +25,7 @@ func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schem
     for key, path := range pathParameters {
         value, err := navigateValue(result, path, nil)
         if err != nil {
-            return nil, fmt.Errorf("Error retrieving async operation path parameter: %s", err)
+            return nil, fmt.Errorf("Error retrieving async operation path parameter, err=%s", err)
         }
         data[key] = value.(string)
     }

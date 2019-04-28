@@ -23,7 +23,7 @@ func send<%= prefix -%>Request(d *schema.ResourceData, params interface{},
         <% end -%>
     })
     if r.Err != nil {
-        return nil, fmt.Errorf("Error running api(<%= api.name -%>): %s", r.Err)
+        return nil, fmt.Errorf("Error running api(<%= api.name -%>), err=%s", r.Err)
     }
     return r.Body, nil
 }

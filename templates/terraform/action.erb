@@ -10,7 +10,7 @@ func action<%= prefix %>(d *schema.ResourceData, result interface{}, client *gol
     for key, path := range pathParameters {
         value, err := navigateValue(result, path, nil)
         if err != nil {
-            return fmt.Errorf("Error retrieving path parameter: %s", err)
+            return fmt.Errorf("Error retrieving path parameter, err=%s", err)
         }
         data[key] = value.(string)
     }
@@ -44,7 +44,7 @@ func action<%= prefix %>(d *schema.ResourceData, result interface{}, client *gol
         <% end -%>
     })
     if r.Err != nil {
-        return fmt.Errorf("Error run action of <%= api.name %>: %s", r.Err)
+        return fmt.Errorf("Error run action of <%= api.name %>, err=%s", r.Err)
     }
     return nil
 }
