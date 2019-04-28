@@ -77,10 +77,12 @@ extends_documentation_fragment: hwc
 
 <%if example -%>
 EXAMPLES = '''
-<%#<% res_readable_name = Google::StringUtils.uncombine(object.name) -%>
+<% unless example.description.nil? -%>
+# <%= example.description %>
+<% end -%>
 <% if example.dependencies -%>
 <%   example.dependencies.each do |depend| -%>
-<%= lines(depend.build_test('present', object, false)) -%>
+<%= lines(depend.build_example('present', object)) -%>
 <%   end # example.dependencies.each -%>
 <% end # if example.dependencies -%>
 <%= lines(example.task.build_example('present', object)) -%>

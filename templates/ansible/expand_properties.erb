@@ -11,7 +11,7 @@
 <%   end -%>
 <%= indent(convert_parameter(prop, args, prefix), 4) %>
 <%   unless prop.send_empty_value -%>
-    if (v is not None) and (not is_empty_value(v)):
+    if not is_empty_value(v):
         <%= r %>
 <%   else -%>
     if v is not None:

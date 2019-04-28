@@ -158,11 +158,13 @@ module Provider
       attr_reader :code
       attr_reader :scopes
       attr_reader :register
+      attr_reader :description
 
       def validate
         super
         check_property :name, String
         check_property :code, String
+        check_optional_property :description, String
         check_optional_property_list :scopes, ::String
       end
 
@@ -171,7 +173,17 @@ module Provider
       end
 
       def build_example(state, object)
-        build_task(state, EXAMPLE_DEFAULTS, object)
+	desc = @description || sprintf("%s a %s", verbs[state.to_sym], object_name_from_module_name(@name))
+        [
+          "- name: #{desc}",
+          indent([
+            "#{@name}:",
+            indent([
+                     compile_string(EXAMPLE_DEFAULTS, @code),
+                   ], 4),
+            ("register: #{@register}" unless @register.nil?)
+          ].compact, 2)
+        ]
       end
 
       def verbs
@@ -225,10 +237,12 @@ module Provider
       attr_reader :task
       attr_reader :verifier
       attr_reader :dependencies
+      attr_reader :description
 
       def validate
         super
         check_property :task, Task
+        check_optional_property :description, String
         check_optional_property :verifier, Verifier
         check_optional_property_list :dependencies, Task
       end
