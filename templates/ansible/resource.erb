@@ -1,10 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2018 Huawei
+# Copyright (C) 2019 Huawei
 # GNU General Public License v3.0+ (see COPYING or
 # https://www.gnu.org/licenses/gpl-3.0.txt)
-<%= lines(autogen_notice :python) -%>
+<%# lines(autogen_notice :python) -%>
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
@@ -100,11 +100,11 @@ RETURN = '''
 ###############################################################################
 
 from ansible.modules.cloud.<%= module_dir %>.custom_functions import *
-from ansible.module_utils.hwc_utils import (Config, HwcModule, DictComparison,
-                                            HwcClientException404, get_region,
-                                            HwcClientException, navigate_value,
+from ansible.module_utils.hwc_utils import (Config, HwcClientException,
+                                            HwcClientException404, HwcModule,
+                                            are_different_dicts, get_region,
                                             is_empty_value, build_path,
-                                            wait_to_finish)
+                                            navigate_value, wait_to_finish)
 <%
   # imports = ['json']
   # imports << 're'
@@ -153,8 +153,7 @@ def main():
     try:
         resource = fetch_resource(config)
         if resource:
-            module.params['id'] = navigate_value(
-                resource, [<%= index2navigate(list_api.resource_id_path) %>])
+            module.params['id'] = navigate_value(resource, [<%= index2navigate(list_api.resource_id_path) %>])
 
         result = {}
         changed = False
@@ -171,7 +170,7 @@ def main():
 <% else -%>
                 current = read_resource(config, exclude_output=True)
                 expect = user_input_parameters(module)
-                if DictComparison(expect) != DictComparison(current):
+                if are_different_dicts(expect, current):
                     if not module.check_mode:
                         result = update(config)
                     changed = True
@@ -311,7 +310,6 @@ def read_resource(config, exclude_output=False):
     res = {}
 <% read_apis = [read_api, other_api(object, "r")].flatten.compact -%>
 <% read_apis.each do | item | -%>
-
     r = send_<%= item.out_name%>_request(module, client)
     res["<%= item.name %>"] = r
 <% end -%>
