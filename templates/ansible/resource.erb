@@ -150,42 +150,47 @@ def main():
 <% list_api = object.apis.fetch("list", nil)
    raise "no list api" if list_api.nil?
 -%>
-    resource = fetch_resource(config)
-    if resource:
-        module.params['id'] = navigate_value(
-            resource, [<%= index2navigate(list_api.resource_id_path) %>])
-
-    result = {}
-    changed = False
-    if module.params['state'] == 'present':
-        if resource is None:
-            if not module.check_mode:
-                result = create(config)
-                result['id'] = module.params.get('id')
-            changed = True
-
-        else:
-<% unless updatable?(object) -%>
-            result = read_resource(config)
-<% else -%>
-            current = read_resource(config, exclude_output=True)
-            expect = user_input_parameters(module)
-            if DictComparison(expect) != DictComparison(current):
-                if not module.check_mode:
-                    result = update(config)
-                changed = True
-            else:
-                result = read_resource(config)
-<% end # updateable(object)? -%>
-            result['id'] = module.params.get('id')
-    else:
+    try:
+        resource = fetch_resource(config)
         if resource:
-            if not module.check_mode:
-                delete(config)
-            changed = True
+            module.params['id'] = navigate_value(
+                resource, [<%= index2navigate(list_api.resource_id_path) %>])
 
-    result['changed'] = changed
-    module.exit_json(**result)
+        result = {}
+        changed = False
+        if module.params['state'] == 'present':
+            if resource is None:
+                if not module.check_mode:
+                    result = create(config)
+                    result['id'] = module.params.get('id')
+                changed = True
+
+            else:
+<% unless updatable?(object) -%>
+                result = read_resource(config)
+<% else -%>
+                current = read_resource(config, exclude_output=True)
+                expect = user_input_parameters(module)
+                if DictComparison(expect) != DictComparison(current):
+                    if not module.check_mode:
+                        result = update(config)
+                    changed = True
+                else:
+                    result = read_resource(config)
+<% end # updateable(object)? -%>
+                result['id'] = module.params.get('id')
+        else:
+            if resource:
+                if not module.check_mode:
+                    delete(config)
+                changed = True
+
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
+
+    else:
+        result['changed'] = changed
+        module.exit_json(**result)
 
 
 def user_input_parameters(module):
