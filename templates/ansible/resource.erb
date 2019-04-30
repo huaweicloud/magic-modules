@@ -161,6 +161,7 @@ def main():
         if resource is None:
             if not module.check_mode:
                 result = create(config)
+                result['id'] = module.params.get('id')
             changed = True
 
         else:
@@ -176,6 +177,7 @@ def main():
             else:
                 result = read_resource(config)
 <% end # updateable(object)? -%>
+            result['id'] = module.params.get('id')
     else:
         if resource:
             if not module.check_mode:
