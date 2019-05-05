@@ -139,11 +139,11 @@ def main():
 <%   unless at["delete"].nil? -%>
                 delete=dict(default=<%= sprintf('\'%dm\'', at["delete"] / 60) -%>, type='str'),
 <%   end -%>
-            )),
+            ), default=dict()),
 <% end -%>
 <%= lines(indent_list(mod_props, 12)) -%>
         ),
-        upports_check_mode=True,
+        supports_check_mode=True,
     )
 
     config = Config(module, "<%= object.__product.prefix[1..-1] %>")
@@ -323,12 +323,7 @@ def fetch_resource(config):
     opts = user_input_parameters(module)
     identity = {
 <% list_api.identity.each do |k, v| -%>
-<%   p = find_property(object, v.split("."))
-     unless p.required
-       raise "property(#{p.name}) referenced by list identity(#{k}) must be a required option"
-     end
--%>
-        "<%= k %>": navigate_value(opts, [<%= index2navigate(v, true) %>])
+        "<%= k %>": navigate_value(opts, [<%= index2navigate(v, true) %>]),
 <% end -%>
     }
 
@@ -346,8 +341,10 @@ def fetch_resource(config):
 <% if list_api.query_params.include?('marker') -%>
     p = {'marker': ''}
     while True:
-        url = link % p
+        url = link.format(**p)
         r = send_<%= list_api.out_name %>_request(module, client, url)
+        if not r:
+            return None
         for item in r:
             for k, v in identity.items():
                 if item[k] != v:
@@ -359,8 +356,10 @@ def fetch_resource(config):
 <% elsif list_api.query_params.include?('offset') -%>
     p = {'offset': 0}
     while True:
-        url = link % p
+        url = link.format(**p)
         r = send_<%= list_api.out_name %>_request(module, client, url)
+        if not r:
+            return None
         for item in r:
             for k, v in identity.items():
                 if item[k] != v:
@@ -372,8 +371,10 @@ def fetch_resource(config):
 <% elsif list_api.query_params.include?('start') -%>
     p = {'start': 1}
     while True:
-        url = link % p
+        url = link.format(**p)
         r = send_<%= list_api.out_name %>_request(module, client, url)
+        if not r:
+            return None
         for item in r:
             for k, v in identity.items():
                 if item[k] != v:
@@ -384,6 +385,8 @@ def fetch_resource(config):
         p['start'] += len(r)
 <% else -%>
     r = send_<%= list_api.out_name %>_request(module, client, link)
+    if not r:
+        return None
     for item in v:
         for k, v in identity.items():
         if item[k] != v:
