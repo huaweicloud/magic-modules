@@ -5,11 +5,14 @@ func find<%= resource_name %>ByList(client *golangsdk.ServiceClient, link string
         url := strings.Sprintf(link, marker)
         r, err := send<%= resource_name %><%= titlelize(list_api.name) %>Request(client, url)
         if err != nil {
-                return nil, err
+            return nil, err
         }
-
+        r1 := r.([]interface{})
+        if len(r1) == 0 {
+            break
+        }
         var val map[string]interface{}
-        for _, item := range r.([]interface{}) {
+        for _, item := range r1 {
             val = item.(map[string]interface{})
 
             bingo := true
@@ -34,8 +37,11 @@ func find<%= resource_name %>ByList(client *golangsdk.ServiceClient, link string
         if err != nil {
                 return nil, err
         }
-
-        for _, item := range r.([]interface{}) {
+        r1 := r.([]interface{})
+        if len(r1) == 0 {
+            break
+        }
+        for _, item := range r1 {
             val := item.(map[string]interface{})
 
             bingo := true
@@ -60,8 +66,11 @@ func find<%= resource_name %>ByList(client *golangsdk.ServiceClient, link string
         if err != nil {
                 return nil, err
         }
-
-        for _, item := range r.([]interface{}) {
+        r1 := r.([]interface{})
+        if len(r1) == 0 {
+            break
+        }
+        for _, item := range r1 {
             val := item.(map[string]interface{})
 
             bingo := true
