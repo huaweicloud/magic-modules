@@ -30,7 +30,8 @@ def <%= func_def %>
 
 <%   nested_properties = nested_properties(property) -%>
     req = []
-    for i in range(len(v)):
+    n = len(v) if v else 1<%# v may be None %>
+    for i in range(n):
         new_array_index["<%= to_schema_index(property.field) %>"] = i
         transformed = dict()
 
