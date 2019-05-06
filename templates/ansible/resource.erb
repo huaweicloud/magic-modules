@@ -311,6 +311,7 @@ def read_resource(config, exclude_output=False):
 <% read_apis = [read_api, other_api(object, "r")].flatten.compact -%>
 <% read_apis.each do | item | -%>
     r = send_<%= item.out_name%>_request(module, client)
+    fill_<%= item.out_name%>_resp_body(r)
     res["<%= item.name %>"] = r
 <% end -%>
 
@@ -446,6 +447,9 @@ def fetch_resource(config):
 
 
 <%= lines(build_read_method(item, module_name(object), false)) -%>
+
+
+<%= lines(build_fill_resp_body_method(item)) -%>
 <% end -%>
 
 

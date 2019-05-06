@@ -366,6 +366,26 @@ module Provider
           indent(out, spaces)
         end
       end
+
+      def fill_resp_parameter(prop, prefix, parent_var, spaces)
+	code = indent([
+	  sprintf("v = %s.setdefault(\"%s\", None)", parent_var, prop.name),
+	  "if v:",
+          sprintf("    fill%s%s_%s(v)", prefix.empty? ? "" : "_", prefix, prop.out_name),
+	], spaces)
+
+        if prop.is_a? Api::Type::NestedObject
+          return code
+
+        elsif prop.is_a?(Api::Type::Array) && \
+              prop.item_type.is_a?(Api::Type::NestedObject)
+          return code
+
+        else
+          indent(sprintf("%s.setdefault(\"%s\", None)", parent_var, prop.name), spaces)
+        end
+      end
+
     end
     # rubocop:enable Metrics/ModuleLength
   end
