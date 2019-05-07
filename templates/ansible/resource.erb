@@ -275,6 +275,7 @@ def update(config):
 <% end # updatable? -%>
 
 
+<% read_api = object.apis["read"] -%>
 def delete(config):
     module = config.module
     client = config.client(<%= argu_for_sdkclient(create_api) %>)
@@ -297,12 +298,34 @@ def delete(config):
     <%= spaces %>async_wait_delete(config, r, client, timeout)
 <% else -%>
 <%   unless create_api.async.nil? -%>
+
 <%   # if create api is async, then it is best to make sure the resource is delete successfully -%>
+<%     if !read_api.nil? -%>
+    url = build_path(module, "<%= read_api.path -%>")
+<%     end -%>
+
+    def _refresh_status():
+        try:
+            client.get(url)
+        except HwcClientException404:
+            return True, "Done"
+
+        except Exception:
+            return None, ""
+
+        return True, "Pending"
+
+    timeout = 60 * int(module.params['timeouts']['create'].rstrip('m'))
+    try:
+        wait_to_finish(["Done"], ["Pending"], _refresh_status, timeout)
+    except Exception as ex:
+        module.fail_json(msg="module(<%= module_name(object) %>): error "
+                             "waiting for api(delete) to "
+                             "be done, error= %s" % str(ex))
 <%   end -%>
 <% end -%>
 
 
-<% read_api = object.apis["read"] -%>
 def read_resource(config, exclude_output=False):
     module = config.module
     client = config.client(<%= argu_for_sdkclient(read_api) %>)
