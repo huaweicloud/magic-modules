@@ -18,7 +18,6 @@ def <%= func_def %>
                        array_index)
 <%   end -%>
 <%= indent(lines(property.from_response), 4) -%>
-    return v
 <% elsif property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
 
 
