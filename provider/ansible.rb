@@ -405,6 +405,83 @@ module Provider
           .gsub(/([a-z\d])([A-Z])/, '\1 \2')
       end
 
+      def custom_override_methods(resource)
+        v = @config.overrides.fetch(resource.name, nil)
+        return [] if v.nil?
+
+        r = []
+        v.properties.each do |_, p|
+          if p.is_a?(Provider::Ansible::PropertyOverride)
+            r << p.to_request_method
+          end
+        end
+
+        v.api_parameters.each do |_, p|
+          if p.is_a?(Provider::Ansible::PropertyOverride)
+            r << p.to_request_method
+          end
+        end
+
+        v.api_asyncs.each do |_, p|
+          if p.is_a?(Provider::AsyncOverride)
+            r << p.custom_status_check_func
+          end
+        end
+
+        r.compact.sort
+      end
+
+      def module_import_items(resource)
+        v = ["Config", "HwcClientException", "HwcModule",
+	     "build_path", "is_empty_value", "navigate_value"]
+
+        if updatable?(resource)
+          v << "are_different_dicts"
+        end
+
+        resource.apis.each do |_, api|
+          unless api.async.nil?
+            v << "wait_to_finish"
+            break
+          end
+        end
+
+
+        resource.apis.each do |_, api|
+          if api.service_level.eql?("project")
+            v << "get_region"
+            break
+          end
+        end
+
+        if resource.apis["delete"].async.nil? && !resource.apis["create"].async.nil?
+          v << "HwcClientException404"
+        end
+
+        v = v.sort
+        v[-1] = v[-1] + ")"
+
+        r = []
+        v1 = []
+        pre = ""
+        v.each do |i|
+          v1 << i
+          s = v1.join(", ")
+          if s.length > 74
+            r << pre + ","
+            v1 = [i]
+          else
+            pre = s
+          end
+        end
+
+        unless v1.empty?
+          r << v1.join(", ")
+        end
+
+        indent(r, 4)
+      end
+
       def module_dir
         @api.cloud_half_full_name
       end
