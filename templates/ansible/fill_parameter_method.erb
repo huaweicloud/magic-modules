@@ -13,7 +13,6 @@ def <%= func_def %>
 <%= fill_resp_parameter(prop, new_prefix, "item", 8) %>
 <%   end -%>
 <%   nested_properties.each do |prop| -%>
-<%     next unless has_output_property(prop) -%>
 <%= lines(build_fill_param_method(new_prefix, prop)) -%>
 <%   end -%>
 <% elsif property.is_a?(Api::Type::NestedObject) -%>
@@ -26,7 +25,6 @@ def <%= func_def %>
 <%= fill_resp_parameter(prop, new_prefix, "value", 4) %>
 <%   end -%>
 <%   nested_properties.each do |prop| -%>
-<%     next unless has_output_property(prop) -%>
 <%= lines(build_fill_param_method(new_prefix, prop)) -%>
 <%   end -%>
 <% end # if property.is_a?(Api::Type::Array) -%>
