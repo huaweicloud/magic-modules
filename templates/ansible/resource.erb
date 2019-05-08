@@ -99,12 +99,18 @@ RETURN = '''
 # Imports
 ###############################################################################
 
-from ansible.modules.cloud.<%= module_dir %>.custom_functions import *
-from ansible.module_utils.hwc_utils import (Config, HwcClientException,
-                                            HwcClientException404, HwcModule,
-                                            are_different_dicts, get_region,
-                                            is_empty_value, build_path,
-                                            navigate_value, wait_to_finish)
+<% cfs = custom_override_methods(object) -%>
+<% unless cfs.empty? -%>
+from ansible.modules.cloud.<%= module_dir %>.custom_functions import (
+<%   last_item = cfs.pop -%>
+<%   cfs.each do |i| -%>
+    <%= i %>,
+<%   end -%>
+    <%= last_item %>)
+
+<% end -%>
+from ansible.module_utils.hwc_utils import (
+<%= module_import_items(object) %>
 <%
   # imports = ['json']
   # imports << 're'
