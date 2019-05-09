@@ -113,6 +113,10 @@ module Api
       shrink_type_name(type1)
     end
 
+    def child_properties
+      nil
+    end
+
     private
 
     def check_default_value
@@ -280,6 +284,10 @@ module Api
         end
         [property_file]
       end
+
+      def child_properties
+        @item_type.is_a?(Api::Type::NestedObject) ? @item_type.child_properties : nil
+      end
     end
 
     # Represents an enum, and store is valid values
@@ -436,6 +444,10 @@ module Api
 
       def properties
         @properties.reject(&:exclude)
+      end
+
+      def child_properties
+        @properties
       end
     end
 
