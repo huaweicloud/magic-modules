@@ -426,6 +426,25 @@ module Api
         || access_api_results
     end
 
+    def find_property(path)
+       return nil if (!path.is_a?(String) or path.empty?)
+       v = path.split(".")
+
+       o = @properties.find { |i| i.name.eql?(v[0]) }
+       v.shift
+
+       v.each do |name|
+         return nil if o.nil?
+
+         p = o.child_properties
+         return nil if p.nil?
+
+         o = p.find { |i| i.name.eql?(name) }
+       end
+
+       o
+    end
+
     private
 
     # Given an array of properties, return all ResourceRefs contained within

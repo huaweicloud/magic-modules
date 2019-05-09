@@ -39,6 +39,28 @@ module Api
 
       check_optional_property :header_params, Hash
     end
+
+    def find_parameter(path)
+       return nil if @parameters.nil?
+
+       return nil if (!path.is_a?(String) or path.empty?)
+       v = path.split(".")
+
+       o = @parameters.find { |i| i.name.eql?(v[0]) }
+       v.shift
+
+       v.each do |name|
+         return nil if o.nil?
+
+         p = o.child_properties
+         return nil if p.nil?
+
+         o = p.find { |i| i.name.eql?(name) }
+       end
+
+       o
+    end
+
   end
 
   class ApiCreate < Api::ApiBasic
@@ -74,10 +96,10 @@ module Api
       @identity.each do |k, v|
         next if k.eql?("id")
 
-        p = find_property(@__resource, v.split("."))
-	if p.nil?
+        p = @__resource.find_property(v)
+        if p.nil?
           raise "Missing property for identity(#{k}) in list operation of resource (#{@__resource.name})"
-	end
+        end
         unless p.required
           raise "property(#{v}) referenced by list identity(#{k}) must be a required option"
         end
