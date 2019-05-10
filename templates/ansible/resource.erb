@@ -351,17 +351,12 @@ def fetch_resource(config):
     module = config.module
     client = config.client(<%= argu_for_sdkclient(list_api) %>)
     opts = user_input_parameters(module)
-    identity = {
-<% list_api.identity.each do |k, v| -%>
-        "<%= k %>": navigate_value(opts, [<%= index2navigate(v, true) %>]),
-<% end -%>
-    }
-
 <% if list_api.path.include?("{") -%>
     link = build_path(module, "<%= list_api.path %>")
 <% else -%>
     link = <%= sprintf("\"%s\"", list_api.path) %>
 <% end -%>
+
 <% query_link = build_list_query_params(list_api, 4) -%>
 <% unless query_link.empty? -%>
 <%=  lines(query_link) -%>
