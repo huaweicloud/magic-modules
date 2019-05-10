@@ -82,26 +82,54 @@ module Api
     def validate
       super
 
-      check_property :identity, Hash
+      check_optional_property :identity, Hash # only terraform needs it
       check_property :resource_id_path, String
-      check_optional_property :query_params, Array
-      check_optional_property_list :query_params, String
-
-      @query_params || []
-
+      check_optional_property :query_params, Hash
     end
 
     def check_identity
+      return if @identity.nil?
+
       # Ensures we have all properties defined
       @identity.each do |k, v|
         next if k.eql?("id")
 
         p = @__resource.find_property(v)
         if p.nil?
-          raise "Missing property for identity(#{k}) in list operation of resource (#{@__resource.name})"
+          raise "Missing property(#{v}) for identity(#{k}) in list operation of resource (#{@__resource.name})"
         end
+
         unless p.required
           raise "property(#{v}) referenced by list identity(#{k}) must be a required option"
+        end
+      end
+
+      check_query_params
+    end
+
+    def default_query_params
+      ["marker", "offset", "start", "limit"]
+    end
+
+    private
+
+    def check_query_params
+      return if @query_params.nil?
+
+      dqp = default_query_params
+
+      # Ensures we have all properties defined
+      @query_params.each do |k, v|
+        next if dqp.include?(k)
+
+        p = @__resource.find_property(v)
+
+        if p.nil?
+          raise "Missing property(#{v}) for query_params(#{k}) in list operation of resource (#{@__resource.name})"
+        end
+
+        unless p.crud.include?("c") || p.crud.include?("u")
+          raise "property(#{v}) referenced by list query_params(#{k}) must be an input option"
         end
       end
     end
