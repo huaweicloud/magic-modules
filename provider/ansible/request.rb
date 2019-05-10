@@ -330,8 +330,9 @@ module Provider
       def build_list_query_params(api, spaces)
         page = []
         identity = []
-        api.query_params.each do |i|
-          case i
+        qp = api.query_params || Hash.new
+        qp.each do |k, v|
+          case k
           when "limit"
             page << "limit=10"
           when "offset"
@@ -341,38 +342,42 @@ module Provider
           when "marker"
             page << "marker={marker}"
           else
-            identity << i if api.identity.has_key?(i)
+            identity << k
           end
         end
 
+        page_s = page.empty? ? "" : sprintf("%s", page.join("&"))
+
         if identity.empty?
-          page.empty? ? "" : indent(sprintf("query_link = \"?%s\"", page.join("&")), spaces)
+          page_s.empty? ? "" : indent(sprintf("query_link = \"?%s\"", page_s), spaces)
         else
           out = []
           if identity.length == 1
             k = identity[0]
-            if k.eql?("id")
-              out << sprintf("query_link = \"?%sid=\" + identity[\"id\"]", page.empty? ? "" : page.join("&") + "&")
-            else
-              out << sprintf("query_link = \"?%s%s=\" + str(identity[\"%s\"])", page.empty? ? "" : page.join("&") + "&", k, k)
-            end
+            out << sprintf("query_link = \"?%s\"", page_s)
+            out << sprintf("v = navigate_value(opts, [%s])", index2navigate(qp[k], true))
+            out << "if v:"
+            out << sprintf("    query_link += \"%s%s=\" + str(v)", page_s.empty? ? "" : "&", k)
           else
-            out << sprintf("query_link = \"?%s\" + \"&\".join([", page.empty? ? "" : page.join("&") + "&")
+            out << "query_params = []"
             identity.each do |k|
-              out << "    \"#{k}=%s\" % str(identity[\"#{k}\"]),"
+              out << sprintf("v = navigate_value(opts, [%s])", index2navigate(qp[k], true))
+              out << sprintf("if v:\n    query_params.append(\"%s=\" + str(v))", k)
             end
-            out << "])"
+            out << sprintf("\nquery_link = \"?%s\"", page_s)
+            out << "if query_params:"
+            out << sprintf("    query_link += %s\"&\".join(query_params)", page_s.empty? ? "" : "\"&\" + ", )
           end
           indent(out, spaces)
         end
       end
 
       def fill_resp_parameter(prop, prefix, parent_var, spaces)
-	code = indent([
-	  sprintf("v = %s.setdefault(\"%s\", None)", parent_var, prop.name),
-	  "if v:",
+        code = indent([
+          sprintf("v = %s.setdefault(\"%s\", None)", parent_var, prop.name),
+          "if v:",
           sprintf("    fill%s%s_%s(v)", prefix.empty? ? "" : "_", prefix, prop.out_name),
-	], spaces)
+        ], spaces)
 
         if prop.is_a? Api::Type::NestedObject
           return code
