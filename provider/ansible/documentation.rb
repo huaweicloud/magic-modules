@@ -126,10 +126,10 @@ module Provider
         block = minimal_doc_block(prop, object, spaces)
         # Ansible linter does not support nesting options this deep.
         if prop.is_a?(Api::Type::NestedObject)
-          block.concat(nested_doc(prop.properties, object, spaces))
+          block.concat(nested_doc(order_properties(prop.properties), object, spaces))
         elsif prop.is_a?(Api::Type::Array) &&
               prop.item_type.is_a?(Api::Type::NestedObject)
-          block.concat(nested_doc(prop.item_type.properties, object, spaces))
+          block.concat(nested_doc(order_properties(prop.item_type.properties), object, spaces))
         else
           block
         end
@@ -140,10 +140,10 @@ module Provider
       def return_property_yaml(prop, spaces)
         block = minimal_return_block(prop, spaces)
         if prop.is_a? Api::Type::NestedObject
-          block.concat(nested_return(prop.properties, spaces))
+          block.concat(nested_return(order_properties(prop.properties), spaces))
         elsif prop.is_a?(Api::Type::Array) &&
               prop.item_type.is_a?(Api::Type::NestedObject)
-          block.concat(nested_return(prop.item_type.properties, spaces))
+          block.concat(nested_return(order_properties(prop.item_type.properties), spaces))
         else
           block
         end
@@ -185,8 +185,8 @@ module Provider
         [
           minimal_yaml(prop, spaces),
           indent([
-            "required: #{prop.required ? 'true' : 'false'}",
             ('type: bool' if prop.is_a? Api::Type::Boolean),
+            "required: #{prop.required ? 'true' : 'false'}",
             ("aliases: [#{prop.aliases.join(', ')}]" if prop.aliases),
             (if prop.is_a? Api::Type::Enum
                if prop.element_type.nil? || prop.element_type == 'Api::Type::String'
@@ -218,8 +218,8 @@ module Provider
         [
           minimal_yaml(prop, spaces),
           indent([
+                   "type: #{type}",
                    'returned: success',
-                   "type: #{type}"
                  ], 4)
         ]
       end

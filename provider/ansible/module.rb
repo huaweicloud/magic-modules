@@ -22,9 +22,9 @@ module Provider
         return if prop.crud.eql?("r")
         if prop.is_a?(Api::Type::Array) && \
            prop.item_type.is_a?(Api::Type::NestedObject)
-          nested_obj_dict(prop, object, prop.item_type.properties, spaces)
+          nested_obj_dict(prop, object, order_properties(prop.item_type.properties), spaces)
         elsif prop.is_a? Api::Type::NestedObject
-          nested_obj_dict(prop, object, prop.properties, spaces)
+          nested_obj_dict(prop, object, order_properties(prop.properties), spaces)
         else
           name = Google::StringUtils.underscore(prop.out_name)
           "#{name}=dict(#{prop_options(prop, object, spaces).join(', ')})"
