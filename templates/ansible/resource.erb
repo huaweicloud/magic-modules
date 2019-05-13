@@ -75,7 +75,7 @@ options:
                 default: <%= sprintf('\'%dm\'', at["delete"] / 60) %>
 <%   end -%>
 <% end -%>
-<% object.not_output_properties.each do |prop| -%>
+<% order_properties(object.not_output_properties).each do |prop| -%>
 <%= lines(indent(doc_property_yaml(prop, object, 4), 4)) -%>
 <% end -%>
 extends_documentation_fragment: hwc
@@ -96,7 +96,7 @@ EXAMPLES = '''
 
 <% end -%>
 RETURN = '''
-<% object.all_user_properties.each do |prop| -%>
+<% order_properties(object.all_user_properties).each do |prop| -%>
 <%= lines(indent(return_property_yaml(prop, 4), 4)) -%>
 <% end -%>
 '''
@@ -130,7 +130,7 @@ from ansible.module_utils.hwc_utils import (
 
 def build_module():
 <%
-  mod_props = object.not_output_properties.map do |prop|
+  mod_props = order_properties(object.not_output_properties).map do |prop|
     python_dict_for_property(prop, object)
   end
 -%>
