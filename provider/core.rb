@@ -745,6 +745,7 @@ module Provider
     end
 
     def need_build_async_url(api)
+      return true
       async = api.async
       if async
         async_op_url = async.operation.path.gsub(/{.*}/, ' ')
