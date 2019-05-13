@@ -432,12 +432,8 @@ module Provider
       end
 
       def module_import_items(resource)
-        v = ["Config", "HwcClientException", "HwcModule",
+        v = ["Config", "HwcClientException", "HwcModule", "are_different_dicts",
 	     "build_path", "is_empty_value", "navigate_value"]
-
-        if updatable?(resource)
-          v << "are_different_dicts"
-        end
 
         resource.apis.each do |_, api|
           unless api.async.nil?

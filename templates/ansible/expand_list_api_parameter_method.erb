@@ -1,0 +1,63 @@
+<%
+   new_prefix = sprintf("%s_%s", prefix, property.out_name)
+   func_def = sprintf("expand_%s(d, array_index):", new_prefix)
+-%>
+<% if property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
+<%   no_do = property.field.nil? || property.field.empty? -%>
+<%   unless no_do -%>
+<%     rp = resource.find_property(property.field) -%>
+<%     no_do = rp.nil? || rp.crud.eql?("r") -%>
+<%   end -%>
+<%   unless no_do -%>
+<%     unless rp.is_a?(Api::Type::Array) -%>
+<%       raise "list api parameter(#{property.name}) is an array, but the matched property is not" -%>
+<%     end -%>
+
+
+def <%= func_def %>
+    new_array_index = copy.deepcopy(array_index) if array_index else dict()
+
+    v = navigate_value(d, [<%= index2navigate(property.field, true) %>],
+                       new_array_index)
+
+    req = []
+    n = len(v) if v else 1<%# v may be None %>
+    for i in range(n):
+        new_array_index["<%= to_schema_index(property.field) %>"] = i
+        transformed = dict()
+<%     nested_properties = nested_properties(property) -%>
+<%       nested_properties.each do |prop| -%>
+
+<%= indent(convert_list_api_parameter(resource, prop, "d, new_array_index", new_prefix, "transformed"), 8) %>
+<%       end -%>
+
+        for _, v in transformed.items():
+            if v is not None:
+                req.append(transformed)
+                break
+
+    return req if req else None
+<%     nested_properties.each do |prop| -%>
+<%= lines(build_expand_method(resource, new_prefix, prop)) -%>
+<%     end -%>
+<%   end # no_do -%>
+<% end -%>
+<% if property.is_a?(Api::Type::NestedObject) -%>
+
+
+def <%= func_def %>
+    r = dict()
+<%   nested_properties = nested_properties(property) -%>
+<%     nested_properties.each do |prop| -%>
+
+<%= indent(convert_list_api_parameter(resource, prop, "d, array_index", new_prefix, "r"), 4) %>
+<%     end -%>
+
+    for _, v in r.items():
+        if v is not None:
+            return r
+    return None
+<%   nested_properties.each do |prop| -%>
+<%= lines(build_expand_method(resource, new_prefix, prop)) -%>
+<%   end -%>
+<% end -%>

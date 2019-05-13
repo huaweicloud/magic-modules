@@ -40,6 +40,12 @@ options:
             - Whether the given object should exist in <%= cloud_name %>.
         choices: ['present', 'absent']
         default: 'present'
+    filters:
+        description:
+            - A list of filters to apply when deciding whether existing
+              resources match and should be altered. The item of filters
+              is the name of input options.
+        required: true
 <% at = async_timout(object) -%>
 <% unless at.empty? -%>
     timeouts:
@@ -122,18 +128,17 @@ from ansible.module_utils.hwc_utils import (
 ###############################################################################
 
 
-def main():
-    """Main function"""
-
+def build_module():
 <%
   mod_props = object.not_output_properties.map do |prop|
     python_dict_for_property(prop, object)
   end
 -%>
-    module = HwcModule(
+    return HwcModule(
         argument_spec=dict(
             state=dict(default='present', choices=['present', 'absent'],
                        type='str'),
+            filters=dict(required=True, type='list', elements='str'),
 <% unless at.empty? -%>
             timeouts=dict(type='dict', options=dict(
 <%   unless at["create"].nil? -%>
@@ -152,14 +157,32 @@ def main():
         supports_check_mode=True,
     )
 
+
+def main():
+    """Main function"""
+
+    module = build_module()
     config = Config(module, "<%= object.__product.prefix[1..-1] %>")
+
 <% list_api = object.apis.fetch("list", nil)
    raise "no list api" if list_api.nil?
 -%>
     try:
-        resource = fetch_resource(config)
-        if resource:
-            module.params['id'] = navigate_value(resource, [<%= index2navigate(list_api.resource_id_path) %>])
+        resource = None
+        if module.params['id']:
+            resource = True
+        else:
+            v = search_resource(config)
+            if len(v) > 1:
+                raise Exception(
+                    "find more than one resources(%s)" % ", ".join([
+                            navigate_value(i, [<%= index2navigate(list_api.resource_id_path) %>])
+                            for i in v
+                        ]))
+
+            if len(v) == 1:
+                resource = v[0]
+                module.params['id'] = navigate_value(resource, [<%= index2navigate(list_api.resource_id_path) %>])
 
         result = {}
         changed = False
@@ -224,7 +247,7 @@ def create(config):
     module.params['id'] = navigate_value(obj, [<%= index2navigate(create_api.async.result.field) %>])
 <% end -%>
 <% other_api(object, "c").each do | item | -%>
-<% 
+<%
      r = item.async.nil? ? "" : "r = "
      spaces = item.parameters.nil? ? "" : "    "
 -%>
@@ -262,7 +285,7 @@ def update(config):
 <%     end -%>
 <%   end # update_api.nil? -%>
 <%   other_api(object, "u").each do | item | -%>
-<% 
+<%
        r = item.async.nil? ? "" : "r = "
        spaces = item.parameters.nil? ? "" : "    "
 -%>
@@ -289,7 +312,7 @@ def delete(config):
     timeout = 60 * int(module.params['timeouts']['delete'].rstrip('m'))
 <% end -%>
 <% delete_api = object.apis["delete"] -%>
-<% 
+<%
    r = delete_api.async.nil? ? "" : "r = "
    spaces = delete_api.parameters.nil? ? "" : "    "
 -%>
@@ -345,79 +368,94 @@ def read_resource(config, exclude_output=False):
 <% end -%>
 
     return update_properties(module, res, exclude_output)
+<% ql = build_list_query_params(list_api, 4) -%>
+<% unless ql.empty? -%>
 
 
-def fetch_resource(config):
+def _build_query_link(opts):
+<%=  lines(ql) -%>
+
+    return query_link
+<% end -%>
+
+
+def search_resource(config):
     module = config.module
     client = config.client(<%= argu_for_sdkclient(list_api) %>)
     opts = user_input_parameters(module)
-<% if list_api.path.include?("{") -%>
-    link = build_path(module, "<%= list_api.path %>")
-<% else -%>
-    link = <%= sprintf("\"%s\"", list_api.path) %>
+    identity_obj = _build_identity_object(module, opts)
+<% unless ql.empty? -%>
+    query_link = _build_query_link(opts)
 <% end -%>
-
-<% query_link = build_list_query_params(list_api, 4) -%>
-<% unless query_link.empty? -%>
-<%=  lines(query_link) -%>
-    link += query_link
+<% if list_api.path.include?("{") -%>
+    link = build_path(module, "<%= list_api.path %>")<%= ql.empty? ? "" : " + query_link" %>
+<% else -%>
+    link = <%= sprintf("\"%s\"", list_api.path) %><%= ql.empty? ? "" : " + query_link" %>
 <% end -%>
 
 <% if list_api.query_params.include?('marker') -%>
+    result = []
     p = {'marker': ''}
     while True:
         url = link.format(**p)
         r = send_<%= list_api.out_name %>_request(module, client, url)
         if not r:
-            return None
+            break
+
         for item in r:
-            for k, v in identity.items():
-                if item[k] != v:
-                    break
-            else:
-                return item
+            if not are_different_dicts(identity_obj, item):
+                result.append(item)
+
+        if len(result) > 1:
+            break
 
         p['marker'] = r[-1].get(<%= quote_string(list_api.resource_id_path) -%>)
+
+    return result
 <% elsif list_api.query_params.include?('offset') -%>
+    result = []
     p = {'offset': 0}
     while True:
         url = link.format(**p)
         r = send_<%= list_api.out_name %>_request(module, client, url)
         if not r:
-            return None
+            break
+
         for item in r:
-            for k, v in identity.items():
-                if item[k] != v:
-                    break
-            else:
-                return item
+            if not are_different_dicts(identity_obj, item):
+                result.append(item)
+
+        if len(result) > 1:
+            break
 
         p['offset'] += 1
+
+    return result
 <% elsif list_api.query_params.include?('start') -%>
+    result = []
     p = {'start': 1}
     while True:
         url = link.format(**p)
         r = send_<%= list_api.out_name %>_request(module, client, url)
         if not r:
-            return None
+            break
+
         for item in r:
-            for k, v in identity.items():
-                if item[k] != v:
-                    break
-            else:
-                return item
+            if not are_different_dicts(identity_obj, item):
+                result.append(item)
+
+        if len(result) > 1:
+            break
 
         p['start'] += len(r)
+
+    return result
 <% else -%>
     r = send_<%= list_api.out_name %>_request(module, client, link)
     if not r:
-        return None
-    for item in v:
-        for k, v in identity.items():
-        if item[k] != v:
-            break
-    else:
-        return item
+        return []
+
+    return [item for item in r if not are_different_dicts(identity_obj, item)]
 <% end -%>
 <% create_apis = [create_api, other_api(object, "c")].flatten.compact -%>
 <% create_apis.each do | item | -%>
@@ -465,7 +503,7 @@ def fetch_resource(config):
 <% unless delete_api.async.nil? -%>
 
 
-    <%= lines(build_resource_async_op(delete_api, module_name(object))) -%>
+<%= lines(build_resource_async_op(delete_api, module_name(object))) -%>
 <% end -%>
 <% read_apis.each do | item | -%>
 
@@ -481,6 +519,9 @@ def fetch_resource(config):
 
 
 <%= lines(build_read_method(list_api, module_name(object), true)) -%>
+
+
+<%= lines(build_identity_object_method(object, list_api)) -%>
 
 
 if __name__ == '__main__':

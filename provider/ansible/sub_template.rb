@@ -123,6 +123,18 @@ module Provider
                          property: property
       end
 
+      def build_identity_object_method(resource, api)
+        compile_template 'templates/ansible/build_identity_object.erb',
+                         resource: resource,
+                         api: api
+      end
+
+      def build_expand_list_api_method(resource, prefix, property)
+        compile_template 'templates/ansible/expand_list_api_parameter_method.erb',
+                         resource: resource,
+                         prefix: prefix,
+                         property: property
+      end
       private
 
       def autogen_notice_contrib

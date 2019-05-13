@@ -1,0 +1,16 @@
+def _build_identity_object(module, all_opts):
+    filters = module.params.get("filters")
+    opts = dict()
+    for k, v in all_opts.items():
+        opts[k] = v if k in filters else None
+
+    result = dict()
+<% api.parameters.each do |prop| -%>
+
+<%= indent(convert_list_api_parameter(resource, prop, "opts, None", api.out_name, "result"), 4) %>
+<% end -%>
+
+    return result
+<% api.parameters.each do |prop| -%>
+<%= lines(build_expand_list_api_method(resource, api.out_name, prop)) -%>
+<% end -%>
