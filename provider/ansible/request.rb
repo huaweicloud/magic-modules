@@ -217,6 +217,52 @@ module Provider
         ].compact
       end
 
+      def convert_list_api_parameter(resource, prop, arguments, prefix, result_var)
+        r = sprintf("%s[\"%s\"] = ", result_var, prop.name)
+        f = [
+          sprintf("v = expand_%s_%s(%s)", prefix, prop.out_name, arguments),
+          r + "v"
+        ]
+
+        if prop.is_a? Api::Type::NestedObject
+          return f
+
+        elsif prop.is_a?(Api::Type::Array) && \
+              prop.item_type.is_a?(Api::Type::NestedObject)
+
+          field = prop.field
+          return r + "None" if field.nil? || field.empty?
+
+          p = resource.find_property(field)
+          return r + "None" if p.nil? || p.crud.eql?("r")
+
+          return f
+
+        elsif prop.is_a?(Api::Type::NameValues)
+          return f
+
+        else
+          field = prop.field
+          return r + "None" if field.nil? || field.empty?
+
+          p = resource.find_property(field)
+          return r + "None" if p.nil? || p.crud.eql?("r")
+
+          d, ai = arguments.split(", ")
+          i = "[#{index2navigate(prop.field, true)}]"
+          if i.length > 39
+            ["v = navigate_value(#{d}, #{i},",
+             "                   #{ai})",
+             r + "v"
+            ]
+          else
+            ["v = navigate_value(#{d}, #{i}, #{ai})",
+             r + "v"
+            ]
+          end
+        end
+      end
+
       def convert_parameter(prop, arguments, prefix)
         f = sprintf("v = expand_%s_%s(%s)", prefix, prop.out_name, arguments)
 
@@ -361,7 +407,7 @@ module Provider
           else
             out << "query_params = []"
             identity.each do |k|
-              out << sprintf("v = navigate_value(opts, [%s])", index2navigate(qp[k], true))
+              out << sprintf("\nv = navigate_value(opts, [%s])", index2navigate(qp[k], true))
               out << sprintf("if v:\n    query_params.append(\"%s=\" + str(v))", k)
             end
             out << sprintf("\nquery_link = \"?%s\"", page_s)
