@@ -6,12 +6,21 @@
 
 
 def <%= func_def %>
+    if not value:
+        return None
+
+    result = []
     for item in value:
+        val = dict()
 <%   nested_properties = nested_properties(property) -%>
 <%   nested_properties.each do |prop| -%>
 
-<%= fill_resp_parameter(prop, new_prefix, "item", 8) %>
+<%= fill_resp_parameter(prop, new_prefix, "val", "item", 8) %>
 <%   end -%>
+
+        result.append(val)
+
+    return result
 <%   nested_properties.each do |prop| -%>
 <%= lines(build_fill_param_method(new_prefix, prop)) -%>
 <%   end -%>
@@ -19,11 +28,17 @@ def <%= func_def %>
 
 
 def <%= func_def %>
+    if not value:
+        return None
+
+    result = dict()
 <%   nested_properties = nested_properties(property) -%>
 <%   nested_properties.each do |prop| -%>
 
-<%= fill_resp_parameter(prop, new_prefix, "value", 4) %>
+<%= fill_resp_parameter(prop, new_prefix, "result", "value", 4) %>
 <%   end -%>
+
+    return result
 <%   nested_properties.each do |prop| -%>
 <%= lines(build_fill_param_method(new_prefix, prop)) -%>
 <%   end -%>
