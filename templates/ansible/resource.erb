@@ -392,8 +392,8 @@ def search_resource(config):
     link = <%= sprintf("\"%s\"", list_api.path) %><%= ql.empty? ? "" : " + query_link" %>
 <% end -%>
 
-<% if list_api.query_params.include?('marker') -%>
     result = []
+<% if list_api.query_params.include?('marker') -%>
     p = {'marker': ''}
     while True:
         url = link.format(**p)
@@ -402,6 +402,7 @@ def search_resource(config):
             break
 
         for item in r:
+            item = fill_<%= list_api.out_name%>_resp_body(item)
             if not are_different_dicts(identity_obj, item):
                 result.append(item)
 
@@ -409,10 +410,7 @@ def search_resource(config):
             break
 
         p['marker'] = r[-1].get(<%= quote_string(list_api.resource_id_path) -%>)
-
-    return result
 <% elsif list_api.query_params.include?('offset') -%>
-    result = []
     p = {'offset': 0}
     while True:
         url = link.format(**p)
@@ -421,6 +419,7 @@ def search_resource(config):
             break
 
         for item in r:
+            item = fill_<%= list_api.out_name%>_resp_body(item)
             if not are_different_dicts(identity_obj, item):
                 result.append(item)
 
@@ -428,10 +427,7 @@ def search_resource(config):
             break
 
         p['offset'] += 1
-
-    return result
 <% elsif list_api.query_params.include?('start') -%>
-    result = []
     p = {'start': 1}
     while True:
         url = link.format(**p)
@@ -440,6 +436,7 @@ def search_resource(config):
             break
 
         for item in r:
+            item = fill_<%= list_api.out_name%>_resp_body(item)
             if not are_different_dicts(identity_obj, item):
                 result.append(item)
 
@@ -447,15 +444,18 @@ def search_resource(config):
             break
 
         p['start'] += len(r)
-
-    return result
 <% else -%>
     r = send_<%= list_api.out_name %>_request(module, client, link)
     if not r:
-        return []
+        return result
 
-    return [item for item in r if not are_different_dicts(identity_obj, item)]
+    for item in r:
+        item = fill_<%= list_api.out_name%>_resp_body(item)
+        if not are_different_dicts(identity_obj, item):
+            result.append(item)
 <% end -%>
+
+    return result
 <% create_apis = [create_api, other_api(object, "c")].flatten.compact -%>
 <% create_apis.each do | item | -%>
 <%   unless item.parameters.nil? -%>
@@ -521,6 +521,9 @@ def search_resource(config):
 
 
 <%= lines(build_identity_object_method(object, list_api)) -%>
+
+
+<%= lines(build_fill_resp_body_method(list_api)) -%>
 
 
 if __name__ == '__main__':
