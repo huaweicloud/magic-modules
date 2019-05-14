@@ -1,9 +1,12 @@
 <% prefix = api.out_name + "_resp" -%>
 def fill_<%= api.out_name%>_resp_body(body):
+    result = dict()
 <% api.parameters.each do |prop| -%>
 
-<%= fill_resp_parameter(prop, "#{prefix}", "body", 4) %>
+<%= fill_resp_parameter(prop, "#{prefix}", "result", "body", 4) %>
 <% end -%>
+
+    return result
 <% api.parameters.each do |prop| -%>
 <%= lines(build_fill_param_method(prefix, prop)) -%>
 <% end -%>

@@ -363,8 +363,7 @@ def read_resource(config, exclude_output=False):
 <% read_apis = [read_api, other_api(object, "r")].flatten.compact -%>
 <% read_apis.each do | item | -%>
     r = send_<%= item.out_name%>_request(module, client)
-    fill_<%= item.out_name%>_resp_body(r)
-    res["<%= item.name %>"] = r
+    res["<%= item.name %>"] = fill_<%= item.out_name%>_resp_body(r)
 <% end -%>
 
     return update_properties(module, res, exclude_output)

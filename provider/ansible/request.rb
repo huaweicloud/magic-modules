@@ -418,11 +418,10 @@ module Provider
         end
       end
 
-      def fill_resp_parameter(prop, prefix, parent_var, spaces)
+      def fill_resp_parameter(prop, prefix, parent_var, var, spaces)
         code = indent([
-          sprintf("v = %s.setdefault(\"%s\", None)", parent_var, prop.name),
-          "if v:",
-          sprintf("    fill%s%s_%s(v)", prefix.empty? ? "" : "_", prefix, prop.out_name),
+          sprintf("v = fill%s%s_%s(%s.get(\"%s\"))", prefix.empty? ? "" : "_", prefix, prop.out_name, var, prop.name),
+          sprintf("%s[\"%s\"] = v", parent_var, prop.name),
         ], spaces)
 
         if prop.is_a? Api::Type::NestedObject
@@ -433,7 +432,7 @@ module Provider
           return code
 
         else
-          indent(sprintf("%s.setdefault(\"%s\", None)", parent_var, prop.name), spaces)
+          indent(sprintf("%s[\"%s\"] = %s.get(\"%s\")", parent_var, prop.name, var, prop.name), spaces)
         end
       end
 
