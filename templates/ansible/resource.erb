@@ -6,12 +6,18 @@
 # https://www.gnu.org/licenses/gpl-3.0.txt)
 <%# lines(autogen_notice :python) -%>
 
-from __future__ import absolute_import, division, print_function
-__metaclass__ = type
+<% cfs = custom_override_methods(object) -%>
+<% unless cfs.empty? -%>
+from ansible.modules.cloud.<%= module_dir %>.custom_functions import (
+<%   last_item = cfs.pop -%>
+<%   cfs.each do |i| -%>
+    <%= i %>,
+<%   end -%>
+    <%= last_item %>)
 
-###############################################################################
-# Documentation
-###############################################################################
+<% end -%>
+from ansible.module_utils.hwc_utils import (
+<%= module_import_items(object) %>
 
 <%
   metadata_version = quote_string(@config.manifest.get('metadata_version',
@@ -100,32 +106,6 @@ RETURN = '''
 <%= lines(indent(return_property_yaml(prop, 4), 4)) -%>
 <% end -%>
 '''
-
-###############################################################################
-# Imports
-###############################################################################
-
-<% cfs = custom_override_methods(object) -%>
-<% unless cfs.empty? -%>
-from ansible.modules.cloud.<%= module_dir %>.custom_functions import (
-<%   last_item = cfs.pop -%>
-<%   cfs.each do |i| -%>
-    <%= i %>,
-<%   end -%>
-    <%= last_item %>)
-
-<% end -%>
-from ansible.module_utils.hwc_utils import (
-<%= module_import_items(object) %>
-<%
-  # imports = ['json']
-  # imports << 're'
--%>
-<%# = lines(imports.sort.uniq.map { |i| "import #{i}" }) -%>
-
-###############################################################################
-# Main
-###############################################################################
 
 
 def build_module():
