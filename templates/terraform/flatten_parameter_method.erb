@@ -23,7 +23,13 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
         if err != nil {
             return nil, err
         }
-        n := len(v.([]interface{}))
+        n := 1
+        if v1, ok := v.([]interface{}); ok {
+            n = len(v1)
+            if n < 1 {
+                n = 1
+            }
+        }
         result = make([]interface{}, n, n)
 <%   else -%>
         result = make([]interface{}, 1, 1)
