@@ -322,7 +322,7 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
     }
 
 <%   end -%>
-    params, err := build<%= resource_name -%>DeleteParameters(opts, arrayIndex)
+    params, err := build<%= resource_name -%>DeleteParameters(opts, <%= ai_name %>)
     if err != nil {
         return fmt.Errorf("Error building the request body of api(delete), err=%s", err)
     }
