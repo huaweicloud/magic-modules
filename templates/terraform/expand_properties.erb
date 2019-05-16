@@ -1,17 +1,18 @@
 <%
    globalIndex = args.split(", ")[1]
+   first = true
 %>
-<% properties.each_index do |i|
-     prop = properties[i]
-     v2 = i == 0 ? ":=" : "="
+<% properties.each do |prop|
      r = sprintf("%s[\"%s\"] = v", map_obj, prop.name)
      rt = return_value ? "nil, " : ""
 -%>
 <%   unless prop.default.nil? -%>
     <%= sprintf("%s[\"%s\"] = %s", map_obj, prop.name, convert_parameter(prop, args, prefix)) %>
+
 <%     next -%>
 <%   end -%>
-    v, err <%= v2 %> <%= convert_parameter(prop, args, prefix) %>
+    v, err <%= first ? ":=" : "=" %> <%= convert_parameter(prop, args, prefix) %>
+<%   first = false -%>
     if err != nil {
         return <%= rt %>err
     }
@@ -23,12 +24,13 @@
     }
 <%   else -%>
 <%     if prop.is_a?(Api::Type::Boolean) || prop.is_a?(Api::Type::Integer) -%>
-    if e, err := isEmptyValue(reflect.ValueOf(v); err != nil {
+    if e, err := isEmptyValue(reflect.ValueOf(v)); err != nil {
         return <%= rt %>err
     } else if !e {
         <%= r %>
     } else {
-        if ok := isUserInput(d, []string{<%= index2navigate(prop.field, true) %>}, <%= globalIndex %>); ok {
+        rd, _ := navigateValue(d, []string{"terraform_resource_data"}, nil)
+        if ok := isUserInput(rd.(*schema.ResourceData), []string{<%= index2navigate(prop.field, true) %>}, <%= globalIndex %>); ok {
             <%= r %>
         }
     }
