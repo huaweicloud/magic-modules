@@ -306,6 +306,63 @@ module Provider
           indent(out, spaces)
         end
       end
+
+      def fill_resp_parameter(prop, prefix, parent_var, var)
+        code = indent([
+          sprintf("if v, ok := %s[\"%s\"]; ok {", var, prop.name),
+          sprintf("%s[\"%s\"] = fill%s%s(v)", parent_var, prop.name, prefix, titlelize(prop.name)),
+          "} else {",
+          sprintf("%s[\"%s\"] = nil", parent_var, prop.name),
+          "}"
+        ], 4)
+
+        if prop.is_a? Api::Type::NestedObject
+          return code
+
+        elsif prop.is_a?(Api::Type::Array) && \
+              prop.item_type.is_a?(Api::Type::NestedObject)
+          return code
+        end
+
+        dv = ""
+        if prop.is_a? Api::Type::Boolean
+          dv = "false"
+
+        elsif prop.is_a? Api::Type::Integer
+          dv = "0"
+
+        elsif prop.is_a? Api::Type::Double
+          dv = "0"
+
+        elsif prop.is_a? Api::Type::String
+          dv = "\"\""
+
+        elsif prop.is_a? Api::Type::Time
+          dv = "\"\""
+
+        elsif prop.is_a? Api::Type::Enum
+          dv = "\"\""
+
+        elsif prop.is_a? Api::Type::Array
+          dv = "nil"
+
+        elsif prop.is_a? Api::Type::NameValues
+          dv = "nil"
+
+        else
+          raise "unknown type"
+        end
+
+        dv = "nil"
+        indent([
+          sprintf("if v, ok := %s[\"%s\"]; ok {", var, prop.name),
+          sprintf("%s[\"%s\"] = v", parent_var, prop.name),
+          "} else {",
+          sprintf("%s[\"%s\"] = %s", parent_var, prop.name, dv),
+          "}"
+        ], 4)
+
+      end
     end
     # rubocop:enable Metrics/ModuleLength
   end

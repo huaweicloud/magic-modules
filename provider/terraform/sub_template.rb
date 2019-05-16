@@ -127,6 +127,16 @@ module Provider
                          api: api
       end
 
+      def build_fill_resp_body_method(api)
+        compile_template 'templates/terraform/fill_resp_body.erb',
+                         api: api
+      end
+
+      def build_fill_param_method(prefix, property)
+        compile_template 'templates/terraform/fill_parameter_method.erb',
+                         prefix: prefix,
+                         property: property
+      end
       private
 
       def autogen_notice_contrib

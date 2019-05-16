@@ -185,7 +185,7 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
     if err != nil {
         return err
     }
-    res["<%= item.name %>"] = v
+    res["<%= item.name %>"] = fill<%= titlelize(item.name) %>RespBody(v)
 <% end -%>
 
     return set<%= resource_name -%>Properties(d, res)
@@ -204,7 +204,7 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
     if err != nil {
         return err
     }
-    res["<%= list_api.name %>"] = v
+    res["<%= list_api.name %>"] = fill<%= titlelize(list_api.name) %>RespBody(v)
 <% read_apis = other_api(object, "r") -%>
 <% read_apis.each do | item | -%>
 
@@ -212,7 +212,7 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
     if err != nil {
         return err
     }
-    res["<%= item.name %>"] = v
+    res["<%= item.name %>"] = fill<%= titlelize(item.name) %>RespBody(v)
 <% end -%>
 
     return set<%= resource_name -%>Properties(d, res)
@@ -451,6 +451,8 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <% read_apis.each do | item | -%>
 
 <%= lines(build_read_method(resource_name, item), 1) -%>
+
+<%= lines(build_fill_resp_body_method(item)) -%>
 <% end -%>
 <% if read_api.nil? and !list_api.nil? -%>
 
@@ -459,6 +461,8 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <%= lines(build_list_method_filter(resource_name, list_api), 1) -%>
 
 <%= lines(build_read_method(resource_name, list_api, true), 1) -%>
+
+<%= lines(build_fill_resp_body_method(list_api)) -%>
 <% end -%>
 
 <%= lines(build_set_properties_method(object, resource_name), 1) -%>
