@@ -28,11 +28,11 @@ func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIn
             newArrayIndex[k] = v
         }
     }
-
-<%   rp = find_property(resource, property.field.split(".")) -%>
-<%   unless rp.is_a?(Api::Type::Array) -%>
-<%     raise "parameter(#{property.name}) is an array, but the matched property is not"-%>
-<%   end -%>
+<%   if property.array_num.nil? -%>
+<%     rp = find_property(resource, property.field.split(".")) -%>
+<%     unless rp.is_a?(Api::Type::Array) -%>
+<%       raise "parameter(#{property.name}) is an array, but the matched property is not"-%>
+<%     end -%>
     val, err := navigateValue(d, []string{<%= index2navigate(property.field, true) %>}, newArrayIndex)
     if err != nil {
         return nil, err
@@ -45,10 +45,15 @@ func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIn
             n = 1
         }
     }
+<%   else -%>
+    n := <%= property.array_num %>
+<%   end -%>
 <%   nested_properties = nested_properties(property) -%>
     req := make([]interface{}, 0, n)
     for i := 0; i < n; i++ {
+<%   unless property.field.nil? -%>
         newArrayIndex["<%= to_schema_index(property.field) %>"] = i
+<%   end -%>
         transformed := make(map[string]interface{})
 
         <%= lines(build_expand_properties(nested_properties, "d, newArrayIndex", prefix + titlelize(property.name), "transformed", true), 1) -%>
