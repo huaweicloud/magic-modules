@@ -1,0 +1,59 @@
+<%
+   new_prefix = sprintf("%s%s", prefix, titlelize(property.name))
+func_def = sprintf("fill%s(value interface{}) interface{}", new_prefix)
+-%>
+<% if property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
+
+func <%= func_def %> {
+    if value == nil {
+        return nil
+    }
+
+    value1, ok := value.([]interface{})
+    if !ok || len(value1) == 0 {
+        return nil
+    }
+
+    n := len(value1)
+    result := make([]interface{}, n, n)
+    for i := 0; i < n; i++ {
+      val := make(map[string]interface{})
+      item := value1[i].(map[string]interface{})
+<%   nested_properties = nested_properties(property) -%>
+<%   nested_properties.each do |prop| -%>
+
+<%= fill_resp_parameter(prop, new_prefix, "val", "item") %>
+<%   end -%>
+
+        result[i] = val
+    }
+
+    return result
+}
+<%   nested_properties.each do |prop| -%>
+<%= lines(build_fill_param_method(new_prefix, prop)) -%>
+<%   end -%>
+<% elsif property.is_a?(Api::Type::NestedObject) -%>
+
+func <%= func_def %> {
+    if value == nil {
+        return nil
+    }
+
+    value1, ok := value.(map[string]interface{})
+    if !ok {
+        value1 = make(map[string]interface{})
+    }
+    result := make(map[string]interface{})
+<%   nested_properties = nested_properties(property) -%>
+<%   nested_properties.each do |prop| -%>
+
+<%= fill_resp_parameter(prop, new_prefix, "result", "value1") %>
+<%   end -%>
+
+    return result
+}
+<%   nested_properties.each do |prop| -%>
+<%= lines(build_fill_param_method(new_prefix, prop)) -%>
+<%   end -%>
+<% end # if property.is_a?(Api::Type::Array) -%>

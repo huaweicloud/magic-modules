@@ -1,0 +1,17 @@
+<% prefix = titlelize(api.name) + "Resp" -%>
+func fill<%= prefix %>Body(body interface{}) interface{} {
+    result := make(map[string]interface{})
+    val, ok := body.(map[string]interface{})
+    if !ok {
+    	val = make(map[string]interface{})
+    }
+<% api.parameters.each do |prop| -%>
+
+<%= fill_resp_parameter(prop, "#{prefix}", "result", "val") %>
+<% end -%>
+
+    return result
+}
+<% api.parameters.each do |prop| -%>
+<%= lines(build_fill_param_method(prefix, prop)) -%>
+<% end -%>
