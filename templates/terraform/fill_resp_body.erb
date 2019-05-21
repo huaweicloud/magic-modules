@@ -1,4 +1,4 @@
-<% prefix = titlelize(api.name) + "Resp" -%>
+<% prefix = resource_name + titlelize(api.name) + "Resp" -%>
 func fill<%= prefix %>Body(body interface{}) interface{} {
     result := make(map[string]interface{})
     val, ok := body.(map[string]interface{})
