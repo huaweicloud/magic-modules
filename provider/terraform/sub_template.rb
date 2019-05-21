@@ -127,8 +127,9 @@ module Provider
                          api: api
       end
 
-      def build_fill_resp_body_method(api)
+      def build_fill_resp_body_method(api, resource_name)
         compile_template 'templates/terraform/fill_resp_body.erb',
+                         resource_name: resource_name,
                          api: api
       end
 
