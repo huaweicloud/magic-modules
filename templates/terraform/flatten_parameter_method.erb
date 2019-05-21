@@ -16,6 +16,7 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
      # send question. it exists that if the array has two items, but the order of readback data is not matched
      # but now, there is no good way to check whether two items from different arraya are matched.
 -%>
+    n := 0
     result, ok := currentValue.([]interface{})
     if !ok || len(result) == 0 {
 <%   if property.crud.include?("r") -%>
@@ -30,10 +31,13 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
                 n = 1
             }
         }
-        result = make([]interface{}, n, n)
+        result = make([]interface{}, 0, n)
 <%   else -%>
-        result = make([]interface{}, 1, 1)
+        n = 1
+        result = make([]interface{}, 0, 1)
 <%   end -%>
+    } else {
+        n = len(result)
     }
 
     newArrayIndex := make(map[string]int)
@@ -43,12 +47,15 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
         }
     }
 
-    for i := 0; i < len(result); i++ {
+    for i := 0; i < n; i++ {
         newArrayIndex["<%= property.field %>"] = i
-        if result[i] == nil {
-            result[i] = make(map[string]interface{})
+
+        var r map[string]interface{}
+        if len(result) >= (i + 1) && result[i] != nil {
+            r = result[i].(map[string]interface{})
+        } else {
+            r = make(map[string]interface{})
         }
-        r := result[i].(map[string]interface{})
 <%   nested_properties = nested_properties(property)
      first_assign = true
 -%>
@@ -60,6 +67,14 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
     <%= c %>
 <%     end -%>
 <%   end -%>
+
+        if len(r) != 0 {
+            if len(result) >= (i + 1) {
+                result[i] = r
+            } else {
+                result = append(result, r)
+            }
+        }
     }
 
     return result, nil
@@ -91,6 +106,9 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
 <%     end -%>
 <%   end -%>
 
+    if len(result[0]) == 0 {
+            return currentValue
+    }
     return result, nil
 }
 <%   nested_properties.each do |prop| -%>
