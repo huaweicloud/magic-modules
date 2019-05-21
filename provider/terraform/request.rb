@@ -222,13 +222,13 @@ module Provider
 
         set_to_schema = indent([
           "if err != nil {\nreturn #{read_err}\n}",
-           sprintf("if err = d.Set(\"%s\", %s); err != nil {", prop.out_name, prop_var),
-           sprintf("return fmt.Errorf(\"Error setting %s:%s, err: %%s\", err)\n}", resource_name, prop.out_name),
+           sprintf("if %s != nil {\nif err = d.Set(\"%s\", %s); err != nil {", prop_var, prop.out_name, prop_var),
+           sprintf("return fmt.Errorf(\"Error setting %s:%s, err: %%s\", err)\n}\n}", resource_name, prop.out_name),
         ], 4)
 
         set_to_parent = indent([
           "if err != nil {\nreturn nil, #{read_err}\n}",
-          sprintf("%s[\"%s\"] = %s", parent_var, prop.out_name, prop_var),
+          sprintf("if %s != nil {\n%s[\"%s\"] = %s\n}", prop_var, parent_var, prop.out_name, prop_var),
         ], 4)
 
         f = indent([

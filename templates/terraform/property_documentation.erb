@@ -6,7 +6,7 @@
   (Optional)
 <% end -%>
 <% desc = property.description.strip -%>
-<% desc += "." unless desc.end_with? "."%>
+<% desc += "." unless desc.end_with? "." -%>
 <%= indent(desc, 2) -%>
 <% _, _, forcenew = optional_compute_forcenew?(property, nil) -%>
 <% if property.is_a?(Api::Type::NestedObject) || (property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject)) -%>
