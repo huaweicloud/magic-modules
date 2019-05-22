@@ -18,12 +18,11 @@
 <% end # if object.virtual -%>
   assert:
     that:
-      - result.failed == 0
 <% if object.virtual -%>
       # <%= object.name -%> is not altered, just verified.
       - result.changed == false
 <% else # if object.virtual -%>
-      - result.changed == true
+      result is changed
 <% end # if object.virtual -%>
 <% if object.kind? -%>
       - "result.kind == <%= quote_string(object.kind) -%>"
@@ -49,8 +48,7 @@
 - name: assert changed is true
   assert:
     that:
-      - result.failed == 0
-      - result.changed == true
+      result is changed
 <% if object.kind? -%>
       - result.has_key('kind') == False
 <% end # if object.kind? -%>

@@ -180,7 +180,7 @@ module Provider
             "#{@name}:",
             indent([
                      compile_string(EXAMPLE_DEFAULTS, @code),
-                   ], 4),
+                   ], 2),
             ("register: #{@register}" unless @register.nil?)
           ].compact, 2)
         ]
@@ -213,7 +213,7 @@ module Provider
                      # 'scopes:',
                      # indent(lines(scopes), 2),
                      "state: #{state}"
-                   ], 4),
+                   ], 2),
             ("register: #{@register}" unless @register.nil?)
           ].compact, 2)
         ]
