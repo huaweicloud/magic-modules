@@ -86,7 +86,7 @@ module Provider
 
       def substitute_tf_var(tf)
         gv = tf.scan(/env-OS_[A-Z_0-9]+/)
-        iv = tf.enum_for(:scan, /(?=_env-val)/).map { Regexp.last_match.offset(0).first }
+        iv = tf.enum_for(:scan, /(?=[_-]env-val)/).map { Regexp.last_match.offset(0).first }
         ig = tf.enum_for(:scan, /(?=env-OS_[A-Z_0-9]+)/).map { Regexp.last_match.offset(0).first }
 
         r = []
@@ -100,7 +100,7 @@ module Provider
         r.sort { |x, y| x[0] <=> y[0] }.each { |i| r1 << i[1]}
 
         s = tf.gsub(/env-OS_[A-Z_0-9]+/, "%s")
-        s = s.gsub(/_env-val/, "%s")
+        s = s.gsub(/[_-]env-val/, "%s")
         lines([
           " return fmt.Sprintf(`",
           s[0..-2],
@@ -117,7 +117,7 @@ module Provider
         end
 
         s = tf.gsub(/env-OS_[A-Z_0-9]+/, h)
-        s = s.gsub(/_env-val/, "")
+        s = s.gsub(/[_-]env-val/, "")
         lines([
           "```hcl",
           s[0..-2],
