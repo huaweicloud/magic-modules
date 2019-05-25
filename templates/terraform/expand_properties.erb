@@ -5,17 +5,33 @@
 <% properties.each do |prop|
      r = sprintf("%s[\"%s\"] = v", map_obj, prop.name)
      rt = return_value ? "nil, " : ""
+     dv = prop.default
 -%>
-<%   unless prop.default.nil? -%>
+<%   unless dv.nil? -%>
+<%     if prop.field.nil? -%>
     <%= sprintf("%s[\"%s\"] = %s", map_obj, prop.name, convert_parameter(prop, args, prefix)) %>
 
-<%     next -%>
+<%       next -%>
+<%     end -%>
+<%     prop.instance_variable_set("@default".to_sym, nil) -%>
 <%   end -%>
     v, err <%= first ? ":=" : "=" %> <%= convert_parameter(prop, args, prefix) %>
 <%   first = false -%>
     if err != nil {
         return <%= rt %>err
     }
+<%   unless dv.nil? -%>
+<%     prop.instance_variable_set("@default".to_sym, dv) -%>
+    if e, err := isEmptyValue(reflect.ValueOf(v)); err != nil {
+        return <%= rt %>err
+    } else if !e {
+        <%= r %>
+    } else {
+        <%= sprintf("%s[\"%s\"] = %s", map_obj, prop.name, convert_parameter(prop, args, prefix)) %>
+    }
+
+<%     next -%>
+<%   end -%>
 <%   unless prop.send_empty_value -%>
     if e, err := isEmptyValue(reflect.ValueOf(v)); err != nil {
         return <%= rt %>err
@@ -23,22 +39,22 @@
         <%= r %>
     }
 <%   else -%>
-<%     if prop.is_a?(Api::Type::Boolean) || prop.is_a?(Api::Type::Integer) -%>
-    if e, err := isEmptyValue(reflect.ValueOf(v)); err != nil {
-        return <%= rt %>err
-    } else if !e {
-        <%= r %>
-    } else {
-        rd, _ := navigateValue(d, []string{"terraform_resource_data"}, nil)
-        if ok := isUserInput(rd.(*schema.ResourceData), []string{<%= index2navigate(prop.field, true) %>}, <%= globalIndex %>); ok {
-            <%= r %>
-        }
-    }
-<%     else -%>
     if v != nil {
+<%     if prop.is_a?(Api::Type::Boolean) || prop.is_a?(Api::Type::Integer) -%>
+        if e, err := isEmptyValue(reflect.ValueOf(v)); err != nil {
+            return <%= rt %>err
+        } else if !e {
+            <%= r %>
+        } else {
+            rd, _ := navigateValue(d, []string{"terraform_resource_data"}, nil)
+            if ok := isUserInput(rd.(*schema.ResourceData), []string{<%= index2navigate(prop.field, true) %>}, <%= globalIndex %>); ok {
+                <%= r %>
+            }
+        }
+<%     else -%>
         <%= r %>
-    }
 <%     end -%>
+    }
 <%   end -%>
 
 <% end -%>
