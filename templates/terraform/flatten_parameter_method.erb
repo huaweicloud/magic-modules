@@ -106,8 +106,8 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
 <%     end -%>
 <%   end -%>
 
-    if len(result[0]) == 0 {
-            return currentValue
+    if len(r) == 0 {
+            return currentValue, nil
     }
     return result, nil
 }
