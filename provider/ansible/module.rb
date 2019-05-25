@@ -49,10 +49,18 @@ module Provider
 
       # Returns an array of all base options for a given property.
       def prop_options(prop, _object, spaces)
+        default = ""
+        if prop.default
+          default = prop.default
+          if prop.is_a?(Api::Type::String) || prop.is_a?(Api::Type::Time) || prop.is_a?(Api::Type::Enum)
+            default = sprintf("\'%s\'", default)
+          end
+        end
         [
-          ('required=True' if prop.required),
           "type=#{quote_string(python_type(prop))}",
+          ('required=True' if prop.required),
           (choices_enum(prop, spaces) if prop.is_a? Api::Type::Enum),
+          ('default=' + default if prop.default),
           ("elements=#{quote_string(python_type(prop.item_type))}" \
             if prop.is_a? Api::Type::Array),
           ("aliases=[#{prop.aliases.map { |x| quote_string(x) }.join(', ')}]" \

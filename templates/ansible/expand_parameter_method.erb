@@ -15,26 +15,32 @@ def <%= func_def %>
 <%   end -%>
 <%= indent(lines(property.to_request, -1), 4) -%>
 <% elsif property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
-<%   rp = find_property(resource, property.field.split("."))
-     unless rp.is_a?(Api::Type::Array)
-       raise "parameter(#{property.name}) is an array, but the matched property is not"
-     end
--%>
 
 
 def <%= func_def %>
     new_array_index = copy.deepcopy(array_index) if array_index else dict()
 
+    req = []
+
+<%   if property.array_num.nil? -%>
+<%     rp = find_property(resource, property.field.split("."))
+       unless rp.is_a?(Api::Type::Array)
+         raise "parameter(#{property.name}) is an array, but the matched property is not"
+       end
+-%>
     v = navigate_value(d, [<%= index2navigate(property.field, true) %>],
                        new_array_index)
-
-<%   nested_properties = nested_properties(property) -%>
-    req = []
     n = len(v) if v else 1<%# v may be None %>
+<%   else -%>
+    n = <%= property.array_num %>
+<%   end -%>
     for i in range(n):
+<%   unless property.field.nil? -%>
         new_array_index["<%= to_schema_index(property.field) %>"] = i
+<%   end -%>
         transformed = dict()
 
+<%   nested_properties = nested_properties(property) -%>
 <%= indent(lines(build_expand_properties(nested_properties, "d, new_array_index", new_prefix, "transformed")), 8) -%>
 
 	if transformed:
