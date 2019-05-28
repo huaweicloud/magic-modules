@@ -221,7 +221,24 @@ def create(config):
     params = build_create_parameters(opts)
     r = send_create_request(module, params, client)
 <% if create_api.async.nil? -%>
-    module.params['id'] = navigate_value(r, [<%= index2navigate(create_api.resource_id_path ) %>])
+<%   path, array_index = convert_resource_id_path(create_api.resource_id_path) -%>
+<%   if array_index.nil? -%>
+    module.params['id'] = navigate_value(r, [<%= index2navigate(path) %>])
+<%   else -%>
+<%     if array_index.length == 1 -%>
+<%       k1 = array_index.keys[0] -%>
+    module.params['id'] = navigate_value(r, [<%= index2navigate(path) %>],
+                                         {"<%= k1 %>": <%= array_index[k1] %>})
+<%     else -%>
+    array_index = {
+        <% array_index.each_pair do |k, v| -%>
+        "<%= k %>": <%= v %>,
+        <% end -%>
+    }
+    module.params['id'] = navigate_value(r, [<%= index2navigate(path) %>],
+                                         array_index)
+<%     end -%>
+<%   end -%>
 <% else -%>
     obj = async_wait_create(config, r, client, timeout)
     module.params['id'] = navigate_value(obj, [<%= index2navigate(create_api.async.result.field) %>])
@@ -341,12 +358,28 @@ def read_resource(config, exclude_output=False):
 
     res = {}
 <% read_apis = [read_api, other_api(object, "r")].flatten.compact -%>
+<% array_params = Hash.new -%>
 <% read_apis.each do | item | -%>
+
     r = send_<%= item.out_name%>_request(module, client)
     res["<%= item.name %>"] = fill_<%= item.out_name%>_resp_body(r)
+<%   v = get_fixed_length_array_parameter(item) -%>
+<%   unless v.nil? || v.empty? -%>
+<%     v.each_pair do |k, v1| -%>
+<%       array_params[item.name + "." + k] = v1 if v1 == 1 -%>
+<%     end-%>
+<%   end -%>
+<% end -%>
+<% unless array_params.empty? -%>
+
+    array_index = {
+<%   array_params.each_pair do |k, v| -%>
+        "<%= k %>": 0,
+<%   end -%>
+    }
 <% end -%>
 
-    return update_properties(module, res, exclude_output)
+    return update_properties(module, res, <%= array_params.empty? ? "None" : "array_index" %>, exclude_output)
 <% ql = build_list_query_params(list_api, 4) -%>
 <% unless ql.empty? -%>
 

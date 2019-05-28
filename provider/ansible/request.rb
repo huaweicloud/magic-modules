@@ -230,6 +230,8 @@ module Provider
         elsif prop.is_a?(Api::Type::Array) && \
               prop.item_type.is_a?(Api::Type::NestedObject)
 
+          return f unless prop.array_num.nil?
+
           field = prop.field
           return r + "None" if field.nil? || field.empty?
 
@@ -308,7 +310,7 @@ module Provider
         return "" unless has_output_property(prop)
 
         prop_var = "v"
-        set_parent = sprintf("%s[\"%s\"] = %s", parent_var, prop.out_name, prop_var)
+        set_parent = sprintf("if %s is not None:\n    %s[\"%s\"] = %s", prop_var, parent_var, prop.out_name, prop_var)
         f = [
           sprintf("%s = %s.get(\"%s\")", prop_var, parent_var, prop.out_name),
           sprintf("%s = flatten%s%s_%s(%s, %s, exclude_output)", prop_var, prefix.empty? ? "" : "_", prefix, prop.out_name, arguments, prop_var),
@@ -359,7 +361,7 @@ module Provider
               "if not exclude_output:",
               (sprintf("    %s = navigate_value(%s, %s, %s)", prop_var, v[0], i, v[1]) if i.length <= 79 - len),
               (sprintf("    %s = navigate_value(%s, %s,\n%s%s)", prop_var, v[0], i, ' ' * len1, v[1]) if i.length > 79 - len),
-              sprintf("    %s", set_parent),
+              indent(set_parent, 4),
             ].compact, spaces)
           else
             len -= 4
@@ -367,7 +369,7 @@ module Provider
             indent([
               (sprintf("%s = navigate_value(%s, %s, %s)", prop_var, v[0], i, v[1]) if i.length <= 79 - len),
               (sprintf("%s = navigate_value(%s, %s,\n%s%s)", prop_var, v[0], i, ' ' * len1, v[1]) if i.length > 79 - len),
-              sprintf("%s", set_parent),
+              set_parent,
             ].compact, spaces)
           end
         end

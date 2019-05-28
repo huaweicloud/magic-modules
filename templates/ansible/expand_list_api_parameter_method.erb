@@ -3,27 +3,37 @@
    func_def = sprintf("expand_%s(d, array_index):", new_prefix)
 -%>
 <% if property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
-<%   no_do = property.field.nil? || property.field.empty? -%>
-<%   unless no_do -%>
-<%     rp = resource.find_property(property.field) -%>
-<%     no_do = rp.nil? || rp.crud.eql?("r") -%>
-<%   end -%>
-<%   unless no_do -%>
-<%     unless rp.is_a?(Api::Type::Array) -%>
+<%   no_do = property.array_num.nil? -%>
+<%   if no_do -%>
+<%     no_do = property.field.nil? || property.field.empty? -%>
+<%     unless no_do -%>
+<%       rp = resource.find_property(property.field) -%>
+<%       no_do = rp.nil? || rp.crud.eql?("r") -%>
+<%     end -%>
+<%     unless no_do || rp.is_a?(Api::Type::Array) -%>
 <%       raise "list api parameter(#{property.name}) is an array, but the matched property is not" -%>
 <%     end -%>
+<%   end -%>
+<%   unless no_do -%>
 
 
 def <%= func_def %>
     new_array_index = copy.deepcopy(array_index) if array_index else dict()
 
+    req = []
+
+<%   if property.array_num.nil? -%>
     v = navigate_value(d, [<%= index2navigate(property.field, true) %>],
                        new_array_index)
 
-    req = []
     n = len(v) if v else 1<%# v may be None %>
+<%   else -%>
+    n = <%= property.array_num %>
+<%   end -%>
     for i in range(n):
+<%   unless property.field.nil? -%>
         new_array_index["<%= to_schema_index(property.field) %>"] = i
+<%   end -%>
         transformed = dict()
 <%     nested_properties = nested_properties(property) -%>
 <%       nested_properties.each do |prop| -%>
@@ -38,7 +48,7 @@ def <%= func_def %>
 
     return req if req else None
 <%     nested_properties.each do |prop| -%>
-<%= lines(build_expand_method(resource, new_prefix, prop)) -%>
+<%= lines(build_expand_list_api_method(resource, new_prefix, prop)) -%>
 <%     end -%>
 <%   end # no_do -%>
 <% end -%>
@@ -58,6 +68,6 @@ def <%= func_def %>
             return r
     return None
 <%   nested_properties.each do |prop| -%>
-<%= lines(build_expand_method(resource, new_prefix, prop)) -%>
+<%= lines(build_expand_list_api_method(resource, new_prefix, prop)) -%>
 <%   end -%>
 <% end -%>

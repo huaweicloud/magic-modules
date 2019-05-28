@@ -1,7 +1,7 @@
-def update_properties(module, response, exclude_output=False):
+def update_properties(module, response, array_index, exclude_output=False):
     r = user_input_parameters(module)
 <% object.all_user_properties.each do |prop| -%>
-<%   c = convert_resp_parameter(prop, "response, None", "", "r", 4) -%>
+<%   c = convert_resp_parameter(prop, "response, array_index", "", "r", 4) -%>
 <%   unless c.empty? -%>
 
 <%= c %>
