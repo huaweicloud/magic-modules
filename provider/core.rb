@@ -885,5 +885,59 @@ module Provider
         properties.reject(&:required).reject(&:output).sort_by(&:out_name) +
         properties.select(&:output).sort_by(&:out_name)
     end
+
+    def convert_resource_id_path(path)
+      return path, nil if path.index(/\.[0-9]+\./).nil?
+
+      r = Hash.new
+      items = path.split(".")
+      items.each_index do |i|
+        v = items[i]
+        unless v.match(/[0-9]+/).nil?
+          r[items[i-1]] = v.to_i
+        end
+      end
+
+      return path.sub(/\.[0-9]+\./, "."), r
+    end
+
+    def get_fixed_length_array_parameter(api)
+       return if api.parameters.nil?
+
+       r = Hash.new
+
+       api.parameters.each do |i|
+         v = []
+         _postorder_traverse_property(i, method(:_get_fixed_length_array_parameter_callback), v)
+
+         v.each do |j|
+           v1 = j.split(":")
+           r[v1[0]] = v1[1].to_i
+         end
+       end
+
+       r
+    end
+
+    def _get_fixed_length_array_parameter_callback(property, result)
+      name = property.name
+
+      result.each_index do |i|
+        result[i] = name + "." + result[i]
+      end
+
+      num = property.array_num
+      result << sprintf("%s:%d", name, num) unless num.nil?
+    end
+
+    def _postorder_traverse_property(obj, callback, argv)
+      p = obj.child_properties
+      unless p.nil?
+        p.each do |i|
+          _postorder_traverse_property(i, callback, argv)
+        end
+      end
+      callback.call(obj, argv)
+    end
   end
 end
