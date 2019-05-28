@@ -41,9 +41,9 @@ def <%= func_def %>
         transformed = dict()
 
 <%   nested_properties = nested_properties(property) -%>
-<%= indent(lines(build_expand_properties(nested_properties, "d, new_array_index", new_prefix, "transformed")), 8) -%>
+<%= indent(lines(build_expand_properties(nested_properties, "d, new_array_index", new_prefix, "transformed")), 4) %>
 
-	if transformed:
+        if transformed:
             req.append(transformed)
 
     return req

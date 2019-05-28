@@ -40,9 +40,9 @@ module Provider
         options = prop_options(prop, object, spaces).join(', ')
         [
           "#{name}=dict(#{options}, options=dict(",
-          indent_list(properties.map do |p|
+          indent_list((properties.map do |p|
             python_dict_for_property(p, object, spaces + 4)
-          end, 4),
+          end).compact, 4),
           '))'
         ]
       end
