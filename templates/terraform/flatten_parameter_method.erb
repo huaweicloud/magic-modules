@@ -77,6 +77,9 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
         }
     }
 
+    if len(result) == 0 {
+        return currentValue, nil
+    }
     return result, nil
 }
 <%   nested_properties.each do |prop| -%>

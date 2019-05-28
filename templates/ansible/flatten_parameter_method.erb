@@ -31,7 +31,7 @@ def <%= func_def %>
 <%   if property.crud.include?("r") -%>
         v = navigate_value(d, [<%= index2navigate(property.field) %>],
                            array_index)
-        n = len(v)
+        n = len(v) if v else 1
 <%   else -%>
         n = 1
 <%   end -%>
@@ -58,7 +58,7 @@ def <%= func_def %>
         if val and len(result) < (i + 1):
             result.append(val)
 
-    return result
+    return result if result else current_value
 <%   nested_properties.each do |prop| -%>
 <%     next unless has_output_property(prop) -%>
 <%= lines(build_flatten_method(new_prefix, prop)) -%>
@@ -79,7 +79,7 @@ def <%= func_def %>
 <%     end -%>
 <%   end -%>
 
-    return result
+    return result if result else current_value
 <%   nested_properties.each do |prop| -%>
 <%     next unless has_output_property(prop) -%>
 <%= lines(build_flatten_method(new_prefix, prop)) -%>
