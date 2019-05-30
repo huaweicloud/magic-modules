@@ -224,7 +224,10 @@ module Provider
           r + "v"
         ]
 
-        if prop.is_a? Api::Type::NestedObject
+        if prop.to_request
+          return f
+
+        elsif prop.is_a? Api::Type::NestedObject
           return f
 
         elsif prop.is_a?(Api::Type::Array) && \

@@ -2,7 +2,12 @@
    new_prefix = sprintf("%s_%s", prefix, property.out_name)
    func_def = sprintf("expand_%s(d, array_index):", new_prefix)
 -%>
-<% if property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
+<% if !property.to_request.nil? -%>
+
+
+def <%= func_def %>
+<%= indent(lines(property.to_request, -1), 4) -%>
+<% elsif property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
 <%   no_do = property.array_num.nil? -%>
 <%   if no_do -%>
 <%     no_do = property.field.nil? || property.field.empty? -%>
@@ -51,8 +56,7 @@ def <%= func_def %>
 <%= lines(build_expand_list_api_method(resource, new_prefix, prop)) -%>
 <%     end -%>
 <%   end # no_do -%>
-<% end -%>
-<% if property.is_a?(Api::Type::NestedObject) -%>
+<% elsif property.is_a?(Api::Type::NestedObject) -%>
 
 
 def <%= func_def %>
