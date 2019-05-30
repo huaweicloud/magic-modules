@@ -7,7 +7,7 @@ def _build_identity_object(module, all_opts):
     result = dict()
 <% api.parameters.each do |prop| -%>
 
-<%= indent(convert_list_api_parameter(resource, prop, "opts, None", api.out_name, "result"), 4) %>
+<%= indent(convert_list_api_parameter(resource, prop, "opts, None", api.out_name, "result", 4), 4) %>
 <% end -%>
 
     return result

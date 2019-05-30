@@ -217,7 +217,7 @@ module Provider
         ].compact
       end
 
-      def convert_list_api_parameter(resource, prop, arguments, prefix, result_var)
+      def convert_list_api_parameter(resource, prop, arguments, prefix, result_var, spaces)
         r = sprintf("%s[\"%s\"] = ", result_var, prop.name)
         f = [
           sprintf("v = expand_%s_%s(%s)", prefix, prop.out_name, arguments),
@@ -255,20 +255,21 @@ module Provider
 
           d, ai = arguments.split(", ")
           i = "[#{index2navigate(prop.field, true)}]"
-          if i.length > 39
+          r1 = "v = navigate_value(#{d}, #{i}, #{ai})"
+          if r1.length + spaces > 79
             ["v = navigate_value(#{d}, #{i},",
              "                   #{ai})",
              r + "v"
             ]
           else
-            ["v = navigate_value(#{d}, #{i}, #{ai})",
+            [r1,
              r + "v"
             ]
           end
         end
       end
 
-      def convert_parameter(prop, arguments, prefix)
+      def convert_parameter(prop, arguments, prefix, spaces)
         f = sprintf("v = expand_%s_%s(%s)", prefix, prop.out_name, arguments)
 
         if prop.to_request
@@ -299,12 +300,13 @@ module Provider
         else
           d, ai = arguments.split(", ")
           i = "[#{index2navigate(prop.field, true)}]"
-          if i.length > 39
+          r = "v = navigate_value(#{d}, #{i}, #{ai})"
+          if r.length + spaces > 79
             ["v = navigate_value(#{d}, #{i},",
              "                   #{ai})"
             ]
           else
-            "v = navigate_value(#{d}, #{i}, #{ai})"
+            r
           end
         end
       end
