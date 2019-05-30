@@ -23,7 +23,9 @@ def <%= func_def %>
 -%>
     v = navigate_value(d, [<%= index2navigate(property.field, true) %>],
                        new_array_index)
-    n = len(v) if v else 1<%# v may be None %>
+    if not v:
+        return req
+    n = len(v)<%# v may be None %>
 <%   else -%>
     n = <%= property.array_num %>
 <%   end -%>
