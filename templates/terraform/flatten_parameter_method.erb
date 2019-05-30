@@ -17,6 +17,7 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
      # but now, there is no good way to check whether two items from different arraya are matched.
 -%>
     n := 0
+    hasInitValue := true
     result, ok := currentValue.([]interface{})
     if !ok || len(result) == 0 {
 <%   if property.crud.include?("r") -%>
@@ -24,18 +25,17 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
         if err != nil {
             return nil, err
         }
-        n := 1
-        if v1, ok := v.([]interface{}); ok {
+        if v1, ok := v.([]interface{}); !ok || len(v1) == 0 {
+            return currentValue, nil
+        } else {
             n = len(v1)
-            if n < 1 {
-                n = 1
-            }
         }
-        result = make([]interface{}, 0, n)
 <%   else -%>
+<%     raise "check this case and remove me to go on!!!" -%>
         n = 1
-        result = make([]interface{}, 0, 1)
 <%   end -%>
+        result = make([]interface{}, 0, n)
+        hasInitValue = false
     } else {
         n = len(result)
     }
@@ -68,11 +68,16 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
 <%     end -%>
 <%   end -%>
 
-        if len(r) != 0 {
-            if len(result) >= (i + 1) {
+        if len(result) >= (i + 1) {
+            if result[i] == nil {
                 result[i] = r
-            } else {
-                result = append(result, r)
+            }
+        } else {
+            for k, v := range r {
+                if v != nil {
+                    result = append(result, r)
+                    break
+                }
             }
         }
     }
@@ -93,8 +98,9 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
     if !ok || len(result) == 0 {
         result = make([]interface{}, 1, 1)
     }
-    if result[0] == nil {
-         result[0] = make(map[string]interface{})
+    hasInitValue := (result[0] != nil)
+    if !hasInitValue {
+        result[0] = make(map[string]interface{})
     }
     r := result[0].(map[string]interface{})
 <%   nested_properties = nested_properties(property)
@@ -109,10 +115,15 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
 <%     end -%>
 <%   end -%>
 
-    if len(r) == 0 {
-            return currentValue, nil
+    if hasInitValue {
+        return result, nil
     }
-    return result, nil
+    for k, v := range r {
+        if v != nil {
+            return result, nil
+        }
+    }
+    return currentValue, nil
 }
 <%   nested_properties.each do |prop| -%>
 <%     next unless has_output_property(prop) -%>
