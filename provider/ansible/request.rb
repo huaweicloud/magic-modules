@@ -310,10 +310,13 @@ module Provider
       end
 
       def convert_resp_parameter(prop, arguments, prefix, parent_var, spaces)
-        return "" unless has_output_property(prop)
+        unless has_output_property(prop)
+          return indent(sprintf("%s.setdefault(\"%s\", None)", parent_var, prop.out_name), spaces)
+        end
 
         prop_var = "v"
-        set_parent = sprintf("if %s is not None:\n    %s[\"%s\"] = %s", prop_var, parent_var, prop.out_name, prop_var)
+        set_parent = sprintf("%s[\"%s\"] = %s", parent_var, prop.out_name, prop_var)
+
         f = [
           sprintf("%s = %s.get(\"%s\")", prop_var, parent_var, prop.out_name),
           sprintf("%s = flatten%s%s_%s(%s, %s, exclude_output)", prop_var, prefix.empty? ? "" : "_", prefix, prop.out_name, arguments, prop_var),
