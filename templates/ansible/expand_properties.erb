@@ -6,10 +6,10 @@
 
 <%   end -%>
 <%   unless prop.default.nil? -%>
-    <%= sprintf("%s[\"%s\"] = %s", map_obj, prop.name, convert_parameter(prop, args, prefix)) %>
+    <%= sprintf("%s[\"%s\"] = %s", map_obj, prop.name, convert_parameter(prop, args, prefix, 0)) %>
 <%     next -%>
 <%   end -%>
-<%= indent(convert_parameter(prop, args, prefix), 4) %>
+<%= indent(convert_parameter(prop, args, prefix, 4), 4) %>
 <%   unless prop.send_empty_value -%>
     if not is_empty_value(v):
         <%= r %>

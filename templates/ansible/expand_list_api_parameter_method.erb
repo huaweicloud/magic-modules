@@ -43,7 +43,7 @@ def <%= func_def %>
 <%     nested_properties = nested_properties(property) -%>
 <%       nested_properties.each do |prop| -%>
 
-<%= indent(convert_list_api_parameter(resource, prop, "d, new_array_index", new_prefix, "transformed"), 8) %>
+<%= indent(convert_list_api_parameter(resource, prop, "d, new_array_index", new_prefix, "transformed", 8), 8) %>
 <%       end -%>
 
         for _, v in transformed.items():
@@ -64,7 +64,7 @@ def <%= func_def %>
 <%   nested_properties = nested_properties(property) -%>
 <%     nested_properties.each do |prop| -%>
 
-<%= indent(convert_list_api_parameter(resource, prop, "d, array_index", new_prefix, "r"), 4) %>
+<%= indent(convert_list_api_parameter(resource, prop, "d, array_index", new_prefix, "r", 4), 4) %>
 <%     end -%>
 
     for _, v in r.items():
