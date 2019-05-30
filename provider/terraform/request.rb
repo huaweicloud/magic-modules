@@ -215,20 +215,30 @@ module Provider
       end
 
       def convert_resp_parameter(prop, arguments, prefix, first_assign, parent_var, set_to, resource_name)
-        return first_assign, "" unless has_output_property(prop)
+        unless has_output_property(prop)
+          if set_to.eql?("parent")
+            r = indent([
+              sprintf("if _, ok := %s[\"%s\"]; !ok {", parent_var, prop.out_name),
+              sprintf("%s[\"%s\"] = nil\n}", parent_var, prop.out_name),
+            ], 4)
+            return first_assign, r
+          end
+
+          return first_assign, ""
+        end
 
         read_err = sprintf("fmt.Errorf(\"Error reading %s:%s, err: %%s\", err)", resource_name, prop.out_name)
         prop_var = "v"
 
         set_to_schema = indent([
           "if err != nil {\nreturn #{read_err}\n}",
-           sprintf("if %s != nil {\nif err = d.Set(\"%s\", %s); err != nil {", prop_var, prop.out_name, prop_var),
-           sprintf("return fmt.Errorf(\"Error setting %s:%s, err: %%s\", err)\n}\n}", resource_name, prop.out_name),
+           sprintf("if err = d.Set(\"%s\", %s); err != nil {", prop.out_name, prop_var),
+           sprintf("return fmt.Errorf(\"Error setting %s:%s, err: %%s\", err)\n}", resource_name, prop.out_name),
         ], 4)
 
         set_to_parent = indent([
           "if err != nil {\nreturn nil, #{read_err}\n}",
-          sprintf("if %s != nil {\n%s[\"%s\"] = %s\n}", prop_var, parent_var, prop.out_name, prop_var),
+          sprintf("%s[\"%s\"] = %s", parent_var, prop.out_name, prop_var),
         ], 4)
 
         f = indent([

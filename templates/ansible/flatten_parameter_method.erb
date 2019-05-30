@@ -50,7 +50,9 @@ def <%= func_def %>
 <%= convert_resp_parameter(prop, "d, new_array_index", new_prefix, "val", 8) %>
 <%   end -%>
 
-        if len(result) < (i + 1):
+        if len(result) >= (i + 1):
+            result[i] = val
+        else:
             for _, v in val.items():
                 if v is not None:
                     result.append(val)
