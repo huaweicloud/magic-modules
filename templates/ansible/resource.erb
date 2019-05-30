@@ -169,24 +169,20 @@ def main():
         if module.params['state'] == 'present':
             if resource is None:
                 if not module.check_mode:
-                    result = create(config)
-                    result['id'] = module.params.get('id')
+                    create(config)
                 changed = True
+<% if updatable?(object) -%>
 
-            else:
-<% unless updatable?(object) -%>
-                result = read_resource(config)
-<% else -%>
-                current = read_resource(config, exclude_output=True)
-                expect = user_input_parameters(module)
-                if are_different_dicts(expect, current):
-                    if not module.check_mode:
-                        result = update(config)
-                    changed = True
-                else:
-                    result = read_resource(config)
+            current = read_resource(config, exclude_output=True)
+            expect = user_input_parameters(module)
+            if are_different_dicts(expect, current):
+                if not module.check_mode:
+                    update(config)
+                changed = True
 <% end # updateable(object)? -%>
-                result['id'] = module.params.get('id')
+
+            result = read_resource(config)
+            result['id'] = module.params.get('id')
         else:
             if resource:
                 if not module.check_mode:
@@ -258,8 +254,6 @@ def create(config):
     <%= spaces %>async_wait_<%= item.out_name %>(config, r, client, timeout)
 <%   end -%>
 <% end -%>
-
-    return read_resource(config)
 <% if updatable?(object) -%>
 
 
@@ -296,8 +290,6 @@ def update(config):
     <%= spaces %>async_wait_<%= item.out_name %>(config, r, client, timeout)
 <%     end -%>
 <%   end -%>
-
-    return read_resource(config)
 <% end # updatable? -%>
 
 

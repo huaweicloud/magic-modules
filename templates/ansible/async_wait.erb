@@ -48,7 +48,11 @@ def async_wait_<%= api.out_name%>(config, result, client, timeout):
     try:
         return wait_to_finish(
             [<%= status_check.complete.compact.map { |x| "\"#{x}\"" }.join(", ") %>],
+<%   if status_check.pending.nil? -%>
+            None,
+<%   else -%>
             [<%= status_check.pending.compact.map { |x| "\"#{x}\"" }.join(", ") %>],
+<%   end -%>
             _query_status, timeout)
     except Exception as ex:
         module.fail_json(msg="module(<%= module_name %>): error "
