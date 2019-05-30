@@ -10,13 +10,6 @@
 
 
 def <%= func_def %>
-<%   v = index2navigate(property.field) -%>
-<%   if v.length <= 35 -%>
-    v = navigate_value(d, [<%= v %>], array_index)
-<%   else -%>
-    v = navigate_value(d, [<%= v %>],
-                       array_index)
-<%   end -%>
 <%= indent(lines(property.from_response), 4) -%>
 <% elsif property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
 
