@@ -39,10 +39,10 @@ func expand<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIn
         return nil, err
     }
     n := 0
-    if val1, ok := val.([]interface{}); !ok || len(val1) == 0 {
-        return nil
-    } else {
+    if val1, ok := val.([]interface{}); ok && len(val1) > 0 {
         n = len(val1)
+    } else {
+        return nil, nil
     }
 <%   else -%>
 

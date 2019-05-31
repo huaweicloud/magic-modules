@@ -25,10 +25,10 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
         if err != nil {
             return nil, err
         }
-        if v1, ok := v.([]interface{}); !ok || len(v1) == 0 {
-            return currentValue, nil
-        } else {
+	if v1, ok := v.([]interface{}); ok && len(v1) > 0 {
             n = len(v1)
+        } else {
+            return currentValue, nil
         }
 <%   else -%>
 <%     raise "check this case and remove me to go on!!!" -%>
@@ -73,7 +73,7 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
                 result[i] = r
             }
         } else {
-            for k, v := range r {
+            for _, v := range r {
                 if v != nil {
                     result = append(result, r)
                     break
@@ -82,10 +82,10 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
         }
     }
 
-    if len(result) == 0 {
-        return currentValue, nil
+    if hasInitValue || len(result) > 0 {
+        return result, nil
     }
-    return result, nil
+    return currentValue, nil
 }
 <%   nested_properties.each do |prop| -%>
 <%     next unless has_output_property(prop) -%>
@@ -118,7 +118,7 @@ func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayI
     if hasInitValue {
         return result, nil
     }
-    for k, v := range r {
+    for _, v := range r {
         if v != nil {
             return result, nil
         }

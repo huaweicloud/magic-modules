@@ -58,10 +58,7 @@ def <%= func_def %>
                     result.append(val)
                     break
 
-    if has_init_value:
-        return result
-
-    return result if result else current_value
+    return result if (has_init_value or result) else current_value
 <%   nested_properties.each do |prop| -%>
 <%     next unless has_output_property(prop) -%>
 <%= lines(build_flatten_method(new_prefix, prop)) -%>
