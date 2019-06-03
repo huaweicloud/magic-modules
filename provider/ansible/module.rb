@@ -27,7 +27,7 @@ module Provider
           nested_obj_dict(prop, object, order_properties(prop.properties), spaces)
         else
           name = Google::StringUtils.underscore(prop.out_name)
-          "#{name}=dict(#{prop_options(prop, object, spaces).join(', ')})"
+          indent("#{name}=dict(#{prop_options(prop, object, spaces).join(', ')})", spaces)
         end
       end
 
@@ -38,13 +38,23 @@ module Provider
       def nested_obj_dict(prop, object, properties, spaces)
         name = Google::StringUtils.underscore(prop.out_name)
         options = prop_options(prop, object, spaces).join(', ')
+        h = indent("#{name}=dict(#{options}, options=dict(", spaces)
+        t = indent('))', spaces)
+        if h.length > 79
+          h = indent([
+            "#{name}=dict(",
+            indent("#{options},\noptions=dict(", 4)
+          ], spaces)
+          t = indent("    ),\n)", spaces)
+          spaces += 4
+        end
         [
-          "#{name}=dict(#{options}, options=dict(",
+          h,
           indent_list((properties.map do |p|
             python_dict_for_property(p, object, spaces + 4)
-          end).compact, 4),
-          '))'
-        ]
+          end).compact, 0),
+          t
+        ].flatten
       end
 
       # Returns an array of all base options for a given property.
