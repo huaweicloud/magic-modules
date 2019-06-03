@@ -1,7 +1,7 @@
 <%
    new_prefix = sprintf("%s%s%s", prefix, prefix.empty? ? "" : "_", property.out_name)
    func_def = sprintf("flatten_%s(d, array_index, current_value, exclude_output):", new_prefix)
-   if func_def.length > 79
+   if (func_def.length + 4) > 79
      spaces = sprintf("def flatten_%s(", new_prefix).length
      func_def = sprintf("flatten_%s(d, array_index,\n%scurrent_value, exclude_output):", new_prefix, ' ' * spaces)
    end

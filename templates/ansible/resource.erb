@@ -111,7 +111,7 @@ RETURN = '''
 def build_module():
 <%
   mod_props = order_properties(object.not_output_properties).map do |prop|
-    python_dict_for_property(prop, object)
+    python_dict_for_property(prop, object, 12)
   end
 -%>
     return HwcModule(
@@ -132,7 +132,7 @@ def build_module():
 <%   end -%>
             ), default=dict()),
 <% end -%>
-<%= lines(indent_list(mod_props, 12)) -%>
+<%= lines(indent_list(mod_props, 0)) -%>
         ),
         supports_check_mode=True,
     )
