@@ -174,7 +174,8 @@ def main():
 
             resource_state, array_index = read_resource(config)
 <% if updatable?(object) -%>
-            current = update_properties(module, resource_state, array_index, True)
+            current = update_properties(module, resource_state,
+                                        array_index, True)
             expect = user_input_parameters(module)
             if are_different_dicts(expect, current):
                 if not module.check_mode:
@@ -183,7 +184,8 @@ def main():
                 changed = True
 
 <% end # updateable(object)? -%>
-            result = update_properties(module, resource_state, array_index, False)
+            result = update_properties(module, resource_state,
+                                       array_index, False)
             result['id'] = module.params.get('id')
         else:
             if resource:
@@ -421,7 +423,8 @@ def search_resource(config):
 <% end -%>
 
     result = []
-<% if list_api.query_params.include?('marker') -%>
+<% _, pp = list_api.pagination_param -%>
+<% if pp.eql?("marker") -%>
     p = {'marker': ''}
     while True:
         url = link.format(**p)
@@ -438,7 +441,7 @@ def search_resource(config):
             break
 
         p['marker'] = r[-1].get(<%= quote_string(list_api.resource_id_path) -%>)
-<% elsif list_api.query_params.include?('offset') -%>
+<% elsif pp.eql?('offset') -%>
     p = {'offset': 0}
     while True:
         url = link.format(**p)
@@ -455,8 +458,8 @@ def search_resource(config):
             break
 
         p['offset'] += 1
-<% elsif list_api.query_params.include?('start') -%>
-    p = {'start': 1}
+<% elsif pp.eql?('start') -%>
+    p = {'start': 0}
     while True:
         url = link.format(**p)
         r = send_<%= list_api.out_name %>_request(module, client, url)

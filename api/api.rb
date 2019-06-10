@@ -107,8 +107,27 @@ module Api
       check_query_params
     end
 
-    def default_query_params
+    def known_query_params
       ["marker", "offset", "start", "limit"]
+    end
+
+    def pagination_param
+      r = Hash.new
+      @query_params.each do |k, v|
+        if ["marker", "offset", "start"].include?(v)
+          r[k] = v
+        end
+      end
+
+      if r.length > 1
+        raise "there should be only one pagination parameter"
+      end
+
+      r.each do |k, v|
+        return k, v
+      end
+
+      return "", ""
     end
 
     private
@@ -116,11 +135,11 @@ module Api
     def check_query_params
       return if @query_params.nil?
 
-      dqp = default_query_params
+      qp = known_query_params
 
       # Ensures we have all properties defined
       @query_params.each do |k, v|
-        next if dqp.include?(k)
+        next if qp.include?(k)
 
         p = @__resource.find_property(v)
 
@@ -132,6 +151,8 @@ module Api
           raise "property(#{v}) referenced by list query_params(#{k}) must be an input option"
         end
       end
+
+      pagination_param
     end
   end
 
