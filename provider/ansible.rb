@@ -347,6 +347,10 @@ module Provider
         field.scan(/\S.{0,#{avail_columns}}\S(?=\s|$)|\S+/)
       end
 
+      def normal_method_name(name)
+        name.gsub(/__+|:/, '_')
+      end
+
       private
 
       def get_example(cfg_file)
