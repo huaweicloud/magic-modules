@@ -755,17 +755,11 @@ module Provider
       false
     end
 
-    def need_build_async_client(api)
-      async = api.async
-      if async
-        v1 = async.operation.service_type != api.service_type
+    def need_build_new_client(op1, op2)
+      v1 = op1.service_type != op2.service_type
+      v2 = op1.service_level != op2.service_level
 
-        v2 = async.operation.service_level != api.service_level
-
-        return v1 || v2
-      end
-
-      false
+      return v1 || v2
     end
 
     def async_timout(resource)
