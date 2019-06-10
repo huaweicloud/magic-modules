@@ -219,8 +219,9 @@ module Provider
 
       def convert_list_api_parameter(resource, prop, arguments, prefix, result_var, spaces)
         r = sprintf("%s[\"%s\"] = ", result_var, prop.name)
+        fn = normal_method_name(sprintf("expand_%s_%s", prefix, prop.out_name))
         f = [
-          sprintf("v = expand_%s_%s(%s)", prefix, prop.out_name, arguments),
+          sprintf("v = %s(%s)", fn, arguments),
           r + "v"
         ]
 
@@ -243,8 +244,8 @@ module Provider
 
           return f
 
-        elsif prop.is_a?(Api::Type::NameValues)
-          return f
+        #elsif prop.is_a?(Api::Type::NameValues)
+        #  return f
 
         else
           field = prop.field
@@ -270,7 +271,8 @@ module Provider
       end
 
       def convert_parameter(prop, arguments, prefix, spaces)
-        f = sprintf("v = expand_%s_%s(%s)", prefix, prop.out_name, arguments)
+        fn = normal_method_name(sprintf("expand_%s_%s", prefix, prop.out_name))
+        f = sprintf("v = %s(%s)", fn, arguments)
 
         if prop.to_request
           return f
@@ -410,19 +412,19 @@ module Provider
           out = []
           if identity.length == 1
             k = identity[0]
-            out << sprintf("query_link = \"?%s\"", page_s)
+            out << sprintf("query_link = \"%s\"", page_s.empty? ? "" : "?" + page_s)
             out << sprintf("v = navigate_value(opts, [%s])", index2navigate(qp[k], true))
-            out << "if v:"
-            out << sprintf("    query_link += \"%s%s=\" + str(v)", page_s.empty? ? "" : "&", k)
+            out << "if v or v in [False, 0]:"
+	    out << sprintf("    query_link += \"%s%s=\" + (\n        str(v) if v else str(v).lower())", page_s.empty? ? "?" : "&", k)
           else
             out << "query_params = []"
             identity.each do |k|
               out << sprintf("\nv = navigate_value(opts, [%s])", index2navigate(qp[k], true))
-              out << sprintf("if v:\n    query_params.append(\"%s=\" + str(v))", k)
+              out << sprintf("if v or v in [False, 0]:\n    query_params.append(\n        \"%s=\" + (str(v) if v else str(v).lower()))", k)
             end
-            out << sprintf("\nquery_link = \"?%s\"", page_s)
+            out << sprintf("\nquery_link = \"%s\"", page_s.empty? ? "" : "?" + page_s)
             out << "if query_params:"
-            out << sprintf("    query_link += %s\"&\".join(query_params)", page_s.empty? ? "" : "\"&\" + ", )
+            out << sprintf("    query_link += \"%s\" + \"&\".join(query_params)", page_s.empty? ? "?" : "&")
           end
           indent(out, spaces)
         end

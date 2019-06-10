@@ -1,5 +1,5 @@
 <%
-   new_prefix = sprintf("%s_%s", prefix, property.out_name)
+   new_prefix = normal_method_name(sprintf("%s_%s", prefix, property.out_name))
    func_def = sprintf("expand_%s(d, array_index):", new_prefix)
 -%>
 <% if !property.to_request.nil? -%>
