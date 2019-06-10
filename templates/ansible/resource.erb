@@ -171,17 +171,19 @@ def main():
                 if not module.check_mode:
                     create(config)
                 changed = True
-<% if updatable?(object) -%>
 
-            current = read_resource(config, exclude_output=True)
+            resource_state, array_index = read_resource(config)
+<% if updatable?(object) -%>
+            current = update_properties(module, resource_state, array_index, True)
             expect = user_input_parameters(module)
             if are_different_dicts(expect, current):
                 if not module.check_mode:
                     update(config, expect, current)
+                    resource_state, array_index = read_resource(config)
                 changed = True
-<% end # updateable(object)? -%>
 
-            result = read_resource(config)
+<% end # updateable(object)? -%>
+            result = update_properties(module, resource_state, array_index, False)
             result['id'] = module.params.get('id')
         else:
             if resource:
@@ -360,7 +362,7 @@ def delete(config):
 <% end -%>
 
 
-def read_resource(config, exclude_output=False):
+def read_resource(config):
     module = config.module
     client = config.client(<%= argu_for_sdkclient(read_api) %>)
 
@@ -392,7 +394,7 @@ def read_resource(config, exclude_output=False):
     }
 <% end -%>
 
-    return update_properties(module, res, <%= array_params.empty? ? "None" : "array_index" %>, exclude_output)
+    return res, <%= array_params.empty? ? "None" : "array_index" %>
 <% ql = build_list_query_params(list_api, 4) -%>
 <% unless ql.empty? -%>
 
