@@ -177,7 +177,7 @@ def main():
             expect = user_input_parameters(module)
             if are_different_dicts(expect, current):
                 if not module.check_mode:
-                    update(config)
+                    update(config, expect, current)
                 changed = True
 <% end # updateable(object)? -%>
 
@@ -263,7 +263,7 @@ def create(config):
 
 
 <%   update_api = object.apis.fetch("update", nil) -%>
-def update(config):
+def update(config, expect_value, current_value):
     module = config.module
 <%   unless update_api.nil? -%>
     client = config.client(<%= argu_for_sdkclient(update_api) %>)
@@ -271,12 +271,12 @@ def update(config):
 <%   unless at["update"].nil? -%>
     timeout = 60 * int(module.params['timeouts']['update'].rstrip('m'))
 <%   end -%>
-    opts = user_input_parameters(module)
 <%   unless update_api.nil? -%>
 <%     r = update_api.async.nil? ? "" : "r = " -%>
 
-    params = build_update_parameters(opts)
-    if params:
+    params = build_update_parameters(expect_value)
+    params1 = build_update_parameters(current_value)
+    if params and params1 and are_different_dicts(params, params1):
         <%= r %>send_update_request(module, params, client)
 <%     unless update_api.async.nil? -%>
         async_wait_update(config, r, client, timeout)
@@ -290,8 +290,9 @@ def update(config):
 -%>
 
 <%     unless item.parameters.nil? -%>
-    params = build_<%= item.out_name %>_parameters(opts)
-    if params:
+    params = build_<%= item.out_name %>_parameters(expect_value)
+    params1 = build_<%= item.out_name %>_parameters(current_value)
+    if params and params1 and are_different_dicts(params, params1):
 <%     end -%>
 <%     if pre_api.nil? || need_build_new_client(pre_api, item) -%>
     <%= spaces %>client = config.client(<%= argu_for_sdkclient(item) %>)
