@@ -386,23 +386,13 @@ module Provider
       end
 
       def build_list_query_params(api, spaces)
-        page = []
-        identity = []
         qp = api.query_params || Hash.new
-        qp.each do |k, v|
-          case k
-          when "limit"
-            page << "limit=10"
-          when "offset"
-            page << "offset={offset}"
-          when "start"
-            page << "start={start}"
-          when "marker"
-            page << "marker={marker}"
-          else
-            identity << k
-          end
-        end
+        identity = qp.select { |k, v| !api.known_query_params.include?(k) }
+        k, v = api.pagination_param
+        page = [
+          ("limit=10" if qp.include?("limit")),
+          (sprintf("%s={%s}", k, v) unless k.empty?)
+        ].compact
 
         page_s = page.empty? ? "" : sprintf("%s", page.join("&"))
 
@@ -411,15 +401,16 @@ module Provider
         else
           out = []
           if identity.length == 1
-            k = identity[0]
+            k = identity.keys()[0]
+            v = identity[k]
             out << sprintf("query_link = \"%s\"", page_s.empty? ? "" : "?" + page_s)
-            out << sprintf("v = navigate_value(opts, [%s])", index2navigate(qp[k], true))
+            out << sprintf("v = navigate_value(opts, [%s])", index2navigate(v, true))
             out << "if v or v in [False, 0]:"
-	    out << sprintf("    query_link += \"%s%s=\" + (\n        str(v) if v else str(v).lower())", page_s.empty? ? "?" : "&", k)
+            out << sprintf("    query_link += \"%s%s=\" + (\n        str(v) if v else str(v).lower())", page_s.empty? ? "?" : "&", k)
           else
             out << "query_params = []"
-            identity.each do |k|
-              out << sprintf("\nv = navigate_value(opts, [%s])", index2navigate(qp[k], true))
+            identity.each do |k, v|
+              out << sprintf("\nv = navigate_value(opts, [%s])", index2navigate(v, true))
               out << sprintf("if v or v in [False, 0]:\n    query_params.append(\n        \"%s=\" + (str(v) if v else str(v).lower()))", k)
             end
             out << sprintf("\nquery_link = \"%s\"", page_s.empty? ? "" : "?" + page_s)
