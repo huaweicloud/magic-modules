@@ -1,5 +1,4 @@
-func set<%= resource_name -%>Properties(d *schema.ResourceData, response map[string]interface{}) error {
-    opts := resource<%= resource_name -%>UserInputParams(d)
+func set<%= resource_name -%>Properties(d *schema.ResourceData, response, opts map[string]interface{}) error {
 <% first_assign = true -%>
 <% properties_to_show(object).each do |prop| -%>
 <%   first_assign, c = convert_resp_parameter(prop, 'response, nil', resource_name, first_assign, 'opts', "schema", object.name) -%>

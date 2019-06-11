@@ -233,7 +233,8 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
     res["<%= item.name %>"] = fill<%= resource_name %><%= titlelize(item.name) %>RespBody(v)
 <% end -%>
 
-    return set<%= resource_name -%>Properties(d, res)
+    opts := resource<%= resource_name -%>UserInputParams(d)
+    return set<%= resource_name -%>Properties(d, res, opts)
 }
 <% elsif !list_api.nil? -%>
 func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{}) error {
@@ -269,7 +270,8 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
     res["<%= item.name %>"] = fill<%= resource_name %><%= titlelize(item.name) %>RespBody(v)
 <% end -%>
 
-    return set<%= resource_name -%>Properties(d, res)
+    opts := resource<%= resource_name -%>UserInputParams(d)
+    return set<%= resource_name -%>Properties(d, res, opts)
 }
 <% end -%>
 <% if updatable?(object) -%>
