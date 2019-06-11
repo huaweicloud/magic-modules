@@ -6,14 +6,6 @@ func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schem
    async_op = async.operation
 -%>
 <% cl = "client" -%>
-<% if need_build_async_client(api) -%>
-    asyncClient, err := config.sdkClient(<%= argu_for_sdkclient(async.operation) %>)
-    if err != nil {
-        return nil, fmt.Errorf("Error creating async sdk client, err=%s", err)
-    }
-<%   cl = "asyncClient" -%>
-
-<% end -%>
 <% if need_build_async_url(api) -%>
 <%   if async_op.path_parameter -%>
     data := make(map[string]string)

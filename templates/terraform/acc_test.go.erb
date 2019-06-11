@@ -16,7 +16,7 @@ import (
    terraform_name = "#{package}_" + Google::StringUtils.underscore(resource_name)
    terraform_resource_name = "#{terraform_name}.#{example.primary_resource_id}"
 
-   sdkcp = argu_for_sdkclient(object.apis["create"], true)
+   sdkcp = argu_for_sdkclient(object.apis.fetch("read", nil) || object.apis.fetch("list", nil), true)
 %>
 
 func TestAcc<%= test_case_name -%>(t *testing.T) {
