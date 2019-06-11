@@ -220,6 +220,7 @@ def create(config):
 
     params = build_create_parameters(opts)
     r = send_create_request(module, params, client)
+<% pre_api = create_api -%>
 <% if create_api.async.nil? -%>
 <%   path, array_index = convert_resource_id_path(create_api.resource_id_path) -%>
 <%   if array_index.nil? -%>
@@ -240,10 +241,15 @@ def create(config):
 <%     end -%>
 <%   end -%>
 <% else -%>
+<%   async_op = create_api.async.operation -%>
+<%   if need_build_new_client(pre_api, async_op) -%>
+
+    client = config.client(<%= argu_for_sdkclient(async_op) %>)
+<%   end -%>
+<%   pre_api = async_op -%>
     obj = async_wait_create(config, r, client, timeout)
     module.params['id'] = navigate_value(obj, [<%= index2navigate(create_api.async.result.field) %>])
 <% end -%>
-<%   pre_api = create_api -%>
 <% other_api(object, "c").each do | item | -%>
 <%
      r = item.async.nil? ? "" : "r = "
@@ -260,6 +266,12 @@ def create(config):
 <%   pre_api = item -%>
     <%= spaces %><%= r %>send_<%= item.out_name %>_request(module, <%= item.parameters.nil? ? "None" : "params" %>, client)
 <%   unless item.async.nil? -%>
+<%     async_op = item.async.operation -%>
+<%     if need_build_new_client(pre_api, async_op) -%>
+
+    <%= spaces %>client = config.client(<%= argu_for_sdkclient(async_op) %>)
+<%     end -%>
+<%     pre_api = async_op -%>
     <%= spaces %>async_wait_<%= item.out_name %>(config, r, client, timeout)
 <%   end -%>
 <% end -%>
@@ -277,6 +289,7 @@ def update(config, newv, oldv):
 <%   unless at["update"].nil? -%>
     timeout = 60 * int(module.params['timeouts']['update'].rstrip('m'))
 <%   end -%>
+<%   pre_api = update_api -%>
 <%   unless update_api.nil? -%>
 <%     r = update_api.async.nil? ? "" : "r = " -%>
 
@@ -289,10 +302,15 @@ def update(config, newv, oldv):
 <%     end -%>
         <%= r %>send_update_request(module, params, client)
 <%     unless update_api.async.nil? -%>
+<%       async_op = update_api.async.operation -%>
+<%       if need_build_new_client(pre_api, async_op) -%>
+
+        client = config.client(<%= argu_for_sdkclient(async_op) %>)
+<%       end -%>
+<%       pre_api = async_op -%>
         async_wait_update(config, r, client, timeout)
 <%     end -%>
 <%   end # update_api.nil? -%>
-<%   pre_api = update_api -%>
 <%   other_api(object, "u").each do | item | -%>
 <%
        r = item.async.nil? ? "" : "r = "
@@ -314,6 +332,12 @@ def update(config, newv, oldv):
 <%     pre_api = item -%>
     <%= spaces %><%= r %>send_<%= item.out_name %>_request(module, <%= item.parameters.nil? ? "None" : "params" %>, client)
 <%     unless item.async.nil? -%>
+<%       async_op = item.async.operation -%>
+<%       if need_build_new_client(pre_api, async_op) -%>
+
+    <%= spaces %>client = config.client(<%= argu_for_sdkclient(async_op) %>)
+<%       end -%>
+<%       pre_api = async_op -%>
     <%= spaces %>async_wait_<%= item.out_name %>(config, r, client, timeout)
 <%     end -%>
 <%   end -%>
@@ -340,6 +364,11 @@ def delete(config):
 <% end -%>
     <%= spaces %><%= r %>send_delete_request(module, <%= delete_api.parameters.nil? ? "None" : "params" %>, client)
 <% unless delete_api.async.nil? -%>
+<%   async_op = delete_api.async.operation -%>
+<%   if need_build_new_client(delete_api, async_op) -%>
+
+    <%= spaces %>client = config.client(<%= argu_for_sdkclient(async_op) %>)
+<%   end -%>
     <%= spaces %>async_wait_delete(config, r, client, timeout)
 <% else -%>
 <%   unless create_api.async.nil? -%>

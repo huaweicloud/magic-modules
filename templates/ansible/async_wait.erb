@@ -24,11 +24,6 @@ def async_wait_<%= api.out_name%>(config, result, client, timeout):
 <%   end -%>
 <% end -%>
 <% cl = "client" -%>
-<% if need_build_new_client(api, async_op) -%>
-
-    async_client = config.client(<%= argu_for_sdkclient(async.operation) %>)
-<%   cl = "async_client" -%>
-<% end -%>
 <% status_check = async.status_check -%>
 <% if status_check -%>
 
