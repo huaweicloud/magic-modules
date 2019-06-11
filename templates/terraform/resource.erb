@@ -219,9 +219,22 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
 }
 <% end -%>
 <% if updatable?(object) -%>
-
 <%   update_api = object.apis.fetch("update", nil) -%>
 <%   update_apis = [update_api, other_api(object, "u")].flatten.compact -%>
+<%   multi_update = update_apis.length > 1 -%>
+<%   if multi_update -%>
+
+func resource<%= resource_name -%>UserInputUpdateParams(d *schema.ResourceData) (oldv, newv map[string]interface{}) {
+    oldv["terraform_resource_data"] = d
+    newv["terraform_resource_data"] = d
+<%     object.not_output_properties.sort_by(&:out_name).each do |prop| -%>
+<%       next unless prop.crud.include?("u") -%>
+
+    oldv["<%= prop.out_name %>"], newv["<%= prop.out_name %>"] = d.GetChange("<%= prop.out_name %>")
+<%     end -%>
+}
+<%   end -%>
+
 func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{}) error {
     config := meta.(*Config)
     client, err := config.sdkClient(<%= argu_for_sdkclient(create_api) %>)
@@ -229,31 +242,42 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
         return fmt.Errorf("Error creating sdk client, err=%s", err)
     }
 
+<%   if multi_update -%>
+    oldv, newv := resource<%= resource_name -%>UserInputUpdateParams(d)
+<%   else -%>
     opts := resource<%= resource_name -%>UserInputParams(d)
-<% unless resource_nestedobj_properties.nil? -%>
+<%   end -%>
+<%   unless resource_nestedobj_properties.nil? -%>
 
     arrayIndex := map[string]int{
-<%   resource_nestedobj_properties.each do |i| -%>
+<%     resource_nestedobj_properties.each do |i| -%>
         "<%= to_schema_index(i) %>": 0,
-<%   end -%>
+<%     end -%>
     }
-<% end -%>
-<% unless at["update"].nil? -%>
+<%   end -%>
+<%   unless at["update"].nil? -%>
     timeout := d.Timeout(schema.TimeoutUpdate)
-<% end -%>
-<% if update_apis.length > 1 -%>
-    var params interface{}
-    var r interface{}
-<% end -%>
-<% assign = update_apis.length > 1 ? "=" : ":=" -%>
+<%   end -%>
+<%   if multi_update -%>
+    var r, params, params1 interface{}
+<%   end -%>
+<%   assign = multi_update ? "=" : ":=" -%>
 <%   unless update_api.nil? -%>
 <%     r = update_api.async.nil? ? "_, err =" : "r, err " + assign -%>
 
-    params, err <%= assign %> build<%= resource_name -%>UpdateParameters(opts, <%= ai_name -%>)
+    params, err <%= assign %> build<%= resource_name -%>UpdateParameters(<%= multi_update ? "newv" : "opts" %>, <%= ai_name -%>)
     if err != nil {
         return fmt.Errorf("Error building the request body of api(<%= update_api.name -%>), err=%s", err)
     }
+<%     if multi_update -%>
+    params1, err <%= assign %> build<%= resource_name -%>UpdateParameters(oldv, <%= ai_name -%>)
+    if err != nil {
+        return fmt.Errorf("Error building the request body of api(<%= update_api.name -%>), err=%s", err)
+    }
+    if e, _ := isEmptyValue(reflect.ValueOf(params)); !(e || reflect.DeepEqual(params, params1)) {
+<%     else -%>
     if e, _ := isEmptyValue(reflect.ValueOf(params)); !e {
+<%     end -%>
         <%= r %> send<%= resource_name -%>UpdateRequest(d, params, client)
         if err != nil {
             return fmt.Errorf("Error updating (<%= resource_name -%>: %v), err=%s", d.Id(), err)
@@ -273,11 +297,19 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 -%>
 
 <%     unless item.parameters.nil? -%>
-    params, err <%= assign %> build<%= fn -%>Parameters(opts, <%= ai_name -%>)
+    params, err <%= assign %> build<%= fn -%>Parameters(<%= multi_update ? "newv" : "opts" %>, <%= ai_name -%>)
     if err != nil {
         return fmt.Errorf("Error building the request body of api(<%= item.name -%>), err=%s", err)
     }
+<%       if multi_update -%>
+    params1, err <%= assign %> build<%= fn -%>Parameters(oldv, <%= ai_name -%>)
+    if err != nil {
+        return fmt.Errorf("Error building the request body of api(<%= item.name -%>), err=%s", err)
+    }
+    if e, _ := isEmptyValue(reflect.ValueOf(params)); !(e || reflect.DeepEqual(params, params1)) {
+<%       else -%>
     if e, _ := isEmptyValue(reflect.ValueOf(params)); !e {
+<%       end -%>
 <%     end -%>
     <%= r %> send<%= fn %>Request(d, <%= item.parameters.nil? ? "nil" : "params" %>, client)
     if err != nil {
