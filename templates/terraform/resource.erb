@@ -278,13 +278,13 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
 <%   multi_update = update_apis.length > 1 -%>
 <%   if multi_update -%>
 
-func resource<%= resource_name -%>UserInputUpdateParams(d *schema.ResourceData) (oldv, newv map[string]interface{}) {
-    oldv["terraform_resource_data"] = d
-    newv["terraform_resource_data"] = d
+func resource<%= resource_name -%>UserInputUpdateParams(d *schema.ResourceData) (oldState, newState map[string]interface{}) {
+    oldState["terraform_resource_data"] = d
+    newState["terraform_resource_data"] = d
 <%     object.not_output_properties.sort_by(&:out_name).each do |prop| -%>
 <%       next unless prop.crud.include?("u") -%>
 
-    oldv["<%= prop.out_name %>"], newv["<%= prop.out_name %>"] = d.GetChange("<%= prop.out_name %>")
+    oldState["<%= prop.out_name %>"], newState["<%= prop.out_name %>"] = d.GetChange("<%= prop.out_name %>")
 <%     end -%>
 }
 <%   end -%>
@@ -299,7 +299,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 <%   end -%>
 
 <%   if multi_update -%>
-    oldv, newv := resource<%= resource_name -%>UserInputUpdateParams(d)
+    oldState, newState := resource<%= resource_name -%>UserInputUpdateParams(d)
 <%   else -%>
     opts := resource<%= resource_name -%>UserInputParams(d)
 <%   end -%>
@@ -322,12 +322,12 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 <%   unless update_api.nil? -%>
 <%     r = update_api.async.nil? ? "_, err =" : "r, err " + assign -%>
 
-    params, err <%= assign %> build<%= resource_name -%>UpdateParameters(<%= multi_update ? "newv" : "opts" %>, <%= ai_name -%>)
+    params, err <%= assign %> build<%= resource_name -%>UpdateParameters(<%= multi_update ? "newState" : "opts" %>, <%= ai_name -%>)
     if err != nil {
         return fmt.Errorf("Error building the request body of api(<%= update_api.name -%>), err=%s", err)
     }
 <%     if multi_update -%>
-    params1, err <%= assign %> build<%= resource_name -%>UpdateParameters(oldv, <%= ai_name -%>)
+    params1, err <%= assign %> build<%= resource_name -%>UpdateParameters(oldState, <%= ai_name -%>)
     if err != nil {
         return fmt.Errorf("Error building the request body of api(<%= update_api.name -%>), err=%s", err)
     }
@@ -363,12 +363,12 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 -%>
 
 <%     unless item.parameters.nil? -%>
-    params, err <%= assign %> build<%= fn -%>Parameters(<%= multi_update ? "newv" : "opts" %>, <%= ai_name -%>)
+    params, err <%= assign %> build<%= fn -%>Parameters(<%= multi_update ? "newState" : "opts" %>, <%= ai_name -%>)
     if err != nil {
         return fmt.Errorf("Error building the request body of api(<%= item.name -%>), err=%s", err)
     }
 <%       if multi_update -%>
-    params1, err <%= assign %> build<%= fn -%>Parameters(oldv, <%= ai_name -%>)
+    params1, err <%= assign %> build<%= fn -%>Parameters(oldState, <%= ai_name -%>)
     if err != nil {
         return fmt.Errorf("Error building the request body of api(<%= item.name -%>), err=%s", err)
     }
