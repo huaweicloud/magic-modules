@@ -264,10 +264,12 @@ def create(config):
 <%   end -%>
 <% end -%>
 <% if updatable?(object) -%>
-
-
 <%   update_api = object.apis.fetch("update", nil) -%>
-def update(config, expect_value, current_value):
+<%   update_apis = [update_api, other_api(object, "u")].flatten.compact -%>
+<%   multi_update = update_apis.length > 1 -%>
+
+
+def update(config, newv, oldv):
     module = config.module
 <%   unless update_api.nil? -%>
     client = config.client(<%= argu_for_sdkclient(update_api) %>)
@@ -278,9 +280,13 @@ def update(config, expect_value, current_value):
 <%   unless update_api.nil? -%>
 <%     r = update_api.async.nil? ? "" : "r = " -%>
 
-    params = build_update_parameters(expect_value)
-    params1 = build_update_parameters(current_value)
-    if params and params1 and are_different_dicts(params, params1):
+    params = build_update_parameters(newv)
+<%     if multi_update -%>
+    params1 = build_update_parameters(oldv)
+    if params and are_different_dicts(params, params1):
+<%     else -%>
+    if params:
+<%     end -%>
         <%= r %>send_update_request(module, params, client)
 <%     unless update_api.async.nil? -%>
         async_wait_update(config, r, client, timeout)
@@ -294,9 +300,13 @@ def update(config, expect_value, current_value):
 -%>
 
 <%     unless item.parameters.nil? -%>
-    params = build_<%= item.out_name %>_parameters(expect_value)
-    params1 = build_<%= item.out_name %>_parameters(current_value)
-    if params and params1 and are_different_dicts(params, params1):
+    params = build_<%= item.out_name %>_parameters(newv)
+<%       if multi_update -%>
+    params1 = build_<%= item.out_name %>_parameters(oldv)
+    if params and are_different_dicts(params, params1):
+<%       else -%>
+    if params:
+<%       end -%>
 <%     end -%>
 <%     if pre_api.nil? || need_build_new_client(pre_api, item) -%>
     <%= spaces %>client = config.client(<%= argu_for_sdkclient(item) %>)
@@ -504,7 +514,6 @@ def search_resource(config):
 <%   end -%>
 <% end -%>
 <% if updatable?(object) -%>
-<%   update_apis = [update_api, other_api(object, "u")].flatten.compact -%>
 <%   update_apis.each do | item | -%>
 <%     next if item.is_a?(Api::ApiOther) && item.crud.include?("c") -%>
 <%     unless item.parameters.nil? -%>
