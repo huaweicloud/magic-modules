@@ -281,7 +281,7 @@ def create(config):
 <%   multi_update = update_apis.length > 1 -%>
 
 
-def update(config, newv, oldv):
+def update(config, new_state, old_state):
     module = config.module
 <%   unless update_api.nil? -%>
     client = config.client(<%= argu_for_sdkclient(update_api) %>)
@@ -293,9 +293,9 @@ def update(config, newv, oldv):
 <%   unless update_api.nil? -%>
 <%     r = update_api.async.nil? ? "" : "r = " -%>
 
-    params = build_update_parameters(newv)
+    params = build_update_parameters(new_state)
 <%     if multi_update -%>
-    params1 = build_update_parameters(oldv)
+    params1 = build_update_parameters(old_state)
     if params and are_different_dicts(params, params1):
 <%     else -%>
     if params:
@@ -318,9 +318,9 @@ def update(config, newv, oldv):
 -%>
 
 <%     unless item.parameters.nil? -%>
-    params = build_<%= item.out_name %>_parameters(newv)
+    params = build_<%= item.out_name %>_parameters(new_state)
 <%       if multi_update -%>
-    params1 = build_<%= item.out_name %>_parameters(oldv)
+    params1 = build_<%= item.out_name %>_parameters(old_state)
     if params and are_different_dicts(params, params1):
 <%       else -%>
     if params:
