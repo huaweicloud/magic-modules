@@ -293,7 +293,7 @@ module Provider
             return sprintf("\"%s\"", prop.default)
 
           elsif prop.is_a?(Api::Type::Boolean)
-            return prop.default ? "true" : "false"
+            return prop.default ? "True" : "False"
 
           else
             return prop.default.to_i
