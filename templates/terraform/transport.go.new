@@ -49,14 +49,14 @@ func addQueryParams(rawurl string, params map[string]string) (string, error) {
 	return u.String(), nil
 }
 
-func replaceVars(d *schema.ResourceData, linkTmpl string, kv map[string]string) (string, error) {
+func replaceVars(d *schema.ResourceData, linkTmpl string, kv map[string]interface{}) (string, error) {
 	re := regexp.MustCompile("{([[:word:]]+)}")
 
 	replaceFunc := func(s string) string {
 		m := re.FindStringSubmatch(s)[1]
 		if kv != nil {
 			if v, ok := kv[m]; ok {
-				return v
+				return convertToStr(v)
 			}
 		}
 		if m == "project" {

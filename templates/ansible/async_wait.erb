@@ -18,7 +18,7 @@ def async_wait_<%= api.out_name%>(config, result, client, timeout):
 
     url = build_path(module, "<%= async_op.path -%>", data)
 <%   elsif async_op.path.include?("{") -%>
-    url = build_path(module, "<%= async_op.path -%>")
+    url = build_path(module, "<%= async_op.path -%>", result)
 <%   else -%>
     url = "<%= async_op.path -%>"
 <%   end -%>
