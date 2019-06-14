@@ -1,0 +1,35 @@
+<% prefix = api.out_name -%>
+<% not_async = api.async.nil? -%>
+func multi_invoke_<%= prefix %>(config, opts, client<%= not_async ? "" : ", timeout" %>):
+    module = config.module
+<% opts_name = "opts" -%>
+<% unless api.parameter_pre_process.nil? -%>
+<%   opts_name = "opts1" -%>
+
+<%= indent(lines(api.parameter_pre_process), 4) %>
+<% end -%>
+<% r = "" -%>
+<% client= "client" -%>
+<% unless not_async -%>
+<%   r = "r = " -%>
+<%   async_op = api.async.operation -%>
+<%   if need_build_new_client(api, async_op) -%>
+
+    async_client = config.client(<%= argu_for_sdkclient(async_op) %>)
+<%     client= "async_client" -%>
+<%   end -%>
+<% end -%>
+
+    loop_val = navigate_value(<%= opts_name %>, <%= sprintf("[%s]", index2navigate(api.depends_on, true)) %>)
+    for i in range(len(loop_val)):
+<% params = "params" -%>
+<% if api.parameters.nil? -%>
+<%   p = resource.find_property(api.depends_on) -%>
+<%   params = p.item_type.is_a?(Api::Type::NestedObject) ? "loop_val[i]" : "None" -%>
+<% else -%>
+	params = build_<%= prefix %>_parameters(<%= opts_name %>, {"<%= api.depends_on%>": i})
+<% end -%>
+        <%= r %>send_<%= prefix %>_request(module, <%= params %>, client)
+<%     unless not_async -%>
+	async_wait_<%= prefix %>(config, r, <%= client %>, timeout)
+<%     end -%>

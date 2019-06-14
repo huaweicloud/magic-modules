@@ -203,6 +203,7 @@ def main():
 
 def user_input_parameters(module):
     return {
+        "ansible_module": module,
 <% object.not_output_properties.each do |prop| -%>
         "<%= prop.out_name %>": module.params.get("<%= prop.out_name %>"),
 <% end -%>
@@ -277,8 +278,8 @@ def create(config):
 <% end -%>
 <% if updatable?(object) -%>
 <%   update_api = object.apis.fetch("update", nil) -%>
-<%   update_apis = [update_api, other_api(object, "u")].flatten.compact -%>
-<%   multi_update = update_apis.length > 1 -%>
+<%   update_apis = [update_api, other_api(object, "u"), multi_invoke_api(object, "u")] -%>
+<%   multi_update = update_apis.flatten.compact.length > 1 -%>
 
 
 def update(config, expect_state, current_state):
@@ -342,6 +343,14 @@ def update(config, expect_state, current_state):
 <%       pre_api = async_op -%>
     <%= spaces %>async_wait_<%= item.out_name %>(config, r, client, timeout)
 <%     end -%>
+<%   end -%>
+<%   multi_invoke_api(object, "u").each do | item | -%>
+
+<%     if pre_api.nil? || need_build_new_client(pre_api, item) -%>
+    client = config.client(<%= argu_for_sdkclient(item) %>)
+<%     end -%>
+<%     pre_api = item -%>
+    multi_invoke_<%= item.out_name %>(module, expect_state, client<%= item.async.nil? ? "" : ", timeout"%>)
 <%   end -%>
 <% end # updatable? -%>
 
@@ -528,8 +537,7 @@ def search_resource(config):
 <% end -%>
 
     return result
-<% create_apis = [create_api, other_api(object, "c")].flatten.compact -%>
-<% create_apis.each do | item | -%>
+<% not_read_api(object).each do | item | -%>
 <%   unless item.parameters.nil? -%>
 
 
@@ -544,36 +552,10 @@ def search_resource(config):
 <%= lines(build_resource_async_op(item, module_name(object))) -%>
 <%   end -%>
 <% end -%>
-<% if updatable?(object) -%>
-<%   update_apis.each do | item | -%>
-<%     next if item.is_a?(Api::ApiOther) && item.crud.include?("c") -%>
-<%     unless item.parameters.nil? -%>
+<% multi_invoke_api(object, "u").each do |item| -%>
 
 
-<%= lines(build_request_body_method(object, item)) -%>
-<%     end -%>
-
-
-<%= lines(build_send_request_method(item, module_name(object))) -%>
-<%     unless item.async.nil? -%>
-
-
-<%= lines(build_resource_async_op(item, module_name(object))) -%>
-<%     end -%>
-<%   end -%>
-<% end -%>
-<% unless delete_api.parameters.nil? -%>
-
-
-<%= lines(build_request_body_method(object, delete_api)) -%>
-<% end -%>
-
-
-<%= lines(build_send_request_method(delete_api, module_name(object))) -%>
-<% unless delete_api.async.nil? -%>
-
-
-<%= lines(build_resource_async_op(delete_api, module_name(object))) -%>
+<%= lines(build_multi_invoke_method(item)) -%>
 <% end -%>
 <% read_apis.each do | item | -%>
 

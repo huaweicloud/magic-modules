@@ -765,19 +765,21 @@ module Provider
     def async_timout(resource)
       r = Hash.new
 
-      [resource.apis["create"], other_api(resource, "c")].flatten.compact.each do |i|
-        next if i.async.nil?
-        r["create"] = i.async.timeout
-        break
-      end
+      ["create", "delete", "update"].each do |k|
 
-      a = resource.apis["delete"].async
-      r["delete"] = a.timeout unless a.nil?
+        apis = [
+          resource.apis.fetch(k, nil),
+          other_api(resource, k[0]),
+          multi_invoke_api(resource, k[0])
+        ].flatten.compact
 
-      [resource.apis.fetch("update", nil), other_api(resource, "u")].flatten.compact.each do |i|
-        next if i.async.nil?
-        r["update"] = i.async.timeout
-        break
+        apis.each do |i|
+          unless i.async.nil?
+            r[k] = i.async.timeout
+            break
+          end
+        end
+
       end
 
       r
@@ -810,6 +812,26 @@ module Provider
         if v.is_a?(Api::ApiOther) && v.crud.include?(crud)
           r << v
         end
+      end
+      r
+    end
+
+    def multi_invoke_api(resource, crud)
+      r = []
+      resource.apis.each_value do |v|
+        if v.is_a?(Api::ApiMultiInvoke) && v.crud.include?(crud)
+          r << v
+        end
+      end
+      r
+    end
+
+    def not_read_api(resource)
+      r = []
+      resource.apis.each do |k, v|
+        next if k.eql?("read") || k.eql?("list")
+        next if v.is_a?(Api::ApiOther) && v.crud.include?("r")
+        r << v
       end
       r
     end
