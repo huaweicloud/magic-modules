@@ -61,6 +61,9 @@ module Api
        o
     end
 
+    def check_more(resource)
+    end
+
   end
 
   class ApiCreate < Api::ApiBasic
@@ -87,16 +90,16 @@ module Api
       check_optional_property :query_params, Hash
     end
 
-    def check_identity
+    def check_more(resource)
       return if @identity.nil?
 
       # Ensures we have all properties defined
       @identity.each do |k, v|
         next if k.eql?("id")
 
-        p = @__resource.find_property(v)
+        p = resource.find_property(v)
         if p.nil?
-          raise "Missing property(#{v}) for identity(#{k}) in list operation of resource (#{@__resource.name})"
+          raise "Missing property(#{v}) for identity(#{k}) in list operation of resource (#{resource.name})"
         end
 
         unless p.required
@@ -104,7 +107,7 @@ module Api
         end
       end
 
-      check_query_params
+      check_query_params(resource)
     end
 
     def known_query_params
@@ -132,7 +135,7 @@ module Api
 
     private
 
-    def check_query_params
+    def check_query_params(resource)
       return if @query_params.nil?
 
       qp = known_query_params
@@ -141,10 +144,10 @@ module Api
       @query_params.each do |k, v|
         next if qp.include?(k)
 
-        p = @__resource.find_property(v)
+        p = resource.find_property(v)
 
         if p.nil?
-          raise "Missing property(#{v}) for query_params(#{k}) in list operation of resource (#{@__resource.name})"
+          raise "Missing property(#{v}) for query_params(#{k}) in list operation of resource (#{resource.name})"
         end
 
         unless p.crud.include?("c") || p.crud.include?("u")
@@ -181,6 +184,26 @@ module Api
       super
 
       check_property :crud, String
+    end
+  end
+
+  class ApiMultiInvoke < Api::ApiBasic
+    attr_reader :crud
+    attr_reader :depends_on #it is an array property of resource which is used to calculate the invoke times.
+
+    def validate
+      super
+
+      check_property :crud, String
+      check_property :depends_on, String
+    end
+
+    def check_more(resource)
+        p = resource.find_property(@depends_on)
+
+        if p.nil?
+          raise "Property(#{@depends_on}) is not exist in resource (#{resource.name}), which is used by api(#{@name})"
+        end
     end
   end
 end

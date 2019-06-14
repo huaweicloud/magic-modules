@@ -12,71 +12,51 @@
 # limitations under the License.
 
 require 'api/object'
+require 'api/type'
 
 module Provider
-  # Override to an Api::Resource in api.yaml
-  class ResourceOverride < Api::Object
-    include Api::Resource::Properties
+  # Override a resource property (Api::Type) in api.yaml
+  # TODO(rosbo): Shared common logic with ResourceOverride via a base class.
+  class ApiMultiInvokeOverride < Api::Object
+    module Fields
+      attr_reader :parameter_pre_process
+    end
 
-    # Hash of properties where the key is the property path and the value is
-    # a Provider::PropertyOverride.
-    #
-    # The property path can take of these formats:
-    # - 'foo': Top-level property 'foo'
-    # - 'foo.bar': Property 'bar' nested under property 'foo'
-    attr_reader :properties
+    include Fields
 
-    attr_reader :api_asyncs
+    def validate
+      super
 
-    attr_reader :api_parameters
+      check_optional_property :parameter_pre_process, String
+    end
 
-    attr_reader :api_multi_invokes
-
-    # Apply this override to the given instance of Api::Resource
-    def apply(api_resource)
-      ensure_resource_properties
-      update_overriden_properties(api_resource)
+    # Apply this override to property inheriting from Api::Type
+    def apply(api_property)
+      ensure_property_fields
+      update_overriden_fields api_property
 
       # TODO(nelsonjr): Enable revalidate the object to make sure we did not
       # break the object during the override process
       # | api_resource.validate # check if we did not break the object
     end
 
-    def validate
-      super
-
-      @properties ||= {}
-
-      check_property :properties, Hash
-
-      @api_asyncs ||= {}
-      check_property :api_asyncs, Hash
-
-      @api_parameters ||= {}
-      check_property :api_parameters, Hash
-
-      @api_multi_invokes ||= {}
-      check_property :api_multi_invokes, Hash
-    end
-
     private
 
-    # Updates the resource property to a new value
-    def update(resource, name, value)
-      resource.instance_variable_set("@#{name}".to_sym, value)
+    # Updates a property field to a new value
+    def update(property, field, value)
+      property.instance_variable_set("@#{field}".to_sym, value)
     end
 
-    # Attaches the overridden properties to Api::Resource and ensure they are
+    # Attaches the overridden fields to the property and ensure they are
     # present on the class.
-    def ensure_resource_properties
-      Api::Resource.send(:include, overriden) # override ...
-      require_module overriden
+    def ensure_property_fields
+      Api::ApiMultiInvoke.send(:include, Fields) # override ...
       our_override_modules.each { |mod| require_module mod } # ... and verify
     end
 
     # Copies all overridable properties from ResourceOverride into
     # Api::Resource.
-    def update_overriden_properties(api_resource)
+    def update_overriden_fields(api_resource)
       our_override_modules.each do |mod|
         mod.instance_methods.each do |method|
           # If we have a variable for it, copy it.
@@ -91,15 +71,14 @@ module Provider
     # Returns all modules that contain overridable properties.
     def our_override_modules
       self.class.included_modules.select do |mod|
-        mod == Api::Resource::Properties \
-          || mod.name.split(':').last == 'OverrideProperties'
+        mod == Provider::ApiMultiInvokeOverride::Fields
       end
     end
 
-    # Ensures that Api::Resource includes a module.
+    # Ensures that Api::Type includes a module.
     def require_module(clazz)
-      raise "Api::Resource did not include required #{clazz} module" \
-        unless Api::Resource.included_modules.include?(clazz)
+      raise "Api::Type did not include required #{clazz} module" \
+        unless Api::ApiMultiInvoke.included_modules.include?(clazz)
       raise "#{self.class} did not include required #{clazz} module" \
         unless self.class.included_modules.include?(clazz)
     end
@@ -107,12 +86,6 @@ module Provider
     # Returns the module that provides overriden properties for this provider.
     def overriden
       raise "overriden property should be implemented in #{self.class}"
-    end
-
-    def override_boolean(object, object_key, override_val)
-      return if override_val.nil?
-
-      object.instance_variable_set("@#{object_key}", override_val)
     end
   end
 end

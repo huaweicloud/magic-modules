@@ -12,6 +12,7 @@
 # limitations under the License.
 
 require 'api/object'
+require 'provider/api_multi_invoke_overrirde'
 require 'provider/async_override'
 require 'provider/property_override'
 require 'provider/resource_override'
@@ -106,6 +107,8 @@ module Provider
         override_properties api_object, override
         populate_nonoverridden_aysnc api_object, override
         override_api_async api_object, override
+        populate_nonoverridden_multi_invoke api_object, override
+        override_api_multi_invoke api_object, override
         populate_nonoverridden_parameters(api_object, override)
         override_api_parameters(api_object, override)
       end
@@ -130,6 +133,28 @@ module Provider
         raise "Can't override async for a none-async api(#{path})" if obj.nil?
 
         async_override.apply obj
+      end
+    end
+
+    def populate_nonoverridden_multi_invoke(api_object, override)
+      api_object.apis.each do |k, api|
+        override.api_multi_invokes[k] = Provider::ApiMultiInvokeOverride.new \
+          if api.is_a?(Api::ApiMultiInvoke) && !override.api_multi_invokes.include?(k)
+      end
+    end
+
+    def override_api_multi_invoke(api_object, override)
+      override.api_multi_invokes.each do |path, mi_override|
+        check_property_value "apis['#{path}']",
+                             mi_override, Provider::ApiMultiInvokeOverride
+
+        raise "The api(#{path}) to override must exist" \
+          unless api_object.apis.include? path
+
+        obj = api_object.apis[path]
+        raise "Can't override a none-MultiInvoke api(#{path})" unless obj.is_a?(Api::ApiMultiInvoke)
+
+        mi_override.apply obj
       end
     end
 
