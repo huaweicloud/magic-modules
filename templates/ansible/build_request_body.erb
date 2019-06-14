@@ -1,8 +1,9 @@
 <% prefix = api.out_name -%>
-def build_<%= prefix -%>_parameters(opts):
+<% is_api_mi = api.is_a?(Api::ApiMultiInvoke) -%>
+def build_<%= prefix -%>_parameters(opts<%= is_api_mi ? ", array_index" : "" %>):
     params = dict()
 
-<%= lines(build_expand_properties(api.parameters, "opts, None", prefix, "params"), 1) -%>
+<%= lines(build_expand_properties(api.parameters, "opts, " + (is_api_mi ? "array_index" : "None"), prefix, "params"), 1) -%>
 <% if api.msg_prefix.nil? -%>
     return params
 <% else -%>

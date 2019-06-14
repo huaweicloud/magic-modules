@@ -135,6 +135,12 @@ module Provider
                          prefix: prefix,
                          property: property
       end
+
+      def build_multi_invoke_method(api)
+        compile_template 'templates/ansible/multi_invoke.erb',
+                         api: api
+      end
+
       private
 
       def autogen_notice_contrib

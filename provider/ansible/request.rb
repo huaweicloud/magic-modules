@@ -300,6 +300,8 @@ module Provider
           end
 
         else
+          raise "no field for parameter: " + prop.name if prop.field.nil?
+
           d, ai = arguments.split(", ")
           i = "[#{index2navigate(prop.field, true)}]"
           r = "v = navigate_value(#{d}, #{i}, #{ai})"

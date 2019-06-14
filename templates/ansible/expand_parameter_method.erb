@@ -18,6 +18,7 @@ def <%= func_def %>
     req = []
 
 <%   if property.array_num.nil? -%>
+<%     raise "no field for parameter: " + property.name if property.field.nil? -%>
 <%     rp = find_property(resource, property.field.split("."))
        unless rp.is_a?(Api::Type::Array)
          raise "parameter(#{property.name}) is an array, but the matched property is not"
