@@ -31,5 +31,5 @@ func multi_invoke_<%= prefix %>(config, opts, client<%= not_async ? "" : ", time
 <% end -%>
         <%= r %>send_<%= prefix %>_request(module, <%= params %>, client)
 <%     unless not_async -%>
-	async_wait_<%= prefix %>(config, r, <%= client %>, timeout)
+	<%= united_async ? "async_wait" : ("async_wait_" + prefix) %>(config, r, <%= client %>, timeout)
 <%     end -%>

@@ -40,6 +40,14 @@ module Api
       check_optional_property :timeout, Integer
     end
 
+    def eql?(other)
+      return false unless @operation.eql? other.operation
+
+      p1 = @status_check || Status.new
+      p2 = other.status_check || Status.new
+      return p1.eql? p2
+    end
+
     # Represents the operations (requests) issues to watch for completion
     class Operation < Api::ApiBasic
       attr_reader :path_parameter
@@ -56,10 +64,26 @@ module Api
 
         @name ||= "async_query_api"
 
-	@has_response = true
+        @has_response = true
 
         super
       end
+
+      def eql?(other)
+        return false if @path != other.path
+        return false if @service_type != other.service_type
+        return false if @service_level != other.service_level
+        return false if @wait_ms != other.wait_ms
+
+        p1 = @header_params || Hash.new
+        p2 = other.header_params || Hash.new
+        return false if p1 != p2
+
+        p1 = @path_parameter || Hash.new
+        p2 = other.path_parameter || Hash.new
+        return p1 == p2
+      end
+
     end
 
     # Provides information to parse the result response to check operation
@@ -75,6 +99,16 @@ module Api
         check_property :complete, Array
         check_optional_property :pending, Array
       end
+
+      def eql?(other)
+        return false unless @field.eql?(other.field)
+        return false unless @complete.eql?(other.complete)
+
+        p1 = @pending || []
+        p2 = other.pending || []
+        return p1 == p2
+      end
+
     end
 
     # Represents the results of an Operation request

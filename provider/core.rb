@@ -836,6 +836,40 @@ module Provider
       r
     end
 
+    def is_united_async(resource)
+      ro = @config.overrides.fetch(resource.name, nil)
+      ao = ro.nil? ? Hash.new : ro.api_asyncs
+
+      pre = nil
+      resource.apis.each do |k, v|
+        next if v.async.nil?
+
+        if pre.nil?
+          pre = v
+          next
+        end
+
+        return false, nil unless pre.async.eql? v.async
+
+        o1 = ao.fetch(pre.name, nil)
+        o2 = ao.fetch(v.name, nil)
+
+        next if o1.nil? && o2.nil?
+
+        unless o1.nil? || o2.nil?
+          next if o1.eql? o2
+        end
+
+        return false, nil
+      end
+
+      if pre.nil?
+        return false, nil
+      end
+
+      return true, pre.async
+    end
+
     def find_property(api_entity, property_path)
       property_name = property_path[0]
       properties = get_properties api_entity
