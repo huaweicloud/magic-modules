@@ -40,6 +40,12 @@ module Provider
       # | api_resource.validate # check if we did not break the object
     end
 
+    def eql?(other)
+      p1 = @custom_status_check_func || ""
+      p2 = other.custom_status_check_func || ""
+      return p1 == p2
+    end
+
     private
 
     # Updates a property field to a new value

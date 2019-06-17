@@ -80,9 +80,10 @@ module Provider
                          client: client
       end
 
-      def build_resource_async_op(api, module_name)
+      def build_resource_async_op(api, module_name, gasync=nil)
         compile_template 'templates/ansible/async_wait.erb',
                          module_name: module_name,
+                         gasync: gasync,
                          api: api
       end
 
@@ -136,8 +137,9 @@ module Provider
                          property: property
       end
 
-      def build_multi_invoke_method(api)
+      def build_multi_invoke_method(api, united_async)
         compile_template 'templates/ansible/multi_invoke.erb',
+                         united_async: united_async,
                          api: api
       end
 

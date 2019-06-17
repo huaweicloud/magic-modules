@@ -1,10 +1,10 @@
-def async_wait_<%= api.out_name%>(config, result, client, timeout):
+def async_wait<%= gasync.nil? ? ("_" + api.out_name) : "" %>(config, result, client, timeout):
     module = config.module
 <%
-   async = api.async
+   async = gasync.nil? ? api.async : gasync
    async_op = async.operation
 -%>
-<% if need_build_async_url(api) %>
+<% if (!gasync.nil?) || need_build_async_url(api) %>
 <%   if async_op.path_parameter -%>
     path_parameters = {
 <%     async_op.path_parameter.each do |k, v| -%>
@@ -51,8 +51,12 @@ def async_wait_<%= api.out_name%>(config, result, client, timeout):
             _query_status, timeout)
     except Exception as ex:
         module.fail_json(msg="module(<%= module_name %>): error "
+<%   if gasync.nil? -%>
                              "waiting for api(<%= api.name %>) to "
                              "be done, error= %s" % str(ex))
+<%   else -%>
+                             "waiting to be done, error= %s" % str(ex))
+<%   end -%>
 <% elsif async.custom_status_check_func -%>
 
     def _query_status():
@@ -71,8 +75,12 @@ def async_wait_<%= api.out_name%>(config, result, client, timeout):
         return wait_to_finish(["Done"], ["Pending"], _query_status, timeout)
     except Exception as ex:
         module.fail_json(msg="module(<%= module_name %>): error "
+<%   if gasync.nil? -%>
                              "waiting for api(<%= api.name %>) to "
                              "be done, error= %s" % str(ex))
+<%   else -%>
+                             "waiting to be done, error= %s" % str(ex))
+<%   end -%>
 <% else -%>
-<%   raise "Must sepecify status check for api: #{api.name}" -%>
+<%   raise "Must sepecify status check for api: " + (gasync.nil? ? api.name : "global async") -%>
 <% end -%>

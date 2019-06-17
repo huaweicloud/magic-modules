@@ -210,6 +210,8 @@ def user_input_parameters(module):
     }
 
 
+<% united_async, gasync = is_united_async(object) -%>
+<% async_wait_name = "async_wait" -%>
 <% create_api = object.apis["create"] -%>
 def create(config):
     module = config.module
@@ -248,7 +250,7 @@ def create(config):
     client = config.client(<%= argu_for_sdkclient(async_op) %>)
 <%   end -%>
 <%   pre_api = async_op -%>
-    obj = async_wait_create(config, r, client, timeout)
+    obj = <%= united_async ? async_wait_name : "async_wait_create" %>(config, r, client, timeout)
     module.params['id'] = navigate_value(obj, [<%= index2navigate(create_api.async.result.field) %>])
 <% end -%>
 <% other_api(object, "c").each do | item | -%>
@@ -273,7 +275,7 @@ def create(config):
     <%= spaces %>client = config.client(<%= argu_for_sdkclient(async_op) %>)
 <%     end -%>
 <%     pre_api = async_op -%>
-    <%= spaces %>async_wait_<%= item.out_name %>(config, r, client, timeout)
+    <%= spaces %><%= united_async ? async_wait_name : "async_wait_" + item.out_name %>(config, r, client, timeout)
 <%   end -%>
 <% end -%>
 <% if updatable?(object) -%>
@@ -311,7 +313,7 @@ def update(config, expect_state, current_state):
         client = config.client(<%= argu_for_sdkclient(async_op) %>)
 <%       end -%>
 <%       pre_api = async_op -%>
-        async_wait_update(config, r, client, timeout)
+        <%= united_async ? async_wait_name : "async_wait_update" %>(config, r, client, timeout)
 <%     end -%>
 <%   end # update_api.nil? -%>
 <%   other_api(object, "u").each do | item | -%>
@@ -341,7 +343,7 @@ def update(config, expect_state, current_state):
     <%= spaces %>client = config.client(<%= argu_for_sdkclient(async_op) %>)
 <%       end -%>
 <%       pre_api = async_op -%>
-    <%= spaces %>async_wait_<%= item.out_name %>(config, r, client, timeout)
+    <%= spaces %><%= united_async ? async_wait_name : "async_wait_" + item.out_name %>(config, r, client, timeout)
 <%     end -%>
 <%   end -%>
 <%   multi_invoke_api(object, "u").each do | item | -%>
@@ -380,7 +382,7 @@ def delete(config):
 
     <%= spaces %>client = config.client(<%= argu_for_sdkclient(async_op) %>)
 <%   end -%>
-    <%= spaces %>async_wait_delete(config, r, client, timeout)
+    <%= spaces %><%= united_async ? async_wait_name : "async_wait_delete" %>(config, r, client, timeout)
 <% else -%>
 <%   unless create_api.async.nil? -%>
 
@@ -546,16 +548,21 @@ def search_resource(config):
 
 
 <%= lines(build_send_request_method(item, module_name(object))) -%>
-<%   unless item.async.nil? -%>
+<%   unless item.async.nil? || united_async -%>
 
 
 <%= lines(build_resource_async_op(item, module_name(object))) -%>
 <%   end -%>
 <% end -%>
+<% if united_async -%>
+
+
+<%= lines(build_resource_async_op(nil, module_name(object), gasync)) -%>
+<% end -%>
 <% multi_invoke_api(object, "u").each do |item| -%>
 
 
-<%= lines(build_multi_invoke_method(item)) -%>
+<%= lines(build_multi_invoke_method(item, united_async)) -%>
 <% end -%>
 <% read_apis.each do | item | -%>
 
