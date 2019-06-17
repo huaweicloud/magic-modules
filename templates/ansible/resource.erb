@@ -251,7 +251,24 @@ def create(config):
 <%   end -%>
 <%   pre_api = async_op -%>
     obj = <%= united_async ? async_wait_name : "async_wait_create" %>(config, r, client, timeout)
-    module.params['id'] = navigate_value(obj, [<%= index2navigate(create_api.async.result.field) %>])
+<%   async_r = create_api.async.result -%>
+<%   unless async_r.sub_jobs_path.nil? %>
+    sub_job_identity = {
+<%     async_r.sub_job_identity.each do |k, v| -%>
+        "<%= k %>": <%= convert_simple_value(v) %>,
+<%     end -%>
+    }
+    for item in navigate_value(obj, [<%= index2navigate(async_r.sub_jobs_path) %>]):
+        for k, v in sub_job_identity.items():
+            if item[k] != v:
+                break
+        else:
+            obj = item
+            break
+    else:
+        raise Exception("Can't find the sub job")
+<%   end -%>
+    module.params['id'] = navigate_value(obj, [<%= index2navigate(async_r.field) %>])
 <% end -%>
 <% other_api(object, "c").each do | item | -%>
 <%
