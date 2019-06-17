@@ -114,9 +114,15 @@ module Api
     # Represents the results of an Operation request
     class Result < Api::Object
       attr_reader :field # used to navigate the original resource id
+      attr_reader :sub_jobs_path
+      attr_reader :sub_job_identity
       def validate
         super
         check_property :field, String
+        check_optional_property :sub_jobs_path, String
+        unless sub_jobs_path.nil?
+          check_property :sub_job_identity, Hash
+        end
       end
     end
   end

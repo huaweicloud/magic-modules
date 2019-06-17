@@ -437,7 +437,7 @@ module Provider
 
       def module_import_items(resource)
         v = ["Config", "HwcClientException", "HwcModule", "are_different_dicts",
-	     "build_path", "is_empty_value", "navigate_value"]
+             "build_path", "is_empty_value", "navigate_value"]
 
         resource.apis.each do |_, api|
           unless api.async.nil?
@@ -484,6 +484,21 @@ module Provider
 
       def module_dir
         @api.cloud_half_full_name
+      end
+
+      def convert_simple_value(v)
+        if v.is_a? Integer
+          return v
+
+        elsif v.is_a? String
+          return sprintf("\"%s\"", v)
+
+        elsif [true, false].include? v
+          return v ? "True" : "False"
+
+        end
+
+        raise "Can't convert a non-simple value"
       end
 
       def generate_network_datas(data, object) end
