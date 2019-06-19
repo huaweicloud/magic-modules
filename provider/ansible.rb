@@ -272,6 +272,27 @@ module Provider
         object.all_user_properties.select {|p| has_output_property(p)}
       end
 
+      def need_adjust_property(property)
+        if property.is_a?(Api::Type::Array) &&
+            property.item_type.is_a?(Api::Type::NestedObject) &&
+            (!property.identities.nil?) && has_output_property(property)
+          return true
+        end
+
+        v = property.child_properties
+        unless v.nil?
+          v.each do |i|
+            return true if need_adjust_property(i)
+          end
+        end
+
+        return false
+      end
+
+      def properties_to_adjust(object)
+        object.all_user_properties.select {|p| need_adjust_property(p)}
+      end
+
       def rrefs_in_link(link, object)
         props_in_link = link.scan(/{([a-z_]*)}/).flatten
         (object.parameters || []).select do |p|
