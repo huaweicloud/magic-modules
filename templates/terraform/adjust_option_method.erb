@@ -1,0 +1,133 @@
+<% prop_out_name = property.out_name -%>
+<% if property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
+func adjust<%= prefix -%><%= titlelize(property.name) -%>(parentCur, parentNew map[string]interface{}) {
+<%   # if this property is not readable, then it can not known the number of array when import this resource
+     # because when import, all the properties are empty.
+     # on the other side, since this property is unreadable, why append a readable property on me?
+
+     # send question. it exists that if the array has two items, but the order of readback data is not matched
+     # but now, there is no good way to check whether two items from different arraya are matched.
+-%>
+    v, ok := parentCur["<%= prop_out_name %>"]
+    if !ok || v == nil {
+        return
+    }
+    cv, ok := v.([]interface{})
+    if !ok || len(cv) == 0 {
+        return
+    }
+
+    v, ok = parentNew["<%= prop_out_name %>"]
+    if !ok || v == nil {
+        return
+    }
+    nv, ok := v.([]interface{})
+    if !ok || len(nv) == 0 {
+        return
+    }
+
+    lnv := len(nv)        
+<%   identities = property.identities -%>
+<%   unless identities.nil? -%>
+    result := make([]interface{}, 0, lnv)
+    q := make([]int, 0, lnv)
+<%   end -%>
+    lcv := len(cv)
+    for i := 0; i < lcv; i++ {
+<%   if identities.nil? -%>
+        if i >= lnv {
+            break
+        }
+        inv := nv[i].(map[string]interface{})
+        icv := cv[i].(map[string]interface{})
+<%   else -%>
+        icv := cv[i].(map[string]interface{})
+        var inv map[string]interface{}
+        for j, e := range nv {
+            inv = e.(map[string]interface{})
+            <% identities.each do |k| -%>
+
+            if icv["<%= k %>"] != inv["<%= k %>"] {
+                continue
+            }
+            <% end -%>
+
+            result = append(result, inv)
+            q = append(q, j)
+            break
+        }
+
+        if (i + 1) != len(result) {
+            break
+        }
+<%   end -%>
+<%   property.child_properties.each do |prop|
+       c = adjust_option(prop, prefix + titlelize(property.name), "icv", "inv", resource_name)
+-%>
+<%     unless c.empty? -%>
+
+    <%= c %>
+<%     end -%>
+<%   end -%>
+    }
+
+<%   unless identities.nil? -%>
+    if len(result) != lnv {
+        for i, v := range nv {
+            bingo := false
+            for _, j := range q {
+                if i == j {
+                    bingo = true
+                    break
+                }
+            }
+            if !bingo {
+                result = append(result, v)
+            }
+        }
+    }
+    parentNew["<%= prop_out_name %>"] = result
+<%   end -%>
+}
+<%   property.child_properties.each do |prop| -%>
+<%     next unless need_adjust_property(prop) -%>
+
+<%= lines(build_adjust_option_method(prefix + titlelize(property.name), prop, resource_name), 1) -%>
+<%   end -%>
+<% elsif property.is_a?(Api::Type::NestedObject) -%>
+func adjust<%= prefix -%><%= titlelize(property.name) -%>(parentCur, parentNew map[string]interface{}) error {
+    v, ok := parentCur["<%= prop_out_name %>"]
+    if !ok || v == nil {
+        return
+    }
+    cv, ok := v.([]interface{})
+    if !ok || len(cv) == 0 || cv[0] == nil {
+        return
+    }
+    cr := cv[0].(map[string]interface{})
+
+    v, ok = parentNew["<%= prop_out_name %>"]
+    if !ok || v == nil {
+        return
+    }
+    nv, ok := v.([]interface{})
+    if !ok || len(nv) == 0 || nv[0] == nil {
+        return
+    }
+    nr := nv[0].(map[string]interface{})
+
+<%   property.child_properties.each do |prop|
+       c = adjust_option(prop, prefix + titlelize(property.name), "cr", "nr", resource_name)
+-%>
+<%     unless c.empty? -%>
+
+    <%= c %>
+<%     end -%>
+<%   end -%>
+}
+<%   property.child_properties.each do |prop| -%>
+<%     next unless need_adjust_property(prop) -%>
+
+<%= lines(build_adjust_option_method(prefix + titlelize(property.name), prop, resource_name), 1) -%>
+<%   end -%>
+<% end -%>

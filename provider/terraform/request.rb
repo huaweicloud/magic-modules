@@ -214,6 +214,68 @@ module Provider
         end
       end
 
+      def convert_to_option(prop, arguments, prefix, first_assign, parent_var, resource_name)
+        return first_assign, "" unless has_output_property(prop)
+
+        read_err = sprintf("fmt.Errorf(\"Error flattening %s:%s, err: %%s\", err)", resource_name, prop.out_name)
+        prop_var = "v"
+
+        set_to_parent = indent([
+          "if err != nil {\nreturn nil, #{read_err}\n}",
+          sprintf("%s[\"%s\"] = %s", parent_var, prop.out_name, prop_var),
+        ], 4)
+
+        fn = sprintf("flatten%s%s", prefix, titlelize(prop.name))
+        f = indent([
+          sprintf("%s, err %s %s(%s)", prop_var, first_assign ? ":=" : "=", fn, arguments),
+          set_to_parent
+        ].compact.flatten, 4)
+
+
+        if prop.from_response
+          return false, f
+
+        elsif prop.from_response_method
+          return false, f.sub(fn, prop.from_response_method)
+
+        elsif prop.is_a? Api::Type::NestedObject
+          return false,  f
+
+        elsif prop.is_a?(Api::Type::Array) && \
+              prop.item_type.is_a?(Api::Type::NestedObject)
+          return false,  f
+
+        elsif prop.is_a?(Api::Type::NameValues)
+          return false,  f
+
+        else
+          i = "[]string{#{index2navigate(prop.field, false)}}"
+          v = arguments.split(", ")
+
+          return false, indent([
+            sprintf("%s, err %s navigateValue(%s, %s, %s)", prop_var, first_assign ? ":=" : "=", v[0], i, v[1]),
+            set_to_parent,
+          ].compact.flatten, 4)
+        end
+      end
+
+      def adjust_option(prop, prefix, cur_var, new_var, resource_name)
+        return "" unless need_adjust_property(prop)
+
+        f = sprintf("adjust%s%s(%s, %s)", prefix, titlelize(prop.name), cur_var, new_var)
+
+        if prop.is_a? Api::Type::NestedObject
+          return f
+
+        elsif prop.is_a?(Api::Type::Array) && \
+              prop.item_type.is_a?(Api::Type::NestedObject)
+          return f
+
+        else
+          raise "impossible to adjust the value of property(#{prop.name})"
+        end
+      end
+
       def convert_resp_parameter(prop, arguments, prefix, first_assign, parent_var, set_to, resource_name)
         unless has_output_property(prop)
           if set_to.eql?("parent")

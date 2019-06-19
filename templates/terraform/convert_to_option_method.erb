@@ -1,0 +1,103 @@
+<% if !property.from_response.nil? -%>
+func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
+<%   raise "parameter(#{property.name}) is not readable" unless property.crud.include?("r") -%>
+    v, err := navigateValue(d, []string{<%= index2navigate(property.field) %>}, arrayIndex)
+    if err != nil {
+            return nil, err
+    }
+    <%= lines(property.from_response) -%>
+}
+<% elsif property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
+func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
+<%   # if this property is not readable, then it can not known the number of array when import this resource
+     # because when import, all the properties are empty.
+     # on the other side, since this property is unreadable, why append a readable property on me?
+
+     # send question. it exists that if the array has two items, but the order of readback data is not matched
+     # but now, there is no good way to check whether two items from different arraya are matched.
+-%>
+<%   if property.crud.include?("r") -%>
+    v, err := navigateValue(d, []string{<%= index2navigate(property.field) %>}, arrayIndex)
+    if err != nil {
+        return nil, err
+    }
+    n := 0
+    if v1, ok := v.([]interface{}); ok && len(v1) > 0 {
+        n = len(v1)
+    } else {
+        return nil, nil
+    }
+<%   else -%>
+<%     raise "check this case and remove me to go on!!!" -%>
+        n = 1
+<%   end -%>
+    result := make([]interface{}, 0, n)
+
+    newArrayIndex := make(map[string]int)
+    if arrayIndex != nil {
+        for k, v := range arrayIndex {
+            newArrayIndex[k] = v
+        }
+    }
+
+    for i := 0; i < n; i++ {
+        newArrayIndex["<%= property.field %>"] = i
+        r := make(map[string]interface{})
+<%   nested_properties = nested_properties(property)
+     first_assign = true
+-%>
+<%   nested_properties.each do |prop|
+       first_assign, c = convert_to_option(prop, "d, newArrayIndex", prefix + titlelize(property.name), first_assign, 'r', resource_name)
+-%>
+<%     unless c.empty? -%>
+
+    <%= c %>
+<%     end -%>
+<%   end -%>
+
+        for _, v := range r {
+            if v != nil {
+                result = append(result, r)
+                break
+            }
+        }
+    }
+
+    if len(result) > 0 {
+        return result, nil
+    }
+    return nil, nil
+}
+<%   nested_properties.each do |prop| -%>
+<%     next unless has_output_property(prop) -%>
+
+<%= lines(build_convert_option_method(prefix + titlelize(property.name), prop, resource_name), 1) -%>
+<%   end -%>
+<% elsif property.is_a?(Api::Type::NestedObject) -%>
+func flatten<%= prefix -%><%= titlelize(property.name) -%>(d interface{}, arrayIndex map[string]int) (interface{}, error) {
+     r := make(map[string]interface{})
+<%   nested_properties = nested_properties(property)
+     first_assign = true
+-%>
+<%   nested_properties.each do |prop|
+       first_assign, c = convert_to_option(prop, "d, arrayIndex", prefix + titlelize(property.name), first_assign, "r", resource_name)
+-%>
+<%     unless c.empty? -%>
+
+    <%= c %>
+<%     end -%>
+<%   end -%>
+
+    for _, v := range r {
+        if v != nil {
+            return []interface{}{r}, nil
+        }
+    }
+    return nil, nil
+}
+<%   nested_properties.each do |prop| -%>
+<%     next unless has_output_property(prop) -%>
+
+<%= lines(build_convert_option_method(prefix + titlelize(property.name), prop, resource_name), 1) -%>
+<%   end -%>
+<% end -%>

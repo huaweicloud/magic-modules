@@ -1,0 +1,8 @@
+func set<%= resource_name -%>States(d *schema.ResourceData, opts map[string]interface{}) error {
+    for k, v := range opts {
+        if err := d.Set(k, v); err != nil {
+            return fmt.Errorf("Error setting <%= resource_name %>:%s, err: %s", k, err)
+        }
+    }
+    return nil
+}
