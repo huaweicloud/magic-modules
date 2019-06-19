@@ -255,8 +255,31 @@ module Provider
       return false
     end
 
+    # only one case to adjust as bellow
+    # 1. the array property that keeps the order of array
+    def need_adjust_property(property)
+      if property.is_a?(Api::Type::Array) &&
+          property.item_type.is_a?(Api::Type::NestedObject) &&
+          (!property.identities.nil?) && has_output_property(property)
+        return true
+      end
+
+      v = property.child_properties
+      unless v.nil?
+        v.each do |i|
+          return true if need_adjust_property(i)
+        end
+      end
+
+      return false
+    end
+
     def properties_to_show(object)
       object.all_user_properties.select {|p| has_output_property(p)}
+    end
+
+    def properties_to_adjust(object)
+      object.all_user_properties.select {|p| need_adjust_property(p)}
     end
 
     def argu_for_sdkclient(api, is_test=false)

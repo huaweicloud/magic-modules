@@ -138,6 +138,38 @@ module Provider
                          prefix: prefix,
                          property: property
       end
+
+      def build_convert_option_method(prefix, property, resource_name)
+        compile_template 'templates/terraform/convert_to_option_method.erb',
+                         prefix: prefix,
+                         property: property,
+                         resource_name: resource_name
+      end
+
+      def build_convert_opts_method(object, resource_name)
+        compile_template 'templates/terraform/convert_to_options.erb',
+                         object: object,
+                         resource_name: resource_name
+      end
+
+      def build_adjust_option_method(prefix, property, resource_name)
+        compile_template 'templates/terraform/adjust_option_method.erb',
+                         prefix: prefix,
+                         property: property,
+                         resource_name: resource_name
+      end
+
+      def build_adjust_opts_method(object, resource_name)
+        compile_template 'templates/terraform/adjust_options.erb',
+                         object: object,
+                         resource_name: resource_name
+      end
+
+      def build_set_states_method(resource_name)
+        compile_template 'templates/terraform/set_states.erb',
+                         resource_name: resource_name
+      end
+
       private
 
       def autogen_notice_contrib

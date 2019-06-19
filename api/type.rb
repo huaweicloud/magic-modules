@@ -229,6 +229,7 @@ module Api
     class Array < Composite
       attr_reader :item_type
       attr_reader :max_size
+      attr_reader :identities
 
       STRING_ARRAY_TYPE = [Api::Type::Array, Api::Type::String].freeze
       NESTED_ARRAY_TYPE = [Api::Type::Array, Api::Type::NestedObject].freeze
@@ -248,6 +249,18 @@ module Api
         end
 
         check_optional_property :max_size, ::Integer
+        check_optional_property :identities, ::Array
+
+        if @item_type.is_a?(NestedObject) && (!@identities.nil?)
+           m = []
+           @item_type.child_properties.each do |v|
+             m << v.name
+           end
+
+           @identities.each do |v|
+             raise "The item(#{v}) of identities is not in @item_type for array(#{@name})" unless m.include?(v)
+           end
+        end
       end
 
       def item_type_class
