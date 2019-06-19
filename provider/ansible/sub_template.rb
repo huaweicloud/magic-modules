@@ -143,6 +143,28 @@ module Provider
                          api: api
       end
 
+      def build_convert_option_method(prefix, property)
+        compile_template 'templates/ansible/convert_option_method.erb',
+                         prefix: prefix,
+                         property: property
+      end
+
+      def build_convert_opts_method(object)
+        compile_template 'templates/ansible/convert_to_options.erb',
+                         object: object
+      end
+
+      def build_adjust_option_method(prefix, property)
+        compile_template 'templates/ansible/adjust_option_method.erb',
+                         prefix: prefix,
+                         property: property
+      end
+
+      def build_adjust_opts_method(object)
+        compile_template 'templates/ansible/adjust_options.erb',
+                         object: object
+      end
+
       private
 
       def autogen_notice_contrib

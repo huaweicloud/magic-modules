@@ -1,0 +1,14 @@
+def flatten_options(response, array_index, exclude_output=False):
+    r = dict()
+<% object.all_user_properties.each do |prop| -%>
+<%   c = convert_to_option(prop, "response, array_index", "", "r", 4) -%>
+<%   unless c.empty? -%>
+
+<%= c %>
+<%   end -%>
+<% end -%>
+
+    return r
+<% properties_to_show(object).each do |prop| -%>
+<%= lines(build_convert_option_method("", prop)) -%>
+<% end -%>

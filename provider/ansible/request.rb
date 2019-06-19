@@ -315,6 +315,96 @@ module Provider
         end
       end
 
+      def convert_to_option(prop, arguments, prefix, parent_var, spaces)
+        return "" unless has_output_property(prop)
+
+        prop_var = "v"
+        set_parent = sprintf("%s[\"%s\"] = %s", parent_var, prop.out_name, prop_var)
+
+	fn = sprintf("flatten%s%s_%s", prefix.empty? ? "" : "_", prefix, prop.out_name)
+        f = [
+          sprintf("%s = %s(%s, exclude_output)", prop_var, fn, arguments),
+          set_parent
+        ]
+
+        if prop.from_response
+          if prop.crud.eql?("r")
+            return indent([
+              "if not exclude_output:",
+              indent(f, 4)
+            ], spaces)
+          else
+            return indent(f, spaces)
+          end
+
+        elsif prop.is_a? Api::Type::NestedObject
+          if prop.crud.eql?("r")
+            return indent([
+              "if not exclude_output:",
+              indent(f, 4)
+            ], spaces)
+          else
+            return indent(f, spaces)
+          end
+
+        elsif prop.is_a?(Api::Type::Array) && \
+              prop.item_type.is_a?(Api::Type::NestedObject)
+          if prop.crud.eql?("r")
+            return indent([
+              "if not exclude_output:",
+              indent(f, 4)
+            ], spaces)
+          else
+            return indent(f, spaces)
+          end
+
+        # elsif prop.is_a?(Api::Type::NameValues)
+        #   return f
+
+        else
+          i = "[#{index2navigate(prop.field, false)}]"
+          v = arguments.split(", ")
+          len = sprintf("    %s = navigate_value(%s, , %s)", prop_var, v[0], v[1]).length + spaces
+          len1 = len - sprintf("%s, , %s)", v[0], v[1]).length - spaces
+          if prop.crud.eql?("r")
+            indent([
+              "if not exclude_output:",
+              (sprintf("    %s = navigate_value(%s, %s, %s)", prop_var, v[0], i, v[1]) if i.length <= 79 - len),
+              (sprintf("    %s = navigate_value(%s, %s,\n%s%s)", prop_var, v[0], i, ' ' * len1, v[1]) if i.length > 79 - len),
+              indent(set_parent, 4),
+            ].compact, spaces)
+          else
+            len -= 4
+            len1 -= 4
+            indent([
+              (sprintf("%s = navigate_value(%s, %s, %s)", prop_var, v[0], i, v[1]) if i.length <= 79 - len),
+              (sprintf("%s = navigate_value(%s, %s,\n%s%s)", prop_var, v[0], i, ' ' * len1, v[1]) if i.length > 79 - len),
+              set_parent,
+            ].compact, spaces)
+          end
+        end
+      end
+
+      def adjust_option(prop, prefix, cur_var, new_var, spaces)
+        return "" unless need_adjust_property(prop)
+
+        f = sprintf("%sadjust%s%s_%s(%s, %s)", ' ' * spaces, prefix.empty? ? "" : "_", prefix, prop.out_name, cur_var, new_var)
+
+        if prop.is_a? Api::Type::NestedObject
+          return f
+
+        elsif prop.is_a?(Api::Type::Array) && \
+              prop.item_type.is_a?(Api::Type::NestedObject)
+          return f
+
+	end
+
+        raise "impossible to adjust the value of property(#{prop.name})"
+      end
+      ################################
+
+
+
       def convert_resp_parameter(prop, arguments, prefix, parent_var, spaces)
         unless has_output_property(prop)
           return indent(sprintf("%s.setdefault(\"%s\", None)", parent_var, prop.out_name), spaces)

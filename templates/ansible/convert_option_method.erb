@@ -1,0 +1,77 @@
+<%
+   new_prefix = sprintf("%s%s%s", prefix, prefix.empty? ? "" : "_", property.out_name)
+   func_def = sprintf("flatten_%s(d, array_index, exclude_output):", new_prefix)
+   if (func_def.length + 4) > 79
+     spaces = sprintf("def flatten_%s(", new_prefix).length
+     func_def = sprintf("flatten_%s(d, array_index,\n%sexclude_output):", new_prefix, ' ' * spaces)
+   end
+-%>
+<% if !property.from_response.nil? -%>
+
+
+def <%= func_def %>
+<%= indent(lines(property.from_response), 4) -%>
+<% elsif property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
+
+
+def <%= func_def %>
+<%   if property.crud.include?("r") -%>
+    v = navigate_value(d, [<%= index2navigate(property.field) %>],
+                       array_index)
+    if not v:
+        return None
+    n = len(v)
+<%   else -%>
+<%     raise "check this case and remove me to go on!!!" -%>
+    n = 1
+<%   end -%>
+    result = []
+
+    new_array_index = dict()
+    if array_index:
+        new_array_index.update(array_index)
+
+    for i in range(n):
+        new_array_index["<%= property.field %>"] = i
+
+        val = dict()
+<%   property.child_properties.each do |prop| -%>
+<%     c = convert_to_option(prop, "d, new_array_index", new_prefix, "val", 8) -%>
+<%     unless c.empty? -%>
+
+<%= c %>
+<%     end -%>
+<%   end -%>
+
+        for _, v in val.items():
+            if v is not None:
+                result.append(val)
+                break
+
+    return result if result else None
+<%   property.child_properties.each do |prop| -%>
+<%     next unless has_output_property(prop) -%>
+<%= lines(build_convert_option_method(new_prefix, prop)) -%>
+<%   end -%>
+<% elsif property.is_a?(Api::Type::NestedObject) -%>
+
+
+def <%= func_def %>
+     result = dict()
+<%   property.child_properties.each do |prop| -%>
+<%     c = convert_to_option(prop, "d, array_index", new_prefix, "result", 4) %>
+<%     unless c.empty? -%>
+
+<%= c %>
+<%     end -%>
+<%   end -%>
+
+    for _, v in result.items():
+        if v is not None:
+            return result
+    return None
+<%   property.child_properties.each do |prop| -%>
+<%     next unless has_output_property(prop) -%>
+<%= lines(build_convert_option_method(new_prefix, prop)) -%>
+<%   end -%>
+<% end # if property.is_a?(Api::Type::Array) -%>
