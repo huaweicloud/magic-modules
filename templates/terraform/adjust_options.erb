@@ -1,7 +1,7 @@
 <% props = properties_to_adjust(object) -%>
 <% unless props.empty? -%>
 
-func adjust<%= resource_name -%>Options(opts, states map[string]interface{}) {
+func adjust<%= resource_name -%>Options(opts, states map[string]interface{}) error {
 <%   el = false -%>
 <%   props.each do |prop| -%>
 <%     c = adjust_option(prop, resource_name, 'opts', "states", object.name) -%>
@@ -13,6 +13,8 @@ func adjust<%= resource_name -%>Options(opts, states map[string]interface{}) {
 <%       el = true -%>
 <%     end -%>
 <%   end -%>
+
+    return nil
 }
 
 <%   props.each do |prop| -%>
