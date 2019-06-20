@@ -262,7 +262,10 @@ module Provider
       def adjust_option(prop, prefix, cur_var, new_var, resource_name)
         return "" unless need_adjust_property(prop)
 
-        f = sprintf("adjust%s%s(%s, %s)", prefix, titlelize(prop.name), cur_var, new_var)
+        f = indent([
+          sprintf("if err := adjust%s%s(%s, %s); err != nil {", prefix, titlelize(prop.name), cur_var, new_var),
+          "return err\n}"
+        ], 4)
 
         if prop.is_a? Api::Type::NestedObject
           return f

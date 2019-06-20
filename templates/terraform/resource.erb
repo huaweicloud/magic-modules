@@ -240,7 +240,10 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
 <% unless properties_to_adjust(object).empty? -%>
 
     opts := resource<%= resource_name -%>UserInputParams(d)
-    adjust<%= resource_name -%>Options(opts, states)
+    err = adjust<%= resource_name -%>Options(opts, states)
+    if err != nil {
+        return err
+    }
 <% end -%>
 
     return set<%= resource_name -%>States(d, states)
@@ -286,7 +289,10 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
 <% unless properties_to_adjust(object).empty? -%>
 
     opts := resource<%= resource_name -%>UserInputParams(d)
-    adjust<%= resource_name -%>Options(opts, states)
+    err = adjust<%= resource_name -%>Options(opts, states)
+    if err != nil {
+        return err
+    }
 <% end -%>
 
     return set<%= resource_name -%>States(d, states)

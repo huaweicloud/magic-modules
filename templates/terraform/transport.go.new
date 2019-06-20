@@ -208,3 +208,13 @@ func waitToFinish(target, pending []string, timeout, interval time.Duration, f r
 
 	return stateConf.WaitForState()
 }
+
+func isIncludeIndex(i int, q []int) bool {
+	for _, v := range q {
+		if i == v {
+			return true
+		}
+	}
+
+	return false
+}

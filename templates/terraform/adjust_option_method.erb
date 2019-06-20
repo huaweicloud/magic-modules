@@ -1,6 +1,6 @@
 <% prop_out_name = property.out_name -%>
 <% if property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
-func adjust<%= prefix -%><%= titlelize(property.name) -%>(parentCur, parentNew map[string]interface{}) {
+func adjust<%= prefix -%><%= titlelize(property.name) -%>(parentCur, parentNew map[string]interface{}) error {
 <%   # if this property is not readable, then it can not known the number of array when import this resource
      # because when import, all the properties are empty.
      # on the other side, since this property is unreadable, why append a readable property on me?
@@ -10,41 +10,46 @@ func adjust<%= prefix -%><%= titlelize(property.name) -%>(parentCur, parentNew m
 -%>
     v, ok := parentCur["<%= prop_out_name %>"]
     if !ok || v == nil {
-        return
+        return nil
     }
     cv, ok := v.([]interface{})
-    if !ok || len(cv) == 0 {
-        return
+    if !(ok && len(cv) > 0) {
+        return nil
     }
 
     v, ok = parentNew["<%= prop_out_name %>"]
     if !ok || v == nil {
-        return
+        return nil
     }
     nv, ok := v.([]interface{})
-    if !ok || len(nv) == 0 {
-        return
+    if !(ok && len(nv) > 0) {
+        return nil
     }
 
-    lnv := len(nv)        
+    lnv := len(nv)
 <%   identities = property.identities -%>
 <%   unless identities.nil? -%>
     result := make([]interface{}, 0, lnv)
     q := make([]int, 0, lnv)
 <%   end -%>
-    lcv := len(cv)
-    for i := 0; i < lcv; i++ {
 <%   if identities.nil? -%>
+    for i, icv := range cv {
         if i >= lnv {
             break
         }
         inv := nv[i].(map[string]interface{})
         icv := cv[i].(map[string]interface{})
 <%   else -%>
-        icv := cv[i].(map[string]interface{})
+    for i, e := range cv {
+        icv := e.(map[string]interface{})
         var inv map[string]interface{}
-        for j, e := range nv {
-            inv = e.(map[string]interface{})
+
+        for j, e1 := range nv {
+            if isIncludeIndex(j, q) {
+                 continue
+            }
+
+            inv = e1.(map[string]interface{})
             <% identities.each do |k| -%>
 
             if icv["<%= k %>"] != inv["<%= k %>"] {
@@ -52,7 +57,7 @@ func adjust<%= prefix -%><%= titlelize(property.name) -%>(parentCur, parentNew m
             }
             <% end -%>
 
-            result = append(result, inv)
+            result = append(result, e1)
             q = append(q, j)
             break
         }
@@ -72,22 +77,17 @@ func adjust<%= prefix -%><%= titlelize(property.name) -%>(parentCur, parentNew m
     }
 
 <%   unless identities.nil? -%>
-    if len(result) != lnv {
-        for i, v := range nv {
-            bingo := false
-            for _, j := range q {
-                if i == j {
-                    bingo = true
-                    break
-                }
-            }
-            if !bingo {
-                result = append(result, v)
-            }
+    for i, v := range nv {
+        if !isIncludeIndex(i, q) {
+            result = append(result, v)
         }
+    }
+    if len(result) != lnv {
+        return fmt.Errorf("Error adjusting property(<%= prop_out_name %>), the array number is not equal")
     }
     parentNew["<%= prop_out_name %>"] = result
 <%   end -%>
+    return nil
 }
 <%   property.child_properties.each do |prop| -%>
 <%     next unless need_adjust_property(prop) -%>
@@ -98,21 +98,21 @@ func adjust<%= prefix -%><%= titlelize(property.name) -%>(parentCur, parentNew m
 func adjust<%= prefix -%><%= titlelize(property.name) -%>(parentCur, parentNew map[string]interface{}) error {
     v, ok := parentCur["<%= prop_out_name %>"]
     if !ok || v == nil {
-        return
+        return nil
     }
     cv, ok := v.([]interface{})
-    if !ok || len(cv) == 0 || cv[0] == nil {
-        return
+    if !(ok && len(cv) == 1 && cv[0] != nil) {
+        return nil
     }
     cr := cv[0].(map[string]interface{})
 
     v, ok = parentNew["<%= prop_out_name %>"]
     if !ok || v == nil {
-        return
+        return nil
     }
     nv, ok := v.([]interface{})
-    if !ok || len(nv) == 0 || nv[0] == nil {
-        return
+    if !(ok && len(nv) == 1 && nv[0] != nil) {
+        return nil
     }
     nr := nv[0].(map[string]interface{})
 
@@ -124,6 +124,8 @@ func adjust<%= prefix -%><%= titlelize(property.name) -%>(parentCur, parentNew m
     <%= c %>
 <%     end -%>
 <%   end -%>
+
+    return nil
 }
 <%   property.child_properties.each do |prop| -%>
 <%     next unless need_adjust_property(prop) -%>
