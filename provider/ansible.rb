@@ -293,6 +293,25 @@ module Provider
         object.all_user_properties.select {|p| need_adjust_property(p)}
       end
 
+      def has_unreadable_property(property)
+        unless property.crud.include? "r"
+          return true
+        end
+
+        v = property.child_properties
+        unless v.nil?
+          v.each do |i|
+            return true if has_unreadable_property(i)
+          end
+        end
+
+        return false
+      end
+
+      def unreadable_properties(object)
+        object.all_user_properties.select {|p| has_unreadable_property(p)}
+      end
+
       def rrefs_in_link(link, object)
         props_in_link = link.scan(/{([a-z_]*)}/).flatten
         (object.parameters || []).select do |p|

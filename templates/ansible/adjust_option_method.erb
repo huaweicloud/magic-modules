@@ -53,7 +53,7 @@ def <%= func_def %>
 -%>
 <%     unless c.empty? -%>
 
-    <%= c %>
+<%= c %>
 <%     end -%>
 <%   end -%>
 
@@ -64,7 +64,7 @@ def <%= func_def %>
 
     if len(result) != lnv:
         raise Exception("adjust property(<%= prop_out_name %>) failed, "
-                        "the number is not equal")
+                        "the array number is not equal")
 
     parent_new["<%= prop_out_name %>"] = result
 <%   end -%>
@@ -88,7 +88,7 @@ def <%= func_def %>
 -%>
 <%     unless c.empty? -%>
 
-    <%= c %>
+<%= c %>
 <%     end -%>
 <%   end -%>
 <%   property.child_properties.each do |prop| -%>

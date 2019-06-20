@@ -321,7 +321,7 @@ module Provider
         prop_var = "v"
         set_parent = sprintf("%s[\"%s\"] = %s", parent_var, prop.out_name, prop_var)
 
-	fn = sprintf("flatten%s%s_%s", prefix.empty? ? "" : "_", prefix, prop.out_name)
+        fn = sprintf("flatten%s%s_%s", prefix.empty? ? "" : "_", prefix, prop.out_name)
         f = [
           sprintf("%s = %s(%s, exclude_output)", prop_var, fn, arguments),
           set_parent
@@ -397,13 +397,30 @@ module Provider
               prop.item_type.is_a?(Api::Type::NestedObject)
           return f
 
-	end
+        end
 
         raise "impossible to adjust the value of property(#{prop.name})"
       end
-      ################################
 
+      def set_unreadable_option(prop, prefix, cur_var, new_var, spaces)
+        return "" unless has_unreadable_property(prop)
 
+        unless has_output_property(prop)
+          return indent(sprintf("%s[\"%s\"] = %s.get(\"%s\", None)", new_var, prop.out_name, cur_var, prop.out_name), spaces)
+        end
+
+        f = sprintf("%sset_unread%s%s_%s(%s, %s)", ' ' * spaces, prefix.empty? ? "" : "_", prefix, prop.out_name, cur_var, new_var)
+
+        if prop.is_a? Api::Type::NestedObject
+          return f
+
+        elsif prop.is_a?(Api::Type::Array) && \
+              prop.item_type.is_a?(Api::Type::NestedObject)
+          return f
+        end
+
+        raise "impossible to set the unreadable value for property(#{prop.name})"
+      end
 
       def convert_resp_parameter(prop, arguments, prefix, parent_var, spaces)
         unless has_output_property(prop)

@@ -165,6 +165,18 @@ module Provider
                          object: object
       end
 
+      def build_set_unread_option_method(prefix, property)
+        compile_template 'templates/ansible/set_unreadable_option_method.erb',
+                         prefix: prefix,
+                         property: property
+      end
+
+      def build_set_unread_opts_method(object)
+        compile_template 'templates/ansible/set_unreadable_options.erb',
+                         object: object
+      end
+
+
       private
 
       def autogen_notice_contrib

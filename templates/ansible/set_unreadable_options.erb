@@ -1,0 +1,20 @@
+<% props = unreadable_properties(object) -%>
+<% unless props.empty? -%>
+
+
+def set_unreadable_options(opts, states):
+<%   fl = true -%>
+<%   props.each do |prop| -%>
+<%     c = set_unreadable_option(prop, "", "opts", "states", 4) -%>
+<%   unless c.empty? -%>
+<%       unless fl -%>
+
+<%       end -%>
+<%= c %>
+<%       fl = false -%>
+<%   end -%>
+<% end -%>
+<%   props.each do |prop| -%>
+<%= lines(build_set_unread_option_method("", prop)) -%>
+<%   end -%>
+<% end -%>
