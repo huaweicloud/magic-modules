@@ -1,12 +1,24 @@
-def send_<%= api.out_name -%>_request(module, params, client):
-<% if api.path.include?("{") -%>
-    url = build_path(module, "<%= api.path -%>", params)
+def send_<%= api.out_name -%>_request(module, params, client<%= api.path_parameter.nil? ? "" : ", info"%>):
+<% if !api.path_parameter.nil? -%>
+    path_parameters = {
+<%     api.path_parameter.each do |k, v| -%>
+<%=      sprintf("%s\"%s\": [%s],", ' ' * 8, k, index2navigate(v))  %>
+<%     end -%>
+    }
+    data = {
+        key: navigate_value(info, path)
+        for key, path in path_parameters.items()
+    }
+
+    url = build_path(module, "<%= api.path -%>", data)
+<% elsif api.path.include?("{") -%>
+    url = build_path(module, "<%= api.path -%>")
 <% else -%>
     url = <%= sprintf("\"%s\"", api.path) -%>
 <% end -%>
 
     try:
-        r = client.<%= api.verb.downcase -%>(url, <%= api.parameters.nil? ? "None" : "params" %>)
+        r = client.<%= api.verb.downcase -%>(url, params)
     except HwcClientException as ex:
         msg = ("module(<%= module_name %>): error running "
                "api(<%= api.name %>), error: %s" % str(ex))
