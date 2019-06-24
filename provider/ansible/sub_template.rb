@@ -176,6 +176,17 @@ module Provider
                          object: object
       end
 
+      def build_set_readonly_option_method(prefix, property)
+        compile_template 'templates/ansible/set_readonly_option_method.erb',
+                         prefix: prefix,
+                         property: property
+      end
+
+      def build_set_readonly_opts_method(object)
+        compile_template 'templates/ansible/set_readonly_options.erb',
+                         object: object
+      end
+
 
       private
 

@@ -463,6 +463,29 @@ module Provider
         raise "impossible to set the unreadable value for property(#{prop.name})"
       end
 
+      def set_readonly_option(prop, prefix, input_var, cur_var, spaces)
+        return "" unless has_readonly_property(prop)
+
+        on = prop.out_name
+
+        unless has_unreadonly_property(prop)
+          return indent(sprintf("%s[\"%s\"] = %s.get(\"%s\")", input_var, on, cur_var, on), spaces)
+        end
+
+        f = sprintf("%sset_readonly%s%s_%s(\n%s%s.get(\"%s\"), %s.get(\"%s\"))",
+                    ' ' * spaces, prefix.empty? ? "" : "_", prefix, on, ' ' * (spaces + 4), input_var, on, cur_var, on)
+
+        if prop.is_a? Api::Type::NestedObject
+          return f
+
+        elsif prop.is_a?(Api::Type::Array) && \
+              prop.item_type.is_a?(Api::Type::NestedObject)
+          return f
+        end
+
+        raise "impossible to set the readonly value for property(#{prop.name})"
+      end
+
       def convert_resp_parameter(prop, arguments, prefix, parent_var, spaces)
         unless has_output_property(prop)
           return indent(sprintf("%s.setdefault(\"%s\", None)", parent_var, prop.out_name), spaces)

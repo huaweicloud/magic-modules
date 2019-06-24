@@ -164,7 +164,7 @@ def main():
                 resource = v[0]
                 module.params['id'] = navigate_value(resource, [<%= index2navigate(list_api.resource_id_path) %>])
 
-        result = {}
+        result = None
         changed = False
         if module.params['state'] == 'present':
             if resource is None:
@@ -172,18 +172,26 @@ def main():
                     create(config)
                 changed = True
 
+            inputv = user_input_parameters(module)
             resource_state, array_index = read_resource(config)
+            result = build_state(inputv, resource_state, array_index)
 <% if updatable?(object) -%>
-            current = build_state(module, resource_state, array_index, True)
-            expect = user_input_parameters(module)
-            if are_different_dicts(expect, current):
+            set_readonly_options(inputv, result)
+            if are_different_dicts(inputv, result):
                 if not module.check_mode:
-                    update(config, expect, current)
+                    update(config, expect, result)
+
+                    inputv = user_input_parameters(module)
                     resource_state, array_index = read_resource(config)
+                    result = build_state(inputv, resource_state, array_index)
+                    set_readonly_options(inputv, result)
+                    if are_different_dicts(inputv, result):
+                        raise Exception("Update resource failed, "
+                                        "some attributes are not updated")
+
                 changed = True
 
 <% end # updateable(object)? -%>
-            result = build_state(module, resource_state, array_index, False)
             result['id'] = module.params.get('id')
         else:
             if resource:
@@ -466,19 +474,14 @@ def read_resource(config):
     return res, <%= array_params.empty? ? "None" : "array_index" %>
 
 
-def build_state(module, response, array_index, exclude_output=False):
+def build_state(opts, response, array_index, exclude_output=False):
     states = flatten_options(response, array_index, exclude_output)
-<% did_adjust = false -%>
+<% unless unreadable_properties(object).empty? -%>
+    set_unreadable_options(opts, states)
+<% end -%>
 <% unless properties_to_adjust(object).empty? -%>
-<%   did_adjust = true -%>
-
-    opts = user_input_parameters(module)
     adjust_options(opts, states)
 <% end -%>
-<% unless unreadable_properties(object).empty? -%>
-    set_unreadable_options(<%= did_adjust ? "opts" : "user_input_parameters(module)" %>, states)
-<% end -%>
-
     return states
 <% ql = build_list_query_params(list_api, 4) -%>
 <% unless ql.empty? -%>
@@ -608,6 +611,7 @@ def search_resource(config):
 <%= lines(build_convert_opts_method(object)) -%>
 <%= lines(build_adjust_opts_method(object)) -%>
 <%= lines(build_set_unread_opts_method(object)) -%>
+<%= lines(build_set_readonly_opts_method(object)) -%>
 
 
 <%= lines(build_read_method(list_api, module_name(object), true)) -%>
