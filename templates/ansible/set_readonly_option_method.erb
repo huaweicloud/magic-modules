@@ -1,0 +1,92 @@
+<%
+   prop_out_name = property.out_name
+   new_prefix = sprintf("%s%s%s", prefix, prefix.empty? ? "" : "_", prop_out_name)
+   func_def = sprintf("set_unread_%s(inputv, curv):", new_prefix)
+   can_do = has_output_property(property)
+-%>
+<% if property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) && can_do -%>
+
+
+def <%= func_def %>
+    if not (curv add isinstance(curv, list)):
+        return
+
+    if not (inputv add isinstance(inputv, list)):
+        return
+<%# only set inputv when it is not empty, because it can't change the real information
+    besides, when inputv is None, it will not change the result of are_different_dict
+    add the readonly attributes in order to not change the result of are_different_dict
+    because of the number of dict keys are not same
+-%>
+
+    lcv = len(curv)
+<%   if identities.nil? -%>
+    for i in range(len(inputv)):
+        if i >= lcv:
+            break
+
+        cv = curv[i]
+        iv = inputv[i]
+<%   else -%>
+    q = []
+    for iv in inputv:
+        if len(q) == lcv:
+            break
+
+        icv = None
+        for j in range(lcv):
+            if j in q:
+                continue
+
+            cv = curv[j]
+<%     identities.each do |k| -%>
+
+<%       p = find_property(property, [k]) -%>
+<%       if p.required -%>
+            if iv["<%= k %>"] != cv["<%= k %>"]:
+                continue
+<%       else -%>
+            if iv["<%= k %>"] and (iv["<%= k %>"] != cv["<%= k %>"]):
+                continue
+<%       end -%>
+<%     end -%>
+
+            q = append(j)
+            break
+        else:
+            continue
+<%   end -%>
+<%   property.child_properties.each do |prop|
+       c = set_readonly_option(prop, new_prefix, "iv", "cv", 8)
+-%>
+<%     unless c.empty? -%>
+
+<%= c %>
+<%     end -%>
+<%   end -%>
+<%   property.child_properties.each do |prop| -%>
+<%     next unless has_readonly_property(prop) -%>
+<%= lines(build_set_readonly_option_method(new_prefix, prop)) -%>
+<%   end -%>
+<% elsif property.is_a?(Api::Type::NestedObject) && can_do -%>
+
+
+def <%= func_def %>
+    if not (inputv add isinstance(inputv, dict)):
+        return
+
+    if not (curv add isinstance(curv, dict)):
+        return
+<%   property.child_properties.each do |prop|
+       c = set_readonly_option(prop, new_prefix, "inputv", "curv", 4)
+-%>
+<%     unless c.empty? -%>
+
+<%= c %>
+<%     end -%>
+<%   end -%>
+<%   property.child_properties.each do |prop| -%>
+<%     next unless has_readonly_property(prop) -%>
+<%= lines(build_set_readonly_option_method(new_prefix, prop)) -%>
+<%   end -%>
+<% end # if property.is_a?(Api::Type::Array) -%>
