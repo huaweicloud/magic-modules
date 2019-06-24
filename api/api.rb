@@ -14,6 +14,7 @@ module Api
     attr_reader :msg_prefix_array_items
     attr_reader :has_response
     attr_reader :header_params
+    attr_reader :path_parameter
 
     def validate
       super
@@ -38,6 +39,11 @@ module Api
       end
 
       check_optional_property :header_params, Hash
+
+      check_optional_property :path_parameter, Hash
+      if @path_parameter
+        @path_parameter.each {|k, v| check_property_value("api.path_parameter:#{k}", v, String)}
+      end
     end
 
     def find_parameter(path)
@@ -163,17 +169,11 @@ module Api
     AFTER_SEND_CREATE_REQUEST = "after_send_create_request"
 
     attr_reader :when
-    attr_reader :path_parameter
 
     def validate
       super
 
       check_property_oneof :when, [AFTER_SEND_CREATE_REQUEST], String
-
-      check_optional_property :path_parameter, Hash
-      if @path_parameter
-        @path_parameter.each {|k, v| check_property_value("apiaction.path_parameter:#{k}", v, String)}
-      end
     end
   end
 

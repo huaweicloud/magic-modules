@@ -50,15 +50,9 @@ module Api
 
     # Represents the operations (requests) issues to watch for completion
     class Operation < Api::ApiBasic
-      attr_reader :path_parameter
       attr_reader :wait_ms
 
       def validate
-        check_optional_property :path_parameter, Hash
-        if @path_parameter
-          @path_parameter.each {|k, v| check_property_value("async.operation.path_parameter:#{k}", v, String)}
-        end
-
         @wait_ms ||= 1000
         check_optional_property :wait_ms, Integer
 
