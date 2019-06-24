@@ -60,7 +60,7 @@ def <%= func_def %>
 
     return result if (has_init_value or result) else current_value
 <%   nested_properties.each do |prop| -%>
-<%     next unless has_output_property(prop) -%>
+<%     next unless has_readable_property(prop) -%>
 <%= lines(build_flatten_method(new_prefix, prop)) -%>
 <%   end -%>
 <% elsif property.is_a?(Api::Type::NestedObject) -%>
@@ -86,7 +86,7 @@ def <%= func_def %>
             return result
     return current_value
 <%   nested_properties.each do |prop| -%>
-<%     next unless has_output_property(prop) -%>
+<%     next unless has_readable_property(prop) -%>
 <%= lines(build_flatten_method(new_prefix, prop)) -%>
 <%   end -%>
 <% end # if property.is_a?(Api::Type::Array) -%>
