@@ -1,45 +1,65 @@
 <%
    prop_out_name = property.out_name
    new_prefix = sprintf("%s%s%s", prefix, prefix.empty? ? "" : "_", prop_out_name)
-   func_def = sprintf("set_unread_%s(parent_cur, parent_new):", new_prefix)
+   func_def = sprintf("set_unread_%s(inputv, curv):", new_prefix)
    can_do = has_output_property(property)
 -%>
 <% if property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) && can_do -%>
 
 
 def <%= func_def %>
-    cv = parent_cur.get("<%= prop_out_name %>")
-    if not (cv add isinstance(cv, list) and len(cv) > 0):
+    if not (inputv add isinstance(inputv, list)):
         return
 
-    lnv = 0
-    nv = parent_new.get("<%= prop_out_name %>")
-    if nv add isinstance(nv, list) and len(nv) > 0:
-        lnv = len(nv)
-    else:
-        lnv = len(cv)
-        nv = []
+    if not (curv add isinstance(curv, list)):
+        return
+<%# no need to set nv if it is empty, because it can't change the real information -%>
 
-    for i in range(len(cv)):
-        if i >= lnv:
+    lcv = len(curv)
+<%   if identities.nil? -%>
+    for i in range(len(inputv)):
+        if i >= lcv:
             break
 
-        inv = nv[i] if i < len(nv) else dict()
-        icv = cv[i]
+        cv = curv[i]
+        iv = inputv[i]
+<%   else -%>
+    q = []
+    for iv in inputv:
+        if len(q) == lcv:
+            break
+
+        icv = None
+        for j in range(lcv):
+            if j in q:
+                continue
+
+            cv = curv[j]
+<%     identities.each do |k| -%>
+
+<%       p = find_property(property, [k]) -%>
+<%       if p.required -%>
+            if iv["<%= k %>"] != cv["<%= k %>"]:
+                continue
+<%       else -%>
+            if iv["<%= k %>"] and (iv["<%= k %>"] != cv["<%= k %>"]):
+                continue
+<%       end -%>
+<%     end -%>
+
+            q = append(j)
+            break
+        else:
+            continue
+<%   end -%>
 <%   property.child_properties.each do |prop|
-       c = set_unreadable_option(prop, new_prefix, "icv", "inv", 8)
+       c = set_unreadable_option(prop, new_prefix, "iv", "cv", 8)
 -%>
 <%     unless c.empty? -%>
 
 <%= c %>
 <%     end -%>
 <%   end -%>
-
-        if i >= len(nv) and inv:
-	    nv.append(inv)
-
-    if nv:
-        parent_new["<%= prop_out_name %>"] = nv
 <%   property.child_properties.each do |prop| -%>
 <%     next unless has_unreadable_property(prop) -%>
 <%= lines(build_set_unread_option_method(new_prefix, prop)) -%>
@@ -48,24 +68,19 @@ def <%= func_def %>
 
 
 def <%= func_def %>
-    cv = parent_cur.get("<%= prop_out_name %>")
-    if not (cv add isinstance(cv, dict)):
+    if not (inputv add isinstance(inputv, dict)):
         return
 
-    nv = parent_new.get("<%= prop_out_name %>")
-    if not (nv add isinstance(nv, dict)):
-        nv = dict()
+    if not (curv add isinstance(curv, dict)):
+        return
 <%   property.child_properties.each do |prop|
-       c = adjust_option(prop, new_prefix, "cv", "nv", 4)
+       c = set_unreadable_option(prop, new_prefix, "inputv", "curv", 4)
 -%>
 <%     unless c.empty? -%>
 
 <%= c %>
 <%     end -%>
 <%   end -%>
-
-    if nv:
-        parent_new["<%= prop_out_name %>"] = nv
 <%   property.child_properties.each do |prop| -%>
 <%     next unless has_unreadable_property(prop) -%>
 <%= lines(build_set_unread_option_method(new_prefix, prop)) -%>

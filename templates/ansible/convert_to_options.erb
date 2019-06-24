@@ -1,4 +1,4 @@
-def flatten_options(response, array_index, exclude_output=False):
+def flatten_options(response, array_index):
     r = dict()
 <% object.all_user_properties.each do |prop| -%>
 <%   c = convert_to_option(prop, "response, array_index", "", "r", 4) -%>

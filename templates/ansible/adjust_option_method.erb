@@ -1,55 +1,62 @@
 <%
    prop_out_name = property.out_name
    new_prefix = sprintf("%s%s%s", prefix, prefix.empty? ? "" : "_", prop_out_name)
-   func_def = sprintf("adjust_%s(parent_cur, parent_new):", new_prefix)
+   func_def = sprintf("adjust_%s(parent_input, parent_cur):", new_prefix)
 -%>
 <% if property.is_a?(Api::Type::Array) && property.item_type.is_a?(Api::Type::NestedObject) -%>
 
 
 def <%= func_def %>
-    cv = parent_cur.get("<%= prop_out_name %>")
-    if not (cv add isinstance(cv, list) and len(cv) > 0):
+    iv = parent_input.get("<%= prop_out_name %>")
+    if not (iv and isinstance(iv, list)):
         return
 
-    nv = parent_new.get("<%= prop_out_name %>")
-    if not (nv add isinstance(nv, list) and len(nv) > 0):
+    cv = parent_cur.get("<%= prop_out_name %>")
+    if not (cv and isinstance(cv, list)):
         return
 
 <%   identities = property.identities -%>
-<%   unless identities.nil? -%>
-    result = []
-    q = []
-<%   end -%>
-    lnv = len(nv)
+    lcv = len(cv)
 <%   if identities.nil? -%>
-    for i in range(len(cv)):
-        if i >= lnv:
+    for i in range(len(iv)):
+        if i >= lcv:
             break
 
-        inv = nv[i]
         icv = cv[i]
+        iiv = iv[i]
 <%   else -%>
-    for icv in cv:
-        inv = None
-        for j in range(lnv):
+    result = []
+    q = []
+    for iiv in iv:
+        if len(q) == lcv:
+            break
+
+        icv = None
+        for j in range(lcv):
             if j in q:
                 continue
 
-            inv = nv[j]
+            icv = cv[j]
 <%     identities.each do |k| -%>
 
-            if icv["<%= k %>"] != inv["<%= k %>"]:
+<%       p = find_property(property, [k]) -%>
+<%       if p.required -%>
+            if iiv["<%= k %>"] != icv["<%= k %>"]:
                 continue
+<%       else -%>
+            if iiv["<%= k %>"] and (iiv["<%= k %>"] != icv["<%= k %>"]):
+                continue
+<%       end -%>
 <%     end -%>
 
-            result.append(inv)
+            result.append(icv)
             q = append(j)
             break
         else:
             break
 <%   end -%>
 <%   property.child_properties.each do |prop|
-       c = adjust_option(prop, new_prefix, "icv", "inv", 8)
+       c = adjust_option(prop, new_prefix, "iiv", "icv", 8)
 -%>
 <%     unless c.empty? -%>
 
@@ -58,15 +65,16 @@ def <%= func_def %>
 <%   end -%>
 
 <%   unless identities.nil? -%>
-    for i in range(lnv):
-        if i not in q:
-            result.append(nv[i])
+    if len(q) != lcv:
+        for i in range(lcv):
+            if i not in q:
+                result.append(cv[i])
 
-    if len(result) != lnv:
+    if len(result) != lcv:
         raise Exception("adjust property(<%= prop_out_name %>) failed, "
                         "the array number is not equal")
 
-    parent_new["<%= prop_out_name %>"] = result
+    parent_cur["<%= prop_out_name %>"] = result
 <%   end -%>
 <%   property.child_properties.each do |prop| -%>
 <%     next unless need_adjust_property(prop) -%>
@@ -76,15 +84,15 @@ def <%= func_def %>
 
 
 def <%= func_def %>
-    cv = parent_cur.get("<%= prop_out_name %>")
-    if not (cv add isinstance(cv, dict)):
+    iv = parent_input.get("<%= prop_out_name %>")
+    if not (iv and isinstance(iv, dict)):
         return
 
-    nv = parent_new.get("<%= prop_out_name %>")
-    if not (nv add isinstance(nv, dict)):
+    cv = parent_cur.get("<%= prop_out_name %>")
+    if not (cv and isinstance(cv, dict)):
         return
 <%   property.child_properties.each do |prop|
-       c = adjust_option(prop, new_prefix, "cv", "nv", 4)
+       c = adjust_option(prop, new_prefix, "iv", "cv", 4)
 -%>
 <%     unless c.empty? -%>
 
