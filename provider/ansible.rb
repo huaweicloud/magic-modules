@@ -247,19 +247,13 @@ module Provider
         sprintf("%s, \"%s\", \"%s\"", region, api.service_type, service_level)
       end
 
-      def ansible_readable_property?(property)
-          property.crud.include?("r")
-      end
+      def has_readable_property(property)
+        return true if property.crud.include?("r")
 
-      def has_output_property(property)
-        if ansible_readable_property?(property)
-          return true
-        end
-
-        v = nested_properties(property)
+        v = property.child_properties
         unless v.nil?
           v.each do |i|
-            if has_output_property(i)
+            if has_readable_property(i)
               return true
             end
           end
@@ -269,13 +263,13 @@ module Provider
       end
 
       def properties_to_show(object)
-        object.all_user_properties.select {|p| has_output_property(p)}
+        object.all_user_properties.select {|p| has_readable_property(p)}
       end
 
       def need_adjust_property(property)
         if property.is_a?(Api::Type::Array) &&
             property.item_type.is_a?(Api::Type::NestedObject) &&
-            (!property.identities.nil?) && has_output_property(property)
+            (!property.identities.nil?) && has_readable_property(property)
           return true
         end
 
@@ -310,6 +304,36 @@ module Provider
 
       def unreadable_properties(object)
         object.all_user_properties.select {|p| has_unreadable_property(p)}
+      end
+
+      def has_readonly_property(property)
+        return true if property.crud.eql? "r"
+
+        v = property.child_properties
+        unless v.nil?
+          v.each do |i|
+            return true if has_readonly_property(i)
+          end
+        end
+
+        return false
+      end
+
+      def readonly_properties(object)
+        object.all_user_properties.select {|p| has_readonly_property(p)}
+      end
+
+      def has_unreadonly_property(property)
+        return true unless property.crud.eql? "r"
+
+        v = property.child_properties
+        unless v.nil?
+          v.each do |i|
+            return true if has_unreadonly_property(i)
+          end
+        end
+
+        return false
       end
 
       def rrefs_in_link(link, object)

@@ -316,7 +316,7 @@ module Provider
       end
 
       def _old_version_convert_to_option(prop, arguments, prefix, parent_var, spaces)
-        return "" unless has_output_property(prop)
+        return "" unless has_readable_property(prop)
 
         prop_var = "v"
         set_parent = sprintf("%s[\"%s\"] = %s", parent_var, prop.out_name, prop_var)
@@ -386,7 +386,7 @@ module Provider
       end
 
       def convert_to_option(prop, arguments, prefix, parent_var, spaces)
-        return "" unless has_output_property(prop)
+        return "" unless has_readable_property(prop)
 
         prop_var = "v"
         set_parent = sprintf("%s[\"%s\"] = %s", parent_var, prop.out_name, prop_var)
@@ -445,7 +445,7 @@ module Provider
 
         on = prop.out_name
 
-        unless has_output_property(prop)
+        unless has_readable_property(prop)
           return indent(sprintf("%s[\"%s\"] = %s.get(\"%s\")", cur_var, on, input_var, on), spaces)
         end
 
@@ -487,7 +487,7 @@ module Provider
       end
 
       def convert_resp_parameter(prop, arguments, prefix, parent_var, spaces)
-        unless has_output_property(prop)
+        unless has_readable_property(prop)
           return indent(sprintf("%s.setdefault(\"%s\", None)", parent_var, prop.out_name), spaces)
         end
 
