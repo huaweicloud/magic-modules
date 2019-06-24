@@ -315,7 +315,7 @@ module Provider
         end
       end
 
-      def convert_to_option(prop, arguments, prefix, parent_var, spaces)
+      def _old_version_convert_to_option(prop, arguments, prefix, parent_var, spaces)
         return "" unless has_output_property(prop)
 
         prop_var = "v"
@@ -385,10 +385,48 @@ module Provider
         end
       end
 
-      def adjust_option(prop, prefix, cur_var, new_var, spaces)
+      def convert_to_option(prop, arguments, prefix, parent_var, spaces)
+        return "" unless has_output_property(prop)
+
+        prop_var = "v"
+        set_parent = sprintf("%s[\"%s\"] = %s", parent_var, prop.out_name, prop_var)
+
+        fn = sprintf("flatten%s%s_%s", prefix.empty? ? "" : "_", prefix, prop.out_name)
+        f = [
+          sprintf("%s = %s(%s)", prop_var, fn, arguments),
+          set_parent
+        ]
+
+        if prop.from_response
+          return indent(f, spaces)
+
+        elsif prop.is_a? Api::Type::NestedObject
+          return indent(f, spaces)
+
+        elsif prop.is_a?(Api::Type::Array) && \
+              prop.item_type.is_a?(Api::Type::NestedObject)
+          return indent(f, spaces)
+
+        # elsif prop.is_a?(Api::Type::NameValues)
+        #   return f
+
+        else
+          i = "[#{index2navigate(prop.field, false)}]"
+          v = arguments.split(", ")
+          len = sprintf("%s = navigate_value(%s, , %s)", prop_var, v[0], v[1]).length + spaces
+          len1 = len - sprintf("%s, , %s)", v[0], v[1]).length - spaces
+          indent([
+            (sprintf("%s = navigate_value(%s, %s, %s)", prop_var, v[0], i, v[1]) if i.length <= 79 - len),
+            (sprintf("%s = navigate_value(%s, %s,\n%s%s)", prop_var, v[0], i, ' ' * len1, v[1]) if i.length > 79 - len),
+            set_parent,
+          ].compact, spaces)
+        end
+      end
+
+      def adjust_option(prop, prefix, input_var, cur_var, spaces)
         return "" unless need_adjust_property(prop)
 
-        f = sprintf("%sadjust%s%s_%s(%s, %s)", ' ' * spaces, prefix.empty? ? "" : "_", prefix, prop.out_name, cur_var, new_var)
+        f = sprintf("%sadjust%s%s_%s(%s, %s)", ' ' * spaces, prefix.empty? ? "" : "_", prefix, prop.out_name, input_var, cur_var)
 
         if prop.is_a? Api::Type::NestedObject
           return f
@@ -402,14 +440,17 @@ module Provider
         raise "impossible to adjust the value of property(#{prop.name})"
       end
 
-      def set_unreadable_option(prop, prefix, cur_var, new_var, spaces)
+      def set_unreadable_option(prop, prefix, input_var, cur_var, spaces)
         return "" unless has_unreadable_property(prop)
 
+        on = prop.out_name
+
         unless has_output_property(prop)
-          return indent(sprintf("%s[\"%s\"] = %s.get(\"%s\", None)", new_var, prop.out_name, cur_var, prop.out_name), spaces)
+          return indent(sprintf("%s[\"%s\"] = %s.get(\"%s\")", cur_var, on, input_var, on), spaces)
         end
 
-        f = sprintf("%sset_unread%s%s_%s(%s, %s)", ' ' * spaces, prefix.empty? ? "" : "_", prefix, prop.out_name, cur_var, new_var)
+        f = sprintf("%sset_unread%s%s_%s(\n%s%s.get(\"%s\"), %s.get(\"%s\"))",
+                    ' ' * spaces, prefix.empty? ? "" : "_", prefix, on, ' ' * (spaces + 4), input_var, on, cur_var, on)
 
         if prop.is_a? Api::Type::NestedObject
           return f
