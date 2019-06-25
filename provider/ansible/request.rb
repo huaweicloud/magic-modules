@@ -284,8 +284,8 @@ module Provider
               prop.item_type.is_a?(Api::Type::NestedObject)
           return f
 
-        elsif prop.is_a?(Api::Type::NameValues)
-          return f
+        #elsif prop.is_a?(Api::Type::NameValues)
+        #  return f
 
         elsif !prop.default.nil?
 
@@ -417,7 +417,7 @@ module Provider
           len1 = len - sprintf("%s, , %s)", v[0], v[1]).length - spaces
           indent([
             (sprintf("%s = navigate_value(%s, %s, %s)", prop_var, v[0], i, v[1]) if i.length <= 79 - len),
-            (sprintf("%s = navigate_value(%s, %s,\n%s%s)", prop_var, v[0], i, ' ' * len1, v[1]) if i.length > 79 - len),
+            (sprintf("%s = navigate_value(\n    %s, %s, %s)", prop_var, v[0], i, v[1]) if i.length > 79 - len),
             set_parent,
           ].compact, spaces)
         end
@@ -595,8 +595,15 @@ module Provider
       end
 
       def fill_resp_parameter(prop, prefix, parent_var, var, spaces)
+        on = normal_method_name(prop.out_name)
+
+        c = sprintf("v = fill%s%s_%s(%s.get(\"%s\"))", prefix.empty? ? "" : "_", prefix, on, var, prop.name)
+        if c.length + spaces > 79
+          c = sprintf("v = fill%s%s_%s(\n    %s.get(\"%s\"))", prefix.empty? ? "" : "_", prefix, on, var, prop.name)
+        end
+
         code = indent([
-          sprintf("v = fill%s%s_%s(%s.get(\"%s\"))", prefix.empty? ? "" : "_", prefix, prop.out_name, var, prop.name),
+          c,
           sprintf("%s[\"%s\"] = v", parent_var, prop.name),
         ], spaces)
 
@@ -608,7 +615,11 @@ module Provider
           return code
 
         else
-          indent(sprintf("%s[\"%s\"] = %s.get(\"%s\")", parent_var, prop.name, var, prop.name), spaces)
+          c = sprintf("%s[\"%s\"] = %s.get(\"%s\")", parent_var, prop.name, var, prop.name)
+          if c.length + spaces > 79
+            c = sprintf("%s[\"%s\"] = %s.get(\n    \"%s\")", parent_var, prop.name, var, prop.name)
+          end
+          indent(c, spaces)
         end
       end
 

@@ -34,12 +34,12 @@ def <%= func_def %>
         n = 1
 <%   end -%>
 
-    new_array_index = dict()
+    new_ai = dict()
     if array_index:
-        new_array_index.update(array_index)
+        new_ai.update(array_index)
 
     for i in range(n):
-        new_array_index["<%= property.field %>"] = i
+        new_ai["<%= property.field %>"] = i
 
         val = dict()
         if len(result) >= (i + 1) and result[i]:
@@ -47,7 +47,7 @@ def <%= func_def %>
 <%   nested_properties = nested_properties(property) -%>
 <%   nested_properties.each do |prop| -%>
 
-<%= convert_resp_parameter(prop, "d, new_array_index", new_prefix, "val", 8) %>
+<%= convert_resp_parameter(prop, "d, new_ai", new_prefix, "val", 8) %>
 <%   end -%>
 
         if len(result) >= (i + 1):

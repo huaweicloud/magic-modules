@@ -23,15 +23,15 @@ def <%= func_def %>
 
 
 def <%= func_def %>
-    new_array_index = dict()
+    new_ai = dict()
     if array_index:
-        new_array_index.update(array_index)
+        new_ai.update(array_index)
 
     req = []
 
 <%   if property.array_num.nil? -%>
     v = navigate_value(d, [<%= index2navigate(property.field, true) %>],
-                       new_array_index)
+                       new_ai)
 
     n = len(v) if v else 1<%# v may be None %>
 <%   else -%>
@@ -39,13 +39,13 @@ def <%= func_def %>
 <%   end -%>
     for i in range(n):
 <%   unless property.field.nil? -%>
-        new_array_index["<%= to_schema_index(property.field) %>"] = i
+        new_ai["<%= to_schema_index(property.field) %>"] = i
 <%   end -%>
         transformed = dict()
 <%     nested_properties = nested_properties(property) -%>
 <%       nested_properties.each do |prop| -%>
 
-<%= indent(convert_list_api_parameter(resource, prop, "d, new_array_index", new_prefix, "transformed", 8), 8) %>
+<%= indent(convert_list_api_parameter(resource, prop, "d, new_ai", new_prefix, "transformed", 8), 8) %>
 <%       end -%>
 
         for _, v in transformed.items():

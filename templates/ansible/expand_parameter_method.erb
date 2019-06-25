@@ -11,9 +11,9 @@ def <%= func_def %>
 
 
 def <%= func_def %>
-    new_array_index = dict()
+    new_ai = dict()
     if array_index:
-        new_array_index.update(array_index)
+        new_ai.update(array_index)
 
     req = []
 
@@ -24,8 +24,9 @@ def <%= func_def %>
          raise "parameter(#{property.name}) is an array, but the matched property is not"
        end
 -%>
-    v = navigate_value(d, [<%= index2navigate(property.field, true) %>],
-                       new_array_index)
+    v = navigate_value(
+        d, [<%= index2navigate(property.field, true) %>], new_ai)
+
     if not v:
         return req
     n = len(v)<%# v may be None %>
@@ -34,12 +35,12 @@ def <%= func_def %>
 <%   end -%>
     for i in range(n):
 <%   unless property.field.nil? -%>
-        new_array_index["<%= to_schema_index(property.field) %>"] = i
+        new_ai["<%= to_schema_index(property.field) %>"] = i
 <%   end -%>
         transformed = dict()
 
 <%   nested_properties = nested_properties(property) -%>
-<%= indent(lines(build_expand_properties(nested_properties, "d, new_array_index", new_prefix, "transformed")), 4) %>
+<%= indent(lines(build_expand_properties(nested_properties, "d, new_ai", new_prefix, "transformed")), 4) %>
 
         if transformed:
             req.append(transformed)
