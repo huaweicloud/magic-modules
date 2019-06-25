@@ -8,10 +8,10 @@
 
 
 def <%= func_def %>
-    if not (curv add isinstance(curv, list)):
+    if not (curv and isinstance(curv, list)):
         return
 
-    if not (inputv add isinstance(inputv, list)):
+    if not (inputv and isinstance(inputv, list)):
         return
 <%# only set inputv when it is not empty, because it can't change the real information
     besides, when inputv is None, it will not change the result of are_different_dict
@@ -34,7 +34,7 @@ def <%= func_def %>
         if len(q) == lcv:
             break
 
-        icv = None
+        cv = None
         for j in range(lcv):
             if j in q:
                 continue
@@ -52,7 +52,7 @@ def <%= func_def %>
 <%       end -%>
 <%     end -%>
 
-            q = append(j)
+            q.append(j)
             break
         else:
             continue
@@ -73,10 +73,10 @@ def <%= func_def %>
 
 
 def <%= func_def %>
-    if not (inputv add isinstance(inputv, dict)):
+    if not (inputv and isinstance(inputv, dict)):
         return
 
-    if not (curv add isinstance(curv, dict)):
+    if not (curv and isinstance(curv, dict)):
         return
 <%   property.child_properties.each do |prop|
        c = set_readonly_option(prop, new_prefix, "inputv", "curv", 4)

@@ -148,42 +148,29 @@ def main():
    raise "no list api" if list_api.nil?
 -%>
     try:
-        resource = None
-        if module.params['id']:
-            resource = True
-        else:
-            v = search_resource(config)
-            if len(v) > 1:
-                raise Exception(
-                    "find more than one resources(%s)" % ", ".join([
-                            navigate_value(i, [<%= index2navigate(list_api.resource_id_path) %>])
-                            for i in v
-                        ]))
-
-            if len(v) == 1:
-                resource = v[0]
-                module.params['id'] = navigate_value(resource, [<%= index2navigate(list_api.resource_id_path) %>])
+        _init(config)
+        is_exist = module.params['id']
 
         result = None
         changed = False
         if module.params['state'] == 'present':
-            if resource is None:
+            if not is_exist:
                 if not module.check_mode:
                     create(config)
                 changed = True
 
             inputv = user_input_parameters(module)
-            resource_state, array_index = read_resource(config)
-            result = build_state(inputv, resource_state, array_index)
+            resp, array_index = read_resource(config)
+            result = build_state(inputv, resp, array_index)
 <% if updatable?(object) -%>
             set_readonly_options(inputv, result)
             if are_different_dicts(inputv, result):
                 if not module.check_mode:
-                    update(config, expect, result)
+                    update(config, input, result)
 
                     inputv = user_input_parameters(module)
-                    resource_state, array_index = read_resource(config)
-                    result = build_state(inputv, resource_state, array_index)
+                    resp, array_index = read_resource(config)
+                    result = build_state(inputv, resp, array_index)
                     set_readonly_options(inputv, result)
                     if are_different_dicts(inputv, result):
                         raise Exception("Update resource failed, "
@@ -194,7 +181,7 @@ def main():
 <% end # updateable(object)? -%>
             result['id'] = module.params.get('id')
         else:
-            if resource:
+            if is_exist:
                 if not module.check_mode:
                     delete(config)
                 changed = True
@@ -205,6 +192,23 @@ def main():
     else:
         result['changed'] = changed
         module.exit_json(**result)
+
+
+def _init(config):
+    module = config.module
+    if module.params['id']:
+        return
+
+    v = search_resource(config)
+    n = len(v)
+    if n > 1:
+        raise Exception("find more than one resources(%s)" % ", ".join([
+            navigate_value(i, [<%= index2navigate(list_api.resource_id_path) %>])
+            for i in v
+        ]))
+
+    if n == 1:
+        module.params['id'] = navigate_value(v[0], [<%= index2navigate(list_api.resource_id_path) %>])
 
 
 def user_input_parameters(module):
