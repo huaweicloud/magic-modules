@@ -1,0 +1,20 @@
+<% props = list_api_parameters_to_adjust(api, object) -%>
+<% unless props.empty? -%>
+
+
+def adjust_list_resp(opts, resp):
+<%   fl = true -%>
+<%   props.each do |prop| -%>
+<%     c = adjust_option(prop, "list_api", "opts", "resp", 4, object, "list_api") -%>
+<%   unless c.empty? -%>
+<%       unless fl -%>
+
+<%       end -%>
+<%= c %>
+<%       fl = false -%>
+<%   end -%>
+<% end -%>
+<%   props.each do |prop| -%>
+<%= lines(build_adjust_option_method("list_api", prop, object, "list_api")) -%>
+<%   end -%>
+<% end -%>

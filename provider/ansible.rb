@@ -266,6 +266,14 @@ module Provider
         object.all_user_properties.select {|p| has_readable_property(p)}
       end
 
+      def need_adjust?(property, resource, target)
+        if target.eql? "list_api"
+          return list_api_need_adjust_param(property, resource)
+        end
+
+        return need_adjust_property(property)
+      end
+
       def need_adjust_property(property)
         if property.is_a?(Api::Type::Array) && has_readable_property(property) &&
             (!property.item_type.is_a?(Api::Type::NestedObject) || !property.identities.nil?)
@@ -284,6 +292,33 @@ module Provider
 
       def properties_to_adjust(object)
         object.all_user_properties.select {|p| need_adjust_property(p)}
+      end
+
+      def list_api_need_adjust_param(property, resource)
+        if property.is_a?(Api::Type::Array)
+          unless property.item_type.is_a?(Api::Type::NestedObject)
+            field = property.field
+            unless field.nil? || field.empty?
+              p = resource.find_property(field)
+              return true unless p.nil? || p.crud.eql?("r")
+            end
+          else
+            return true unless property.identities.nil?
+          end
+        end
+
+        v = property.child_properties
+        unless v.nil?
+          v.each do |i|
+            return true if list_api_need_adjust_param(i, resource)
+          end
+        end
+
+        return false
+      end
+
+      def list_api_parameters_to_adjust(list_api, resource)
+        list_api.parameters.select {|p| list_api_need_adjust_param(p, resource)}
       end
 
       def has_unreadable_property(property)

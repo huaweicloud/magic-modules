@@ -72,7 +72,7 @@ def <%= func_def %>
             break
 <%     end -%>
 <%     property.child_properties.each do |prop|
-         c = adjust_option(prop, new_prefix, "iiv", "icv", 8)
+         c = adjust_option(prop, new_prefix, "iiv", "icv", 8, object, target)
 -%>
 <%       unless c.empty? -%>
 
@@ -93,8 +93,8 @@ def <%= func_def %>
     parent_cur["<%= prop_out_name %>"] = result
 <%     end -%>
 <%     property.child_properties.each do |prop| -%>
-<%       next unless need_adjust_property(prop) -%>
-<%= lines(build_adjust_option_method(new_prefix, prop)) -%>
+<%       next unless need_adjust?(prop, object, target) -%>
+<%= lines(build_adjust_option_method(new_prefix, prop, object, target)) -%>
 <%     end -%>
 <%   end -%>
 <% elsif property.is_a?(Api::Type::NestedObject) -%>
@@ -109,7 +109,7 @@ def <%= func_def %>
     if not (cv and isinstance(cv, dict)):
         return
 <%   property.child_properties.each do |prop|
-       c = adjust_option(prop, new_prefix, "iv", "cv", 4)
+       c = adjust_option(prop, new_prefix, "iv", "cv", 4, object, target)
 -%>
 <%     unless c.empty? -%>
 
@@ -117,7 +117,7 @@ def <%= func_def %>
 <%     end -%>
 <%   end -%>
 <%   property.child_properties.each do |prop| -%>
-<%     next unless need_adjust_property(prop) -%>
-<%= lines(build_adjust_option_method(new_prefix, prop)) -%>
+<%     next unless need_adjust?(prop, object, target) -%>
+<%= lines(build_adjust_option_method(new_prefix, prop, object, target)) -%>
 <%   end -%>
 <% end # if property.is_a?(Api::Type::Array) -%>
