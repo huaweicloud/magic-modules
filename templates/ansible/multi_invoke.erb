@@ -21,6 +21,9 @@ def multi_invoke_<%= prefix %>(config, opts, client<%= not_async ? "" : ", timeo
 <% end -%>
 
     loop_val = navigate_value(<%= opts_name %>, <%= sprintf("[%s]", index2navigate(api.depends_on, true)) %>)
+    if not loop_val:
+        return
+
     for i in range(len(loop_val)):
 <% unless api.parameters.nil? -%>
         params = build_<%= prefix %>_parameters(<%= opts_name %>, {"<%= api.depends_on%>": i})
