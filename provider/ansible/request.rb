@@ -431,8 +431,7 @@ module Provider
         if prop.is_a? Api::Type::NestedObject
           return f
 
-        elsif prop.is_a?(Api::Type::Array) && \
-              prop.item_type.is_a?(Api::Type::NestedObject)
+        elsif prop.is_a?(Api::Type::Array)
           return f
 
         end

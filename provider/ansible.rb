@@ -267,9 +267,8 @@ module Provider
       end
 
       def need_adjust_property(property)
-        if property.is_a?(Api::Type::Array) &&
-            property.item_type.is_a?(Api::Type::NestedObject) &&
-            (!property.identities.nil?) && has_readable_property(property)
+        if property.is_a?(Api::Type::Array) && has_readable_property(property) &&
+            (!property.item_type.is_a?(Api::Type::NestedObject) || !property.identities.nil?)
           return true
         end
 
