@@ -166,7 +166,7 @@ def main():
             set_readonly_options(inputv, result)
             if are_different_dicts(inputv, result):
                 if not module.check_mode:
-                    update(config, input, result)
+                    update(config, inputv, result)
 
                     inputv = user_input_parameters(module)
                     resp, array_index = read_resource(config)
@@ -181,6 +181,7 @@ def main():
 <% end # updateable(object)? -%>
             result['id'] = module.params.get('id')
         else:
+            result = dict()
             if is_exist:
                 if not module.check_mode:
                     delete(config)
@@ -213,7 +214,6 @@ def _init(config):
 
 def user_input_parameters(module):
     return {
-        "ansible_module": module,
 <% object.not_output_properties.each do |prop| -%>
         "<%= prop.out_name %>": module.params.get("<%= prop.out_name %>"),
 <% end -%>
@@ -230,6 +230,7 @@ def create(config):
     timeout = 60 * int(module.params['timeouts']['create'].rstrip('m'))
 <% end -%>
     opts = user_input_parameters(module)
+    opts["ansible_module"] = module
 
     params = build_create_parameters(opts)
     r = send_create_request(module, params, client)
@@ -255,12 +256,12 @@ def create(config):
 <%   end -%>
 <% else -%>
 <%   async_op = create_api.async.operation -%>
-<%   if need_build_new_client(pre_api, async_op) -%>
+<%   ncl = need_build_new_client(pre_api, async_op) -%>
+<%   if ncl -%>
 
-    client = config.client(<%= argu_for_sdkclient(async_op) %>)
+    client1 = config.client(<%= argu_for_sdkclient(async_op) %>)
 <%   end -%>
-<%   pre_api = async_op -%>
-    obj = <%= united_async ? async_wait_name : "async_wait_create" %>(config, r, client, timeout)
+    obj = <%= united_async ? async_wait_name : "async_wait_create" %>(config, r, <%= ncl ? "client1" : "client" %>, timeout)
 <%   async_r = create_api.async.result -%>
 <%   unless async_r.sub_jobs_path.nil? %>
     sub_job_identity = {
@@ -290,19 +291,19 @@ def create(config):
     params = build_<%= item.out_name %>_parameters(opts)
     if params:
 <%   end -%>
-<%   if need_build_new_client(pre_api, item) -%>
-    <%= spaces %>client = config.client(<%= argu_for_sdkclient(item) %>)
+<%   ncl = need_build_new_client(pre_api, item) -%>
+<%   if ncl -%>
+    <%= spaces %>client1 = config.client(<%= argu_for_sdkclient(item) %>)
 <%   end -%>
-<%   pre_api = item -%>
-    <%= spaces %><%= r %>send_<%= item.out_name %>_request(module, <%= item.parameters.nil? ? "None" : "params" %>, client)
+    <%= spaces %><%= r %>send_<%= item.out_name %>_request(module, <%= item.parameters.nil? ? "None" : "params" %>, <%= ncl ? "client1" : "client" %>)
 <%   unless item.async.nil? -%>
 <%     async_op = item.async.operation -%>
-<%     if need_build_new_client(pre_api, async_op) -%>
+<%     ncl = need_build_new_client(item, async_op) -%>
+<%     if ncl -%>
 
-    <%= spaces %>client = config.client(<%= argu_for_sdkclient(async_op) %>)
+    <%= spaces %>client1 = config.client(<%= argu_for_sdkclient(async_op) %>)
 <%     end -%>
-<%     pre_api = async_op -%>
-    <%= spaces %><%= united_async ? async_wait_name : "async_wait_" + item.out_name %>(config, r, client, timeout)
+    <%= spaces %><%= united_async ? async_wait_name : "async_wait_" + item.out_name %>(config, r, <%= ncl ? "client1" : "client" %>, timeout)
 <%   end -%>
 <% end -%>
 <% if updatable?(object) -%>
@@ -335,15 +336,20 @@ def update(config, expect_state, current_state):
         <%= r %>send_update_request(module, params, client)
 <%     unless update_api.async.nil? -%>
 <%       async_op = update_api.async.operation -%>
-<%       if need_build_new_client(pre_api, async_op) -%>
+<%       ncl = need_build_new_client(pre_api, async_op) -%>
+<%       if ncl -%>
 
-        client = config.client(<%= argu_for_sdkclient(async_op) %>)
+        client1 = config.client(<%= argu_for_sdkclient(async_op) %>)
 <%       end -%>
-<%       pre_api = async_op -%>
-        <%= united_async ? async_wait_name : "async_wait_update" %>(config, r, client, timeout)
+        <%= united_async ? async_wait_name : "async_wait_update" %>(config, r, <%= ncl ? "client1" : "client" %>, timeout)
 <%     end -%>
 <%   end # update_api.nil? -%>
-<%   other_api(object, "u").each do | item | -%>
+<%   other_updates = other_api(object, "u") -%>
+<%   if !other_updates.empty? && update_api.nil? -%>
+<%     pre_api = other_updates[0] -%>
+    client = config.client(<%= argu_for_sdkclient(pre_api) %>)
+<%   end -%>
+<%   other_updates.each do | item | -%>
 <%
        r = item.async.nil? ? "" : "r = "
        spaces = item.parameters.nil? ? "" : "    "
@@ -358,28 +364,28 @@ def update(config, expect_state, current_state):
     if params:
 <%       end -%>
 <%     end -%>
-<%     if pre_api.nil? || need_build_new_client(pre_api, item) -%>
-    <%= spaces %>client = config.client(<%= argu_for_sdkclient(item) %>)
+<%     ncl = need_build_new_client(pre_api, item) -%>
+<%     if ncl -%>
+    <%= spaces %>client1 = config.client(<%= argu_for_sdkclient(item) %>)
 <%     end -%>
-<%     pre_api = item -%>
-    <%= spaces %><%= r %>send_<%= item.out_name %>_request(module, <%= item.parameters.nil? ? "None" : "params" %>, client)
+    <%= spaces %><%= r %>send_<%= item.out_name %>_request(module, <%= item.parameters.nil? ? "None" : "params" %>, <%= ncl ? "client1" : "client" %>)
 <%     unless item.async.nil? -%>
 <%       async_op = item.async.operation -%>
-<%       if need_build_new_client(pre_api, async_op) -%>
+<%       ncl = need_build_new_client(item, async_op) -%>
+<%       if ncl -%>
 
-    <%= spaces %>client = config.client(<%= argu_for_sdkclient(async_op) %>)
+    <%= spaces %>client1 = config.client(<%= argu_for_sdkclient(async_op) %>)
 <%       end -%>
-<%       pre_api = async_op -%>
-    <%= spaces %><%= united_async ? async_wait_name : "async_wait_" + item.out_name %>(config, r, client, timeout)
+    <%= spaces %><%= united_async ? async_wait_name : "async_wait_" + item.out_name %>(config, r, <%= ncl ? "client1" : "client" %>, timeout)
 <%     end -%>
 <%   end -%>
 <%   multi_invoke_api(object, "u").each do | item | -%>
 
-<%     if pre_api.nil? || need_build_new_client(pre_api, item) -%>
-    client = config.client(<%= argu_for_sdkclient(item) %>)
+<%     ncl = need_build_new_client(pre_api, item) -%>
+<%     if ncl -%>
+    client1 = config.client(<%= argu_for_sdkclient(item) %>)
 <%     end -%>
-<%     pre_api = item -%>
-    multi_invoke_<%= item.out_name %>(module, expect_state, client<%= item.async.nil? ? "" : ", timeout"%>)
+    multi_invoke_<%= item.out_name %>(config, expect_state, <%= ncl ? "client1" : "client" %><%= item.async.nil? ? "" : ", timeout"%>)
 <%   end -%>
 <% end # updatable? -%>
 
@@ -399,6 +405,8 @@ def delete(config):
 
 <% unless delete_api.parameters.nil? -%>
     opts = user_input_parameters(module)
+    opts["ansible_module"] = module
+
     params = build_delete_parameters(opts)
     if params:
 <% end -%>
@@ -478,8 +486,8 @@ def read_resource(config):
     return res, <%= array_params.empty? ? "None" : "array_index" %>
 
 
-def build_state(opts, response, array_index, exclude_output=False):
-    states = flatten_options(response, array_index, exclude_output)
+def build_state(opts, response, array_index):
+    states = flatten_options(response, array_index)
 <% unless unreadable_properties(object).empty? -%>
     set_unreadable_options(opts, states)
 <% end -%>
