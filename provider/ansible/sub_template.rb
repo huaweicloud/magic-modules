@@ -154,9 +154,11 @@ module Provider
                          object: object
       end
 
-      def build_adjust_option_method(prefix, property)
+      def build_adjust_option_method(prefix, property, object, target)
         compile_template 'templates/ansible/adjust_option_method.erb',
                          prefix: prefix,
+                         object: object,
+                         target: target,
                          property: property
       end
 
@@ -187,6 +189,11 @@ module Provider
                          object: object
       end
 
+      def build_adjust_list_resp_method(list_api, object)
+        compile_template 'templates/ansible/adjust_list_resp.erb',
+                         object: object,
+                         api: list_api
+      end
 
       private
 

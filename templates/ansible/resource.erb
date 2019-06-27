@@ -521,6 +521,7 @@ def search_resource(config):
 <% end -%>
 
     result = []
+<% no_need_adjust = list_api_parameters_to_adjust(list_api, object).empty? -%>
 <% _, pp = list_api.pagination_param -%>
 <% if pp.eql?("marker") -%>
     p = {'marker': ''}
@@ -532,6 +533,9 @@ def search_resource(config):
 
         for item in r:
             item = fill_<%= list_api.out_name%>_resp_body(item)
+<%   unless no_need_adjust -%>
+            adjust_list_resp(identity_obj, item)
+<%   end -%>
             if not are_different_dicts(identity_obj, item):
                 result.append(item)
 
@@ -549,6 +553,9 @@ def search_resource(config):
 
         for item in r:
             item = fill_<%= list_api.out_name%>_resp_body(item)
+<%   unless no_need_adjust -%>
+            adjust_list_resp(identity_obj, item)
+<%   end -%>
             if not are_different_dicts(identity_obj, item):
                 result.append(item)
 
@@ -566,6 +573,9 @@ def search_resource(config):
 
         for item in r:
             item = fill_<%= list_api.out_name%>_resp_body(item)
+<%   unless no_need_adjust -%>
+            adjust_list_resp(identity_obj, item)
+<%   end -%>
             if not are_different_dicts(identity_obj, item):
                 result.append(item)
 
@@ -580,6 +590,9 @@ def search_resource(config):
 
     for item in r:
         item = fill_<%= list_api.out_name%>_resp_body(item)
+<%   unless no_need_adjust -%>
+        adjust_list_resp(identity_obj, item)
+<%   end -%>
         if not are_different_dicts(identity_obj, item):
             result.append(item)
 <% end -%>
@@ -633,6 +646,7 @@ def search_resource(config):
 
 
 <%= lines(build_fill_resp_body_method(list_api)) -%>
+<%= lines(build_adjust_list_resp_method(list_api, object)) -%>
 
 
 if __name__ == '__main__':

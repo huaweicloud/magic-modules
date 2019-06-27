@@ -423,8 +423,8 @@ module Provider
         end
       end
 
-      def adjust_option(prop, prefix, input_var, cur_var, spaces)
-        return "" unless need_adjust_property(prop)
+      def adjust_option(prop, prefix, input_var, cur_var, spaces, resource, target)
+        return "" unless need_adjust?(prop, resource, target)
 
         f = sprintf("%sadjust%s%s_%s(%s, %s)", ' ' * spaces, prefix.empty? ? "" : "_", prefix, prop.out_name, input_var, cur_var)
 

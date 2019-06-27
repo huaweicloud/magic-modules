@@ -5,7 +5,7 @@
 def adjust_options(opts, states):
 <%   fl = true -%>
 <%   props.each do |prop| -%>
-<%     c = adjust_option(prop, "", "opts", "states", 4) -%>
+<%     c = adjust_option(prop, "", "opts", "states", 4, object, "resource") -%>
 <%   unless c.empty? -%>
 <%       unless fl -%>
 
@@ -15,6 +15,6 @@ def adjust_options(opts, states):
 <%   end -%>
 <% end -%>
 <%   props.each do |prop| -%>
-<%= lines(build_adjust_option_method("", prop)) -%>
+<%= lines(build_adjust_option_method("", prop, object, "resource")) -%>
 <%   end -%>
 <% end -%>
