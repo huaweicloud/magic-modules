@@ -15,6 +15,7 @@ module Api
     attr_reader :has_response
     attr_reader :header_params
     attr_reader :path_parameter
+    attr_reader :success_codes
 
     def validate
       super
@@ -33,10 +34,7 @@ module Api
 
       check_optional_property :async, Api::Async
       check_optional_property :msg_prefix, String
-      check_optional_property :msg_prefix_array_items, Array
-      unless @msg_prefix_array_items.nil?
-        check_property_list :msg_prefix_array_items, String
-      end
+      check_optional_property_list :msg_prefix_array_items, String
 
       check_optional_property :header_params, Hash
 
@@ -44,6 +42,8 @@ module Api
       if @path_parameter
         @path_parameter.each {|k, v| check_property_value("api.path_parameter:#{k}", v, String)}
       end
+
+      check_optional_property_list :success_codes, Integer
     end
 
     def find_parameter(path)

@@ -1,4 +1,4 @@
-func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schema.ResourceData, config *Config, result interface{}, 
+func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schema.ResourceData, config *Config, result interface{},
    client *golangsdk.ServiceClient, timeout time.Duration) (interface{}, error) {
 
 <%
@@ -8,7 +8,7 @@ func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schem
 <% cl = "client" -%>
 <% if need_build_async_url(api) -%>
 <%   if async_op.path_parameter -%>
-	data := make(map[string]interface{})
+    data := make(map[string]interface{})
     pathParameters := map[string][]string {
 <%     async_op.path_parameter.each do |k, v| -%>
 <%=      sprintf("\"%s\": []string{%s},", k, index2navigate(v))  %>
@@ -28,7 +28,7 @@ func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schem
     }
     url = <%= cl %>.ServiceURL(url)
 <%   elsif async_op.path.include?("{") -%>
-	url, err := replaceVars(d, "<%= async_op.path -%>", result.(map[string]interface{}))
+    url, err := replaceVars(d, "<%= async_op.path -%>", nil)
     if err != nil {
         return nil, err
     }
@@ -38,6 +38,7 @@ func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schem
 <%   end -%>
 <% end -%>
 
+<% rscodes = async_op.success_codes -%>
 <% status_check = async.status_check -%>
 <% if status_check -%>
     return waitToFinish(
@@ -47,6 +48,9 @@ func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schem
         func() (interface{}, string, error) {
             r := golangsdk.Result{}
             _, r.Err = <%= cl %>.Get(url, &r.Body, &golangsdk.RequestOpts{
+              <% unless rscodes.nil? -%>
+                OkCodes: []int{<% rscodes.each_index do |i| -%><%= rscodes[i] %><%= (i + 1) == rscodes.length ? "" : "," %><% end -%>},
+              <% end -%>
               <% if async_op.header_params.nil? -%>
                 MoreHeaders: map[string]string{"Content-Type": "application/json"}})
               <% else -%>
@@ -65,7 +69,7 @@ func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schem
             if err != nil {
                 return nil, "", nil
             }
-            return r.Body, status.(string), nil
+            return r.Body, convertToStr(status), nil
         },
     )
 <% elsif async.custom_status_check_func -%>
@@ -74,6 +78,9 @@ func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schem
         func() (interface{}, string, error) {
             r := golangsdk.Result{}
             _, r.Err = <%= cl %>.Get(url, &r.Body, &golangsdk.RequestOpts{
+              <% unless rscodes.nil? -%>
+                OkCodes: []int{<% rscodes.each_index do |i| -%><%= rscodes[i] %><%= (i + 1) == rscodes.length ? "" : "," %><% end -%>},
+              <% end -%>
               <% if async_op.header_params.nil? -%>
                 MoreHeaders: map[string]string{"Content-Type": "application/json"}})
               <% else -%>
