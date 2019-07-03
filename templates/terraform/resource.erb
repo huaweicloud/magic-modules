@@ -129,7 +129,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     if err != nil {
         return fmt.Errorf("Error constructing id, err=%s", err)
     }
-    d.SetId(id.(string))
+    d.SetId(convertToStr(id))
 <% else -%>
 <%   async_op = create_api.async.operation -%>
 <%   if need_build_new_client(pre_api, async_op) -%>
@@ -149,7 +149,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     if err != nil {
         return fmt.Errorf("Error constructing id, err=%s", err)
     }
-    d.SetId(id.(string))
+    d.SetId(convertToStr(id))
 <% end # unless object.async -%>
 <% other_api(object, "c").each do | item | -%>
 <%
