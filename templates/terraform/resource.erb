@@ -136,7 +136,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 
     client, err = config.sdkClient(<%= argu_for_sdkclient(async_op) %>)
     if err != nil {
-        return nil, fmt.Errorf("Error creating async sdk client, err=%s", err)
+        return fmt.Errorf("Error creating async sdk client, err=%s", err)
     }
 <%   end -%>
 <%   pre_api = async_op -%>

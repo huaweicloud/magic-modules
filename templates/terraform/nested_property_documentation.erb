@@ -1,4 +1,4 @@
-<% nested_properties = nested_properties(property) -%>
+<% nested_properties = property.child_properties -%>
 <% unless nested_properties.nil? -%>
 
 The `<%= Google::StringUtils.underscore(property.name) -%>` block <%= property.output ? "contains" : "supports" -%>:
