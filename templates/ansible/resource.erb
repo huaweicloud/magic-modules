@@ -144,7 +144,7 @@ def main():
     module = build_module()
     config = Config(module, "<%= object.__product.prefix[1..-1] %>")
 
-<% list_api = object.apis.fetch("list", nil)
+<% list_api = object.list_api
    raise "no list api" if list_api.nil?
 -%>
     try:
@@ -222,7 +222,7 @@ def user_input_parameters(module):
 
 <% united_async, gasync = is_united_async(object) -%>
 <% async_wait_name = "async_wait" -%>
-<% create_api = object.apis["create"] -%>
+<% create_api = object.create_api -%>
 def create(config):
     module = config.module
     client = config.client(<%= argu_for_sdkclient(create_api) %>)
@@ -307,7 +307,7 @@ def create(config):
 <%   end -%>
 <% end -%>
 <% if updatable?(object) -%>
-<%   update_api = object.apis.fetch("update", nil) -%>
+<%   update_api = object.update_api -%>
 <%   update_apis = [update_api, other_api(object, "u"), multi_invoke_api(object, "u")] -%>
 <%   multi_update = update_apis.flatten.compact.length > 1 -%>
 
@@ -390,8 +390,8 @@ def update(config, expect_state, current_state):
 <% end # updatable? -%>
 
 
-<% read_api = object.apis["read"] -%>
-<% delete_api = object.apis["delete"] -%>
+<% read_api = object.read_api -%>
+<% delete_api = object.delete_api -%>
 def delete(config):
     module = config.module
     client = config.client(<%= argu_for_sdkclient(delete_api) %>)

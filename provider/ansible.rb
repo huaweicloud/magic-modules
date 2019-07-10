@@ -114,7 +114,7 @@ module Provider
       end
 
       def list_url(resource)
-        op = resource.apis["list"]
+        op = resource.list_api
         v = []
         unless op.query_params.nil?
           op.identity.each do |i|
@@ -552,7 +552,7 @@ module Provider
           end
         end
 
-        if resource.apis["delete"].async.nil? && !resource.apis["create"].async.nil?
+        if resource.delete_api.async.nil? && !resource.create_api.async.nil?
           v << "HwcClientException404"
         end
 

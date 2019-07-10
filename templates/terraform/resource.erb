@@ -71,7 +71,7 @@ func resource<%= resource_name -%>UserInputParams(d *schema.ResourceData) map[st
     }
 }
 
-<% create_api = object.apis["create"] -%>
+<% create_api = object.create_api -%>
 func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{}) error {
     config := meta.(*Config)
     client, err := config.sdkClient(<%= argu_for_sdkclient(create_api) %>)
@@ -199,8 +199,8 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     return resource<%= resource_name -%>Read(d, meta)
 }
 
-<% list_api = object.apis.fetch("list", nil)
-   read_api = object.apis.fetch("read", nil)
+<% list_api = object.list_api
+   read_api = object.read_api
 -%>
 <% if !read_api.nil? -%>
 func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{}) error {
@@ -299,7 +299,7 @@ func resource<%= resource_name -%>Read(d *schema.ResourceData, meta interface{})
 }
 <% end -%>
 <% if updatable?(object) -%>
-<%   update_api = object.apis.fetch("update", nil) -%>
+<%   update_api = object.update_api -%>
 <%   update_apis = [update_api, other_api(object, "u")].flatten.compact -%>
 <%   multi_update = update_apis.length > 1 -%>
 <%   if multi_update -%>
@@ -439,7 +439,7 @@ func resource<%= resource_name -%>Update(d *schema.ResourceData, meta interface{
 }
 <% end -%>
 
-<% delete_api = object.apis["delete"] -%>
+<% delete_api = object.delete_api -%>
 func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{}) error {
     config := meta.(*Config)
     client, err := config.sdkClient(<%= argu_for_sdkclient(delete_api) %>)

@@ -16,7 +16,9 @@ import (
    terraform_name = "#{package}_" + Google::StringUtils.underscore(resource_name)
    terraform_resource_name = "#{terraform_name}.#{example.primary_resource_id}"
 
-   sdkcp = argu_for_sdkclient(object.apis.fetch("read", nil) || object.apis.fetch("list", nil), true)
+   read_api = object.read_api
+   list_api = object.list_api
+   sdkcp = argu_for_sdkclient(read_api || list_api, true)
 %>
 
 func TestAcc<%= test_case_name -%>(t *testing.T) {
@@ -39,9 +41,6 @@ func testAcc<%= test_case_name -%>(val string) string {
 <%= example.config_test product_folder -%>
 }
 
-<% read_api = object.apis.fetch("read", nil)
-   list_api = object.apis.fetch("list", nil)
--%>
 func testAccCheck<%= resource_name -%>Destroy(s *terraform.State) error {
     config := testAccProvider.Meta().(*Config)
     client, err := config.sdkClient(<%= sdkcp %>)
@@ -55,7 +54,7 @@ func testAccCheck<%= resource_name -%>Destroy(s *terraform.State) error {
         }
         <% if !read_api.nil? -%>
 
-        url, err := replaceVarsForTest(rs, "<%= self_link_url(object) -%>")
+        url, err := replaceVarsForTest(rs, "<%= read_api.path -%>")
         if err != nil {
             return err
         }
@@ -105,7 +104,7 @@ func testAccCheck<%= resource_name -%>Exists() resource.TestCheckFunc {
         }
         <% if !read_api.nil? -%>
 
-        url, err := replaceVarsForTest(rs, "<%= self_link_url(object) -%>")
+        url, err := replaceVarsForTest(rs, "<%= read_api.path -%>")
         if err != nil {
             return fmt.Errorf("Error checking <%= terraform_resource_name -%> exist, err=building url failed: %s", err)
         }

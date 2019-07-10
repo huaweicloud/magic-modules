@@ -79,12 +79,6 @@ module Provider
       m[k.join('_')]
     end
 
-    # Puts together the links to use to make API calls for a given resource type
-    def self_link_url(resource)
-      # (TODO) resource may have no read api
-      resource.apis["read"].path
-    end
-
     # Transforms a format string with field markers to a regex string with
     # capture groups.
     #
@@ -297,9 +291,9 @@ module Provider
 
     def import_resource?(resource)
       return false # always not generate import relevant codes
-      return true unless resource.apis.fetch("read", nil).nil?
+      return true unless resource.read_api.nil?
 
-       list_api = resource.apis["list"]
+      list_api = resource.list_api
       (list_api.identity.length == 1 && list_api.identity.has_key?("id"))
     end
   end

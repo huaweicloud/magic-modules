@@ -251,9 +251,9 @@ module Api
 
       @apis.each do |k, v|
         check_property_value "apis::#{k}", v, Api::ApiBasic
-	v.check_more(self)
+        v.check_more(self)
       end
-      if @apis.fetch("read", nil).nil? and @apis.fetch("list", nil).nil?
+      if read_api.nil? and list_api.nil?
         raise "no read api and list api for resource(#{@name})"
       end
 
@@ -439,6 +439,34 @@ module Api
        end
 
        o
+    end
+
+    def create_api
+      fetch_api("create")
+    end
+
+    def read_api
+      fetch_api("read")
+    end
+
+    def update_api
+      fetch_api("update")
+    end
+
+    def delete_api
+      fetch_api("delete")
+    end
+
+    def list_api
+      fetch_api("list")
+    end
+
+    def fetch_api(name)
+      @apis.each do |_, v|
+        return v if v.name.eql? name
+      end
+
+      return nil
     end
 
     private

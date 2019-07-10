@@ -768,7 +768,7 @@ module Provider
       ["create", "delete", "update"].each do |k|
 
         apis = [
-          resource.apis.fetch(k, nil),
+          resource.fetch_api(k),
           other_api(resource, k[0]),
           multi_invoke_api(resource, k[0])
         ].flatten.compact
@@ -828,8 +828,8 @@ module Provider
 
     def not_read_api(resource)
       r = []
-      resource.apis.each do |k, v|
-        next if k.eql?("read") || k.eql?("list")
+      resource.apis.each_value do |v|
+        next if v.name.eql?("read") || v.name.eql?("list")
         next if v.is_a?(Api::ApiOther) && v.crud.include?("r")
         r << v
       end
@@ -841,7 +841,7 @@ module Provider
       ao = ro.nil? ? Hash.new : ro.api_asyncs
 
       pre = nil
-      resource.apis.each do |k, v|
+      resource.apis.each_value do |v|
         next if v.async.nil?
 
         if pre.nil?
@@ -914,7 +914,7 @@ module Provider
     end
 
     def updatable?(resource)
-      !([resource.apis.fetch("update", nil), other_api(resource, "u")].flatten.compact.empty?)
+      !([resource.update_api, other_api(resource, "u")].flatten.compact.empty?)
     end
 
     # Returns the nested properties. An empty list is returned if the property
