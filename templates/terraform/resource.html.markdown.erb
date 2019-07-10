@@ -57,29 +57,34 @@ To get more information about <%= object.name -%>, see:
 ## Argument Reference
 
 The following arguments are supported:
-<% properties.select(&:required).sort_by(&:out_name).each do |prop| -%>
+<% ps = order_properties(properties.reject(&:output)) -%>
+<% ps.each do |prop| -%>
 <%= lines(build_property_documentation(prop)) -%>
 <% end -%>
-<% properties.select(&:required).sort_by(&:out_name).each do |prop| -%>
+<% #unless ps.find_index {|prop| !prop.child_properties.nil? }.nil? -%>
+<% #- - - -%>
+<% #end -%>
+<% ps.each do |prop| -%>
 <%= lines(build_nested_property_documentation(prop)) -%>
 <% end -%>
-
-- - -
-<% properties.reject(&:required).reject(&:output).sort_by(&:out_name).each do |prop| -%>
-<%= lines(build_property_documentation(prop)) -%>
-<% end -%>
-<% properties.reject(&:required).reject(&:output).sort_by(&:out_name).each do |prop| -%>
-<%= lines(build_nested_property_documentation(prop)) -%>
-<% end -%>
+<% # properties.reject(&:required).reject(&:output).sort_by(&:out_name).each do |prop| -%>
+<% #= lines(build_property_documentation(prop)) -%>
+<% # end -%>
+<% # properties.reject(&:required).reject(&:output).sort_by(&:out_name).each do |prop| -%>
+<% # = lines(build_nested_property_documentation(prop)) -%>
+<% # end -%>
+<% ps = properties.select(&:output).sort_by(&:out_name) -%>
+<% unless ps.empty? -%>
 
 ## Attributes Reference
 
 In addition to the arguments listed above, the following computed attributes are exported:
-<% properties.select(&:output).sort_by(&:out_name).each do |prop| -%>
+<%   ps.each do |prop| -%>
 <%= lines(build_property_documentation(prop)) -%>
-<% end -%>
-<% properties.select(&:output).sort_by(&:out_name).each do |prop| -%>
+<%   end -%>
+<%   ps.each do |prop| -%>
 <%= lines(build_nested_property_documentation(prop)) -%>
+<%   end -%>
 <% end -%>
 <% at = async_timout(object) %>
 <% unless at.empty? -%>

@@ -6,13 +6,13 @@ func action<%= prefix %>(d *schema.ResourceData, result interface{}, client *gol
 <%=      sprintf("\"%s\": []string{%s},", k, index2navigate(v))  %>
 <%     end -%>
     }
-    var data = make(map[string]string)
+    var data = make(map[string]interface{})
     for key, path := range pathParameters {
         value, err := navigateValue(result, path, nil)
         if err != nil {
             return fmt.Errorf("Error retrieving path parameter, err=%s", err)
         }
-        data[key] = convertToStr(value)
+        data[key] = value
     }
     url, err := replaceVars(d, "<%= api.path -%>", data)
     if err != nil {
@@ -28,12 +28,14 @@ func action<%= prefix %>(d *schema.ResourceData, result interface{}, client *gol
 <% else -%>
     url := client.ServiceURL(<%= sprintf("\"%s\"", api.path) %>)
 <% end -%>
+<% unless api.parameters.nil? -%>
 
     params := make(map[string]interface{})
-<%= lines(build_expand_properties("", api.parameters, "nil, nil", prefix, "params", false), 1) %>
+<%= lines(build_expand_properties(api.parameters, "nil, nil", prefix, "params", false), 1) %>
+<% end -%>
 
     r := golangsdk.Result{}
-    _, r.Err = client.<%= api.verb.capitalize %>(url, params, <%= api.has_response ? "&r.Body" : "nil" %>, &golangsdk.RequestOpts{
+    _, r.Err = client.<%= api.verb.capitalize %>(url, <%= api.parameters.nil? ? "nil" : "params" %>, <%= api.has_response ? "&r.Body" : "nil" %>, &golangsdk.RequestOpts{
         OkCodes: successHTTPCodes,
         <% unless api.header_params.nil? -%>
         MoreHeaders: map[string]string{
