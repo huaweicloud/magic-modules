@@ -22,8 +22,7 @@ package <%= package %>
   resource_name = product_ns + object.name + object.version.upcase
   resource_nestedobj_properties = nestedobject_properties(object)
   ai_name = resource_nestedobj_properties.nil? ? "nil" : "arrayIndex"
-  #united_async, gasync = is_united_async(object)
-  united_async = false
+  united_async, gasync = is_united_async(object)
 -%>
 
 func resource<%= resource_name -%>() *schema.Resource {
@@ -610,8 +609,12 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <%   end -%>
 <%   unless item.async.nil? || united_async -%>
 
-<%= lines(build_resource_async_op(item, resource_name), 1) %>
+<%= lines(build_resource_async_op(item, resource_name, nil), 1) %>
 <%   end -%>
+<% end -%>
+<% if united_async -%>
+
+<%= lines(build_resource_async_op(nil, resource_name, gasync)) -%>
 <% end -%>
 <% read_apis.each do | item | -%>
 

@@ -1,12 +1,12 @@
-func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schema.ResourceData, config *Config, result interface{},
+func asyncWait<%= sprintf("%s%s", resource_name, gasync.nil? ? titlelize(api.name) : "") %>(d *schema.ResourceData, config *Config, result interface{},
    client *golangsdk.ServiceClient, timeout time.Duration) (interface{}, error) {
 
 <%
-   async = api.async
+   async = gasync.nil? ? api.async : gasync
    async_op = async.operation
 -%>
 <% cl = "client" -%>
-<% if need_build_async_url(api) -%>
+<% if (!gasync.nil?) || need_build_async_url(api) -%>
 <%   if async_op.path_parameter -%>
     data := make(map[string]interface{})
     pathParameters := map[string][]string {
@@ -102,6 +102,6 @@ func asyncWait<%= sprintf("%s%s", resource_name, titlelize(api.name))%>(d *schem
         },
     )
 <% else -%>
-<%   raise "Must sepecify status check for api: #{api.name}" -%>
+<%   raise "Must sepecify status check for api: " + (gasync.nil? ? api.name : "global async") -%>
 <% end -%>
 }
