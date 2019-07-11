@@ -1,7 +1,26 @@
 <% prefix = resource_name + titlelize(api.name) -%>
-func send<%= prefix -%>Request(d *schema.ResourceData, params interface{},
+func send<%= prefix -%>Request(d *schema.ResourceData, params<%= api.path_parameter.nil? ? "" : ", context" %> interface{},
     client *golangsdk.ServiceClient) (interface{}, error) {
-<% if api.path.include?("{") -%>
+<% if !api.path_parameter.nil? -%>
+    pathParameters := map[string][]string {
+<%     api.path_parameter.each do |k, v| -%>
+<%=      sprintf("\"%s\": []string{%s},", k, index2navigate(v))  %>
+<%     end -%>
+    }
+    var data = make(map[string]interface{})
+    for key, path := range pathParameters {
+        value, err := navigateValue(context, path, nil)
+        if err != nil {
+            return nil, fmt.Errorf("Error retrieving path parameter, err=%s", err)
+        }
+        data[key] = value
+    }
+    url, err := replaceVars(d, "<%= api.path -%>", data)
+    if err != nil {
+        return nil, err
+    }
+    url = client.ServiceURL(url)
+<% elsif api.path.include?("{") -%>
     url, err := replaceVars(d, "<%= api.path -%>", nil)
     if err != nil {
         return nil, err

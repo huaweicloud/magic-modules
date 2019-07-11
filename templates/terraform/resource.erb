@@ -104,26 +104,44 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
     if err != nil {
         return fmt.Errorf("Error creating <%= resource_name -%>, err=%s", err)
     }
+<% unless at["create"].nil? -%>
+
+    timeout := d.Timeout(schema.TimeoutCreate)
+<% end -%>
 <% pre_api = create_api -%>
 <% action = action_after_send_create_request(object) -%>
 <% unless action.nil? -%>
+<%   fn = sprintf("%s%s", resource_name, titlelize(action.name)) -%>
+<%   unless action.parameters.nil? -%>
+    params, err = build<%= fn -%>Parameters(opts, <%= ai_name -%>)
+    if err != nil {
+        return fmt.Errorf("Error building the request body of api(<%= action.name -%>), err=%s", err)
+    }
+<%   end -%>
 <%   if need_build_new_client(action, pre_api) -%>
-
     client, err = config.sdkClient(<%= argu_for_sdkclient(action) %>)
     if err != nil {
         return fmt.Errorf("Error creating sdk client, err=%s", err)
     }
 <%   end -%>
-<%   pre_api = action -%>
-
-    err = action<%= resource_name %><%= titlelize(action.name) %>(d, r, client)
+<%   r = item.async.nil? ? "_, err =" : "ar, err :=" -%>
+    <%= r %> send<%= fn %>Request(d, <%= action.parameters.nil? ? "nil" : "params" %><%= action.path_parameter.nil? ? "" : ", r" %>, client)
     if err != nil {
         return err
     }
-<% end -%>
-<% unless at["create"].nil? -%>
-
-    timeout := d.Timeout(schema.TimeoutCreate)
+<%   unless action.async.nil? -%>
+<%     async_op = action.async.operation -%>
+<%     if need_build_new_client(action, async_op) -%>
+    client, err = config.sdkClient(<%= argu_for_sdkclient(async_op) %>)
+    if err != nil {
+        return fmt.Errorf("Error creating async sdk client, err=%s", err)
+    }
+<%     end -%>
+    _, err = asyncWait<%= fn %>(d, config, ar, client, timeout)
+    if err != nil {
+        return err
+    }
+<%   end -%>
 <% end -%>
 <% if create_api.async.nil? -%>
 
@@ -184,7 +202,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
 
     client, err = config.sdkClient(<%= argu_for_sdkclient(async_op) %>)
     if err != nil {
-        return nil, fmt.Errorf("Error creating async sdk client, err=%s", err)
+        return fmt.Errorf("Error creating async sdk client, err=%s", err)
     }
 <%     end -%>
 <%     pre_api = async_op -%>
@@ -617,8 +635,3 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
 <%= lines(build_adjust_opts_method(object, resource_name), 1) -%>
 
 <%= lines(build_set_states_method(resource_name), 1) -%>
-<% action = action_after_send_create_request(object) -%>
-<% if action -%>
-
-<%= lines(build_action_method(object, resource_name, action), 1) -%>
-<% end -%>
