@@ -298,12 +298,12 @@ def create(config):
     <%= spaces %><%= r %>send_<%= item.out_name %>_request(module, <%= item.parameters.nil? ? "None" : "params" %>, <%= ncl ? "client1" : "client" %>)
 <%   unless item.async.nil? -%>
 <%     async_op = item.async.operation -%>
-<%     ncl = need_build_new_client(item, async_op) -%>
-<%     if ncl -%>
+<%     ncl1 = need_build_new_client(item, async_op) -%>
+<%     if ncl1 -%>
 
     <%= spaces %>client1 = config.client(<%= argu_for_sdkclient(async_op) %>)
 <%     end -%>
-    <%= spaces %><%= united_async ? async_wait_name : "async_wait_" + item.out_name %>(config, r, <%= ncl ? "client1" : "client" %>, timeout)
+    <%= spaces %><%= united_async ? async_wait_name : "async_wait_" + item.out_name %>(config, r, <%= ncl1 || ncl ? "client1" : "client" %>, timeout)
 <%   end -%>
 <% end -%>
 <% if updatable?(object) -%>
@@ -371,12 +371,12 @@ def update(config, expect_state, current_state):
     <%= spaces %><%= r %>send_<%= item.out_name %>_request(module, <%= item.parameters.nil? ? "None" : "params" %>, <%= ncl ? "client1" : "client" %>)
 <%     unless item.async.nil? -%>
 <%       async_op = item.async.operation -%>
-<%       ncl = need_build_new_client(item, async_op) -%>
-<%       if ncl -%>
+<%       ncl1 = need_build_new_client(item, async_op) -%>
+<%       if ncl1 -%>
 
     <%= spaces %>client1 = config.client(<%= argu_for_sdkclient(async_op) %>)
 <%       end -%>
-    <%= spaces %><%= united_async ? async_wait_name : "async_wait_" + item.out_name %>(config, r, <%= ncl ? "client1" : "client" %>, timeout)
+    <%= spaces %><%= united_async ? async_wait_name : "async_wait_" + item.out_name %>(config, r, <%= ncl1 || ncl ? "client1" : "client" %>, timeout)
 <%     end -%>
 <%   end -%>
 <%   multi_invoke_api(object, "u").each do | item | -%>
@@ -461,11 +461,11 @@ def read_resource(config):
 <% pre_api = read_api -%>
 <% read_apis.each do | item | -%>
 
-<%   if need_build_new_client(item, pre_api) -%>
-    client = config.client(<%= argu_for_sdkclient(item) %>)
+<%   ncl = need_build_new_client(item, pre_api) -%>
+<%   if ncl -%>
+    client1 = config.client(<%= argu_for_sdkclient(item) %>)
 <%   end -%>
-<%   pre_api = item -%>
-    r = send_<%= item.out_name%>_request(module, client)
+    r = send_<%= item.out_name%>_request(module, <%= ncl ? "client1" : "client" %>)
     res["<%= item.name %>"] = fill_<%= item.out_name%>_resp_body(r)
 <%   v = get_fixed_length_array_parameter(item) -%>
 <%   unless v.nil? || v.empty? -%>
