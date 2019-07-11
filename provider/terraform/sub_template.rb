@@ -81,9 +81,10 @@ module Provider
         )
       end
 
-      def build_resource_async_op(api, resource_name)
+      def build_resource_async_op(api, resource_name, gasync)
         compile_template 'templates/terraform/async_wait.erb',
                          api: api,
+                         gasync: gasync,
                          resource_name: resource_name
       end
 
