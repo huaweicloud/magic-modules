@@ -827,11 +827,24 @@ module Provider
     end
 
     def not_read_api(resource)
-      r = []
-      resource.apis.each_value do |v|
+      r = Hash.new
+      resource.apis.each do |k, v|
         next if v.name.eql?("read") || v.name.eql?("list")
         next if v.is_a?(Api::ApiOther) && v.crud.include?("r")
-        r << v
+        r[k] = v
+      end
+      r
+    end
+
+    def req_apis(resource)
+      val = Hash.new
+      not_read_api(resource).each do |k, v|
+        val[v.operation_id] = k
+      end
+
+      r = Hash.new
+      val.each_value do |v|
+        r[v] = resource.apis[v]
       end
       r
     end

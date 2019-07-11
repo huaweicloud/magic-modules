@@ -598,12 +598,14 @@ def search_resource(config):
 <% end -%>
 
     return result
-<% not_read_api(object).each do | item | -%>
+<% req_apis = req_apis(object) -%>
+<% not_read_api(object).each do | k, item | -%>
 <%   unless item.parameters.nil? -%>
 
 
 <%= lines(build_request_body_method(object, item)) -%>
 <%   end -%>
+<%   next unless req_apis.include?(k) -%>
 
 
 <%= lines(build_send_request_method(item, module_name(object))) -%>

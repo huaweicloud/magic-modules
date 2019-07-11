@@ -461,6 +461,10 @@ module Api
       fetch_api("list")
     end
 
+    def is_delete_api(api)
+      api.name.eql? "delete"
+    end
+
     def fetch_api(name)
       @apis.each do |_, v|
         return v if v.name.eql? name

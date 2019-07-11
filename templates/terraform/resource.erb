@@ -22,6 +22,8 @@ package <%= package %>
   resource_name = product_ns + object.name + object.version.upcase
   resource_nestedobj_properties = nestedobject_properties(object)
   ai_name = resource_nestedobj_properties.nil? ? "nil" : "arrayIndex"
+  #united_async, gasync = is_united_async(object)
+  united_async = false
 -%>
 
 func resource<%= resource_name -%>() *schema.Resource {
@@ -578,41 +580,21 @@ func resource<%= resource_name -%>Delete(d *schema.ResourceData, meta interface{
     return err
 <% end -%>
 }
-<% create_apis = [create_api, other_api(object, "c")].flatten.compact -%>
-<% create_apis.each do | item | -%>
+<% req_apis = req_apis(object) -%>
+<% not_read_api(object).each do | k, item | -%>
 <%   unless item.parameters.nil? -%>
 
 <%= lines(build_request_body_method(object, resource_name, item), 1) -%>
 <%   end -%>
+<%   next unless req_apis.include?(k) -%>
+<%   unless object.is_delete_api(item) -%>
 
 <%= lines(build_send_request_method(resource_name, item), 1) -%>
-<%   unless item.async.nil? -%>
-
-    <%= lines(build_resource_async_op(item, resource_name), 1) %>
 <%   end -%>
-<% end -%>
-<% if updatable?(object) -%>
-<%   update_apis.each do | item | -%>
-<%     next if item.is_a?(Api::ApiOther) && item.crud.include?("c") -%>
-<%     unless item.parameters.nil? -%>
+<%   unless item.async.nil? || united_async -%>
 
-<%= lines(build_request_body_method(object, resource_name, item), 1) -%>
-<%     end -%>
-
-<%= lines(build_send_request_method(resource_name, item), 1) -%>
-<%     unless item.async.nil? -%>
-
-    <%= lines(build_resource_async_op(item, resource_name), 1) %>
-<%     end -%>
+<%= lines(build_resource_async_op(item, resource_name), 1) %>
 <%   end -%>
-<% end -%>
-<% unless delete_api.parameters.nil? -%>
-
-<%= lines(build_request_body_method(object, resource_name, delete_api), 1) -%>
-<% end -%>
-<% unless delete_api.async.nil? -%>
-
-    <%= lines(build_resource_async_op(delete_api, resource_name), 1) %>
 <% end -%>
 <% read_apis.each do | item | -%>
 

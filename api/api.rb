@@ -4,6 +4,7 @@ module Api
   # Represents a list operation definition
   class ApiBasic < Api::Object
     attr_reader :name
+    attr_reader :operation_id
     attr_reader :path
     attr_reader :verb
     attr_reader :parameters
@@ -22,6 +23,7 @@ module Api
 
       check_property :name, String
       check_property :path, String
+      check_property :operation_id, String
       check_property :service_type, String
       check_property :has_response, :boolean
       check_property_oneof :service_level, ["project", "domain"], String
