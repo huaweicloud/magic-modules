@@ -60,6 +60,8 @@ module Api
 
         @has_response = true
 
+	@operation_id = "async"
+
         super
       end
 
