@@ -342,36 +342,39 @@ module Provider
       end
 
       def build_list_query_params(api, spaces)
-        page = []
-        identity = []
-        api.query_params.each do |i|
-          case i
-          when "limit"
-            page << "limit=10"
-          when "offset"
-            page << "offset=%v"
-          when "start"
-            page << "start=%v"
-          when "marker"
-            page << "marker=%v"
-          else
-            identity << i if api.identity.has_key?(i)
-          end
-        end
+        qp = api.query_params || Hash.new
+        identity = qp.select { |k, v| !api.known_query_params.include?(k) }
+        k, v = api.pagination_param
+        page = [
+          ("limit=10" if qp.include?("limit")),
+          (k + "={%v}" unless k.empty?)
+        ].compact
+
+        page_s = page.empty? ? "" : ("?" + page.join("&"))
 
         if identity.empty?
-          page.empty? ? "" : indent(sprintf("queryLink := \"?%s\"", page.join("&")), spaces)
+          page_s.empty? ? "" : indent(sprintf("queryLink := \"%s\"", page_s), spaces)
         else
           out = []
           if identity.length == 1
-            k = identity[0]
-            out << sprintf("queryLink := \"?%s%s=\" + convertToStr(identity[\"#{k}\"])", page.empty? ? "" : page.join("&") + "&", k)
+            k = identity.keys()[0]
+            v = identity[k]
+            out << sprintf("queryLink := \"%s\"", page_s)
+            out << sprintf("v, err := navigateValue(opts, []string{%s})", index2navigate(v, true))
+            out << "if err == nil && convertToStr(v) != \"\"{"
+            out << sprintf("    queryLink += \"%s%s=\" + convertToStr(v)\n}", page_s.empty? ? "?" : "&", k)
           else
-            out << "p := make([]string, 0, #{identity.length})"
-            identity.each do |k|
-              out << "p = append(p, fmt.Sprintf(\"#{k}=%v\", identity[\"#{k}\"]))"
+            out << "queryParams := make([]string, 0, #{identity.length})"
+	    fl = true
+            identity.each do |k, v|
+              out << sprintf("v, err %s navigateValue(opts, []string{%s})", fl ? ":=" : "=", index2navigate(v, true))
+	      out << "if err == nil && convertToStr(v) != \"\"{"
+              out << sprintf("    queryParams = append(queryParams, \"%s=\" + convertToStr(v))\n})", k)
+	      fl = false
             end
-            out << sprintf("queryLink := \"?%s\" + strings.Join(p, \"&\")", page.empty? ? "" : page.join("&") + "&")
+            out << sprintf("\nqueryLink := \"%s\"", page_s)
+            out << "if len(queryParams) > 0 {"
+            out << sprintf("    queryLink += \"%s\" + strings.Join(queryParams, \"&\")\n}", page_s.empty? ? "?" : "&")
           end
           indent(out, spaces)
         end

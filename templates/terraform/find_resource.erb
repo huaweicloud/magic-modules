@@ -1,5 +1,6 @@
-func find<%= resource_name %>ByList(client *golangsdk.ServiceClient, link string, identity map[string]interface{}) (interface{}, error) {
-<% if list_api.query_params.include?('marker') -%>
+func find<%= resource_name %>ByList(client *golangsdk.ServiceClient, link, resourceID string) (interface{}, error) {
+<% _, pp = list_api.pagination_param -%>
+<% if pp.eql?("marker") -%>
     marker := ""
     for {
         url := strings.Sprintf(link, marker)
@@ -11,25 +12,15 @@ func find<%= resource_name %>ByList(client *golangsdk.ServiceClient, link string
         if len(r1) == 0 {
             break
         }
-        var val map[string]interface{}
         for _, item := range r1 {
-            val = item.(map[string]interface{})
-
-            bingo := true
-            for k, v := range identity {
-                if val[k] != v {
-                    bingo = false
-                    break
-                }
-            }
-            if bingo {
+            val, ok := item.(map[string]interface{})["<%= list_api.resource_id_path -%>"]
+            if ok && resourceID == convertToStr(val) {
                 return item, nil
             }
         }
-
-        marker = val[<%= quote_string(list_api.resource_id_path) -%>]
+        marker = val["<%= list_api.resource_id_path -%>"]
     }
-<% elsif list_api.query_params.include?('offset') -%>
+<% elsif pp.eql?('offset') -%>
     offset := 0
     for {
         url := strings.Sprintf(link, offset)
@@ -42,23 +33,14 @@ func find<%= resource_name %>ByList(client *golangsdk.ServiceClient, link string
             break
         }
         for _, item := range r1 {
-            val := item.(map[string]interface{})
-
-            bingo := true
-            for k, v := range identity {
-                if val[k] != v {
-                    bingo = false
-                    break
-                }
-            }
-            if bingo {
+            val, ok := item.(map[string]interface{})["<%= list_api.resource_id_path -%>"]
+            if ok && resourceID == convertToStr(val) {
                 return item, nil
             }
         }
-
         offset += 1
     }
-<% elsif list_api.query_params.include?('start') -%>
+<% elsif pp.eql?('start') -%>
     start := 1
     for {
         url := strings.Sprintf(link, start)
@@ -71,20 +53,11 @@ func find<%= resource_name %>ByList(client *golangsdk.ServiceClient, link string
             break
         }
         for _, item := range r1 {
-            val := item.(map[string]interface{})
-
-            bingo := true
-            for k, v := range identity {
-                if val[k] != v {
-                    bingo = false
-                    break
-                }
-            }
-            if bingo {
+            val, ok := item.(map[string]interface{})["<%= list_api.resource_id_path -%>"]
+            if ok && resourceID == convertToStr(val) {
                 return item, nil
             }
         }
-
         start += len(r.([]interface{}))
     }
 <% else -%>
@@ -92,18 +65,9 @@ func find<%= resource_name %>ByList(client *golangsdk.ServiceClient, link string
     if err != nil {
             return nil, err
     }
-
     for _, item := range r.([]interface{}) {
-        val := item.(map[string]interface{})
-
-        bingo := true
-        for k, v := range identity {
-            if val[k] != v {
-                bingo = false
-                break
-            }
-        }
-        if bingo {
+        val, ok := item.(map[string]interface{})["<%= list_api.resource_id_path -%>"]
+        if ok && resourceID == convertToStr(val) {
             return item, nil
         }
     }

@@ -86,35 +86,16 @@ module Api
 
   class ApiList < Api::ApiBasic
     attr_reader :query_params
-    # an array with items that uniquely identify the resource.
-    attr_reader :identity
     attr_reader :resource_id_path
 
     def validate
       super
 
-      check_optional_property :identity, Hash # only terraform needs it
       check_property :resource_id_path, String
       check_optional_property :query_params, Hash
     end
 
     def check_more(resource)
-      return if @identity.nil?
-
-      # Ensures we have all properties defined
-      @identity.each do |k, v|
-        next if k.eql?("id")
-
-        p = resource.find_property(v)
-        if p.nil?
-          raise "Missing property(#{v}) for identity(#{k}) in list operation of resource (#{resource.name})"
-        end
-
-        unless p.required
-          raise "property(#{v}) referenced by list identity(#{k}) must be a required option"
-        end
-      end
-
       check_query_params(resource)
     end
 
@@ -123,6 +104,8 @@ module Api
     end
 
     def pagination_param
+      return "", "" if @query_params.nil?
+
       r = Hash.new
       @query_params.each do |k, v|
         if ["marker", "offset", "start"].include?(v)
