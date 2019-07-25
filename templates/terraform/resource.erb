@@ -125,7 +125,7 @@ func resource<%= resource_name -%>Create(d *schema.ResourceData, meta interface{
         return fmt.Errorf("Error creating sdk client, err=%s", err)
     }
 <%   end -%>
-<%   r = item.async.nil? ? "_, err =" : "ar, err :=" -%>
+<%   r = action.async.nil? ? "_, err =" : "ar, err :=" -%>
     <%= r %> send<%= fn %>Request(d, <%= action.parameters.nil? ? "nil" : "params" %><%= action.path_parameter.nil? ? "" : ", r" %>, <%= ncl ? "client1" : "client" %>)
     if err != nil {
         return err
