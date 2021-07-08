@@ -79,6 +79,11 @@ Magic Modules requires:
 - Ruby 2.0 or higher
 - Bundler gem
 
+### Example (*recommend*)
+
+  The [user guide doc](user-guide/provider/terraform/manual.md) shows an example of
+  how to generate an terraform provider by cloud service api acheam(yaml) file.
+
 ### Downloading code
 
 Depending on the product and provider combination the generated code is stored
